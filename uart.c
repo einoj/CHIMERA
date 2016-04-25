@@ -70,61 +70,61 @@ void spi_init(void) {
  *
  *  \return  void.
  */
-//ISR(SPI_STC_vect)
-//{
-//  switch (state) {
-//    ///////////////////////////////
-//    // INSTRUCTION STATE
-//    //////////////////////////////
-//    case INSTRUCTION :
-//    {
-//      state = ADDRESS;        
-//      byte_cnt = 1;
-//     SPDR = (uint8_t)(address>>16);      // Address phase is 3 byte long for SPI flashes
-//     break;
-//    }
-//
-//    ///////////////////////////////
-//    // ADDRESS STATE
-//    //////////////////////////////
-//    case ADDRESS :
-//    {
-//      if (byte_cnt == NB_ADDR_BYTE) {    // is the last address byte reached?
-//        state = DATA;          // go to the DATA state
-//        byte_cnt = 0;
-//        SPDR = *data_ptr;     // send the first byte
-//      } else if (byte_cnt == 1) {    // must the middle address byte be sent?
-//        byte_cnt ++;
-//        SPDR = (uint8_t)(address>>8);
-//      } else {
-//        byte_cnt ++;
-//        SPDR = (uint8_t)(address);
-//      }
-//      break;
-//    } 
-//
-//    ///////////////////////////////
-//    // DATA STATE
-//    //////////////////////////////
-//    case DATA :
-//    {
-//      data_ptr++;                 // point to the next byte (even if it was the last)  
-//      if (byte_cnt == nb_byte ) {  // is the last byte sent?
-//        DESELECT_SERIAL_MEMORY;   // Pull high the chip select line of the SPI serial memory                   // terminate current write transfer
-//        state = READY_TO_SEND;    // return to the idle state
-//      } else {      
-//        byte_cnt ++;
-//        SPDR = *data_ptr;
-//      }
-//      break;
-//    }
-//    
-//    default :
-//    {
-//      state = READY_TO_SEND;
-//    }
-//  }  
-//}
+ISR(SPI_STC_vect)
+{
+  switch (state) {
+    ///////////////////////////////
+    // INSTRUCTION STATE
+    //////////////////////////////
+    case INSTRUCTION :
+    {
+      state = ADDRESS;        
+      byte_cnt = 1;
+     SPDR = (uint8_t)(address>>16);      // Address phase is 3 byte long for SPI flashes
+     break;
+    }
+
+    ///////////////////////////////
+    // ADDRESS STATE
+    //////////////////////////////
+    case ADDRESS :
+    {
+      if (byte_cnt == NB_ADDR_BYTE) {    // is the last address byte reached?
+        state = DATA;          // go to the DATA state
+        byte_cnt = 0;
+        SPDR = *data_ptr;     // send the first byte
+      } else if (byte_cnt == 1) {    // must the middle address byte be sent?
+        byte_cnt ++;
+        SPDR = (uint8_t)(address>>8);
+      } else {
+        byte_cnt ++;
+        SPDR = (uint8_t)(address);
+      }
+      break;
+    } 
+
+    ///////////////////////////////
+    // DATA STATE
+    //////////////////////////////
+    case DATA :
+    {
+      data_ptr++;                 // point to the next byte (even if it was the last)  
+      if (byte_cnt == nb_byte ) {  // is the last byte sent?
+        DESELECT_SERIAL_MEMORY;   // Pull high the chip select line of the SPI serial memory                   // terminate current write transfer
+        state = READY_TO_SEND;    // return to the idle state
+      } else {      
+        byte_cnt ++;
+        SPDR = *data_ptr;
+      }
+      break;
+    }
+    
+    default :
+    {
+      state = READY_TO_SEND;
+    }
+  }  
+}
 
 
 uint8_t spi_tx_byte(volatile uint8_t byte) {
@@ -270,9 +270,9 @@ int main (void) {
     get_jedec_id(&JEDEC_ID);
 
     if (JEDEC_ID == 0x25) {
-        printuart("Y\n");
+        printuart("Y\r\n");
     } else {
-        printuart("N\n");
+        printuart("N\r\n");
     }
 
     uint32_t addr;
@@ -280,28 +280,28 @@ int main (void) {
     uint32_t page_cnt = 0;
     uint32_t page_num = 0xfffff+1;
     page_num = page_num>>3;
-    //sprintf(msg, "Checked page %d of %d\n", page_cnt, page_num);
+    //sprintf(msg, "Checked page %d of %d\r\n", page_cnt, page_num);
     //printuart(msg);
-    printuart("STARTING MEMORY CHECK!\n");
+    printuart("STARTING MEMORY CHECK!\r\n");
     while (addr<0xfffff){
         read_byte_arr(0,255,dest);
         addr += 255;
-        printuart("Loop\n");
+        printuart("Loop\r\n");
         for (i = 0; i < 255; i++) {
             if ((i & 1) && (dest[i] != 0xaa)) {
                 //odd
-                sprintf(msg, "Erro: addr %d should be 0xaa is %d\n", i, dest[i]);
+                sprintf(msg, "Erro: addr %d should be 0xaa is %d\r\n", i, dest[i]);
                 printuart(msg);
             } else if ( !(i & 1) && (dest[i] != 0x55)) {
-                sprintf(msg, "Erro: addr %d should be 0xaa is %d\n", i, dest[i]);
+                sprintf(msg, "Erro: addr %d should be 0xaa is %d\r\n", i, dest[i]);
                 printuart(msg);
             } 
         }
         page_cnt++;
-        sprintf(msg, "Checked page %d of %d\n", page_cnt, page_num);
+        sprintf(msg, "Checked page %d of %d\r\n", page_cnt, page_num);
         printuart(msg);
     }
-    printuart("DONE!\n");
+    printuart("DONE!\r\n");
 
 
     while(1) {
