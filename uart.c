@@ -279,14 +279,13 @@ int main (void) {
     uint8_t msg[256];
     uint32_t page_cnt = 0;
     uint32_t page_num = 0xfffff+1;
-    page_num = page_num>>3;
+    page_num = page_num/255+1;
     //sprintf(msg, "Checked page %d of %d\r\n", page_cnt, page_num);
     //printuart(msg);
     printuart("STARTING MEMORY CHECK!\r\n");
     while (addr<0xfffff){
         read_byte_arr(0,255,dest);
         addr += 255;
-        printuart("Loop\r\n");
         for (i = 0; i < 255; i++) {
             if ((i & 1) && (dest[i] != 0xaa)) {
                 //odd
@@ -298,7 +297,7 @@ int main (void) {
             } 
         }
         page_cnt++;
-        sprintf(msg, "Checked page %d of %d\r\n", page_cnt, page_num);
+        sprintf(msg, "Checked page %lu of %lu\r\n", page_cnt, page_num);
         printuart(msg);
     }
     printuart("DONE!\r\n");
