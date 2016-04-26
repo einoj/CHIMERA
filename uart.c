@@ -150,6 +150,25 @@ uint8_t get_status_reg(uint8_t *status) {
 
 }
 
+uint8_t write_spi_command(uint8_t op_code) {
+    uint8_t status_reg;
+
+    if (get_status_reg(&status_reg) == TRANSFER_COMPLETED) {
+        if(!(status_reg & (1<<WIP))) { // Check if the memory is ready to be used. WIP is set an internal write process is in progress
+            DISABLE_SPI_INTERRUPT;
+            SELECT_SERIAL_MEMORY;
+            spi_tx_byte(op_code);
+            DESELECT_SERIAL_MEMORY;
+            ENABLE_SPI_INTERRUPT;
+            return TRANSFER_COMPLETED;
+        } else {
+            return BUSY;
+        }
+    } else {
+        return BUSY;
+    }
+}
+
 /**
  * Reads one or more bytes from the SPI Memory
  */
@@ -201,6 +220,35 @@ uint8_t read_byte_arr(uint32_t addr, uint32_t n_bytes, uint8_t *dest) {
 //            // some memories have three BP bits, others two
 //            spi_tx
 //}
+uint8_t write_byte_array(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
+    uint8_t status_reg;
+    if (start_addr <= TOP_ADDR) {
+        if (get_status_reg(&status_reg) == TRANSFER_COMPLETED) {// Is the SPI interface being used?
+            if (!(status_reg & (1<<WIP))) { // Is a write in progress internally on the memory?
+                // TODO should test for write protectioin
+                write_spi_command(WREN); // Write enable always has to be sent before a write operation.
+                // Seeting the state to INSTRUCTION will cause the spi interrupt to send the first
+                // byte of the three byte address.
+                state = INSTRUCTION; 
+                // global variables used by interrupt function
+                nb_byte = n_bytes; 
+                byte_cnt = 0;
+                address = start_addr;
+                data_ptr = src;
+                SELECT_SERIAL_MEMORY;
+
+                SPDR = BYTE_PRG; // write byte program command to SPI
+                return TRANSFER_STARTED;
+            } else {
+                return BUSY;
+            }
+        } else {
+            return BUSY;
+        }
+    } else {
+        return OUT_OF_RANGE;
+    }
+}
 
 
 /** 
@@ -260,6 +308,9 @@ int main (void) {
     uint8_t JEDEC_ID;
     uint8_t reg_staus;
     static uint8_t dest[257*sizeof(uint8_t)];
+    static uint8_t src[1];
+
+    src[0] = 0x22;
 
     //Initialize USART0
     USART1Init();
@@ -280,8 +331,7 @@ int main (void) {
     uint32_t page_cnt = 0;
     uint32_t page_num = 0xfffff+1;
     page_num = page_num/255+1;
-    //sprintf(msg, "Checked page %d of %d\r\n", page_cnt, page_num);
-    //printuart(msg);
+    while(write_byte_array(0x100,1,src) == BUSY);
     printuart("STARTING MEMORY CHECK!\r\n");
     while (addr<0xfffff){
         read_byte_arr(0,255,dest);
