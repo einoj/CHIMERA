@@ -227,6 +227,30 @@ uint8_t read_byte_arr(uint32_t addr, uint32_t n_bytes, uint8_t *dest) {
 }
 
 /**
+ *
+ */
+uint8_t write_status_reg(uint8_t sreg) {
+    uint8_t status_reg;
+
+    if (read_status_reg(&status_reg) == TRANSFER_COMPLETED) {// Is the SPI interface being used?
+      if (!(status_reg & (1<<WIP))) { // Is a write in progress internally on the memory?
+          write_spi_command(WREN); // Some memories also supports EWSR
+          DISABLE_SPI_INTERRUPT;
+          SELECT_SERIAL_MEMORY;
+          spi_tx_byte(WRSR);
+          spi_tx_byte(sreg);
+          DESELECT_SERIAL_MEMORY;
+          ENABLE_SPI_INTERRUPT;
+          return TRANSFER_COMPLETED;
+      } else {
+          return BUSY;
+      } 
+    } else {
+        return BUSY;
+    }
+}
+
+/**
  * Writes a 4 byte pattern to the memory 
  */
 //uint8_t write_pattern(uint32_t pattern) {
@@ -337,6 +361,35 @@ uint8_t erase_chip(void) {
     }       
 }
 
+uint8_t write_aai(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
+    uint8_t status_reg;
+    if (start_addr <= TOP_ADDR) {
+        if (read_status_reg(&status_reg) == TRANSFER_COMPLETED) {// Is the SPI interface being used?
+            if (!(status_reg & (1<<WIP))) { // Is a write in progress internally on the memory?
+                // TODO should test for write protectioin
+                write_spi_command(WREN); // Write enable always has to be sent before a write operation.
+                // Seeting the state to INSTRUCTION will cause the spi interrupt to send the first
+                // byte of the three byte address.
+                state = INSTRUCTION; 
+                // global variables used by interrupt function
+                nb_byte = n_bytes; 
+                byte_cnt = 0;
+                address = start_addr;
+                data_ptr = src;
+                SELECT_SERIAL_MEMORY;
+                SPDR = AAI; // write byte program command to SPI
+                return TRANSFER_STARTED;
+            } else {
+                return BUSY;
+            }
+        } else {
+            return BUSY;
+        }
+    } else {
+        return OUT_OF_RANGE;
+    }
+}
+
 int main (void) {
     uint8_t u8TXData;
     uint8_t u8RXData;
@@ -345,11 +398,12 @@ int main (void) {
     uint32_t error_cnt;
     uint8_t dir = 0;
     uint8_t JEDEC_ID;
-    uint8_t reg_staus;
+    uint8_t reg_status;
     static uint8_t dest[257*sizeof(uint8_t)];
     static uint8_t src[1];
 
-    src[0] = 0x00;
+    src[0] = 0x55;
+    src[0] = 0xAA;
 
     //Initialize USART0
     USART1Init();
@@ -371,10 +425,14 @@ int main (void) {
     uint32_t page_num = 0xfffff+1;
     error_cnt = 0;
     page_num = page_num/255+1;
-    erase_chip();
-    while(write_byte_array(6,1,src) != TRANSFER_STARTED);
+    write_status_reg(0x00);
+    //erase_chip();
+    read_status_reg(&reg_status);
+    sprintf(msg,"reg status: 0x%02x\r\n",reg_status);
+    printuart(msg);
+    while(write_aai(6,2,src) != TRANSFER_STARTED);
     printuart("STARTING MEMORY CHECK!\r\n");
-    while(read_byte_arr(256,255,dest) != TRANSFER_COMPLETED);
+    while(read_byte_arr(0,255,dest) != TRANSFER_COMPLETED);
     for (i = 0; i < 255; i++) {
         if ((i & 1) && (dest[i] != 0xaa)) {
             //odd
