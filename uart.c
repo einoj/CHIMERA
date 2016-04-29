@@ -72,15 +72,19 @@ void spi_init(void) {
  */
 ISR(SPI_STC_vect)
 {
+  uint8_t msg[256];
   switch (state) {
     ///////////////////////////////
     // INSTRUCTION STATE
     //////////////////////////////
     case INSTRUCTION :
     {
+      printuart("I\r\n");
       state = ADDRESS;        
       byte_cnt = 1;
-     SPDR = (uint8_t)(address>>16);      // Address phase is 3 byte long for SPI flashes
+      SPDR = (uint8_t)(address>>16);      // Address phase is 3 byte long for SPI flashes
+      sprintf(msg, "address %02x\r\n",(uint8_t)(address>>16));
+      printuart(msg);
      break;
     }
 
@@ -90,15 +94,24 @@ ISR(SPI_STC_vect)
     case ADDRESS :
     {
       if (byte_cnt == NB_ADDR_BYTE) {    // is the last address byte reached?
+        printuart("B\r\n");
         state = DATA;          // go to the DATA state
         byte_cnt = 0;
         SPDR = *data_ptr;     // send the first byte
+      sprintf(msg, "data %02x\r\n",*data_ptr);
+      printuart(msg);
       } else if (byte_cnt == 1) {    // must the middle address byte be sent?
+        printuart("C\r\n");
         byte_cnt ++;
         SPDR = (uint8_t)(address>>8);
+      sprintf(msg, "address %02x\r\n",(uint8_t)(address>>8));
+      printuart(msg);
       } else {
+        printuart("D\r\n");
         byte_cnt ++;
         SPDR = (uint8_t)(address);
+      sprintf(msg, "address %02x\r\n",(uint8_t)(address));
+      printuart(msg);
       }
       break;
     } 
@@ -110,11 +123,15 @@ ISR(SPI_STC_vect)
     {
       data_ptr++;                 // point to the next byte (even if it was the last)  
       if (byte_cnt == nb_byte ) {  // is the last byte sent?
+        printuart("E\r\n");
         DESELECT_SERIAL_MEMORY;   // Pull high the chip select line of the SPI serial memory                   // terminate current write transfer
         state = READY_TO_SEND;    // return to the idle state
       } else {      
+        printuart("X\r\n");
         byte_cnt ++;
         SPDR = *data_ptr;
+      sprintf(msg, "data %02x\r\n",*data_ptr);
+      printuart(msg);
       }
       break;
     }
@@ -133,7 +150,7 @@ uint8_t spi_tx_byte(volatile uint8_t byte) {
     return SPDR;
 }
 
-uint8_t get_status_reg(uint8_t *status) {
+uint8_t read_status_reg(uint8_t *status) {
     if (state == READY_TO_SEND) {
         DISABLE_SPI_INTERRUPT;        
         SELECT_SERIAL_MEMORY;        // Pull down chip select.
@@ -153,7 +170,7 @@ uint8_t get_status_reg(uint8_t *status) {
 uint8_t write_spi_command(uint8_t op_code) {
     uint8_t status_reg;
 
-    if (get_status_reg(&status_reg) == TRANSFER_COMPLETED) {
+    if (read_status_reg(&status_reg) == TRANSFER_COMPLETED) {
         if(!(status_reg & (1<<WIP))) { // Check if the memory is ready to be used. WIP is set an internal write process is in progress
             DISABLE_SPI_INTERRUPT;
             SELECT_SERIAL_MEMORY;
@@ -180,7 +197,7 @@ uint8_t read_byte_arr(uint32_t addr, uint32_t n_bytes, uint8_t *dest) {
 
     curr_dest = dest;
     if ((addr) <= TOP_ADDR) {
-        if(get_status_reg(&status_reg) == TRANSFER_COMPLETED) {
+        if(read_status_reg(&status_reg) == TRANSFER_COMPLETED) {
             if(!(status_reg & (1<<WIP))) { // Check if the memory is ready to be used. WIP is set an internal write process is in progress
                 DISABLE_SPI_INTERRUPT;
                 SELECT_SERIAL_MEMORY;
@@ -214,7 +231,7 @@ uint8_t read_byte_arr(uint32_t addr, uint32_t n_bytes, uint8_t *dest) {
  */
 //uint8_t write_pattern(uint32_t pattern) {
 //    uint8_t status_reg;
-//    if (get_status_reg(&status_reg) == TRANSFER_COMPLETED) {
+//    if (read_status_reg(&status_reg) == TRANSFER_COMPLETED) {
 //        if (!(status_reg & (1<<WIP))) { // Check if the memory is ready to be used. WIP is set an internal write process is in progress
 //            // TODO implement check of write protect
 //            // some memories have three BP bits, others two
@@ -223,7 +240,7 @@ uint8_t read_byte_arr(uint32_t addr, uint32_t n_bytes, uint8_t *dest) {
 uint8_t write_byte_array(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
     uint8_t status_reg;
     if (start_addr <= TOP_ADDR) {
-        if (get_status_reg(&status_reg) == TRANSFER_COMPLETED) {// Is the SPI interface being used?
+        if (read_status_reg(&status_reg) == TRANSFER_COMPLETED) {// Is the SPI interface being used?
             if (!(status_reg & (1<<WIP))) { // Is a write in progress internally on the memory?
                 // TODO should test for write protectioin
                 write_spi_command(WREN); // Write enable always has to be sent before a write operation.
@@ -259,7 +276,7 @@ uint8_t write_byte_array(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
 uint8_t get_jedec_id(uint8_t *memID)
 {
     uint8_t status_reg;
-    if (get_status_reg(&status_reg) == TRANSFER_COMPLETED)
+    if (read_status_reg(&status_reg) == TRANSFER_COMPLETED)
     {
         if (!(status_reg & (1<<WIP))) // Check if the memory is ready to be used. WIP is set an internal write process is in progress
         { 
@@ -299,18 +316,40 @@ static void printuart(int8_t *msg) {
     }
 }
 
+uint8_t erase_chip(void) {
+    uint8_t status_reg;                                          
+    if (read_status_reg(&status_reg) == TRANSFER_COMPLETED) 
+    {  
+        if (!(status_reg & (1<<WIP)))                  
+        {
+            write_spi_command(WREN);    
+            DISABLE_SPI_INTERRUPT;  
+            SELECT_SERIAL_MEMORY;    
+            spi_tx_byte(CHIP_ERASE); 
+            DESELECT_SERIAL_MEMORY;
+            ENABLE_SPI_INTERRUPT;   
+            return TRANSFER_COMPLETED;
+        } else {
+            return BUSY;
+        }
+    } else {
+        return BUSY;
+    }       
+}
+
 int main (void) {
     uint8_t u8TXData;
     uint8_t u8RXData;
     uint8_t data[4] = {1,2,4,8};
     uint16_t i = 0;
+    uint32_t error_cnt;
     uint8_t dir = 0;
     uint8_t JEDEC_ID;
     uint8_t reg_staus;
     static uint8_t dest[257*sizeof(uint8_t)];
     static uint8_t src[1];
 
-    src[0] = 0x22;
+    src[0] = 0x00;
 
     //Initialize USART0
     USART1Init();
@@ -330,28 +369,46 @@ int main (void) {
     uint8_t msg[256];
     uint32_t page_cnt = 0;
     uint32_t page_num = 0xfffff+1;
+    error_cnt = 0;
     page_num = page_num/255+1;
-    while(write_byte_array(0x100,1,src) == BUSY);
+    erase_chip();
+    while(write_byte_array(6,1,src) != TRANSFER_STARTED);
     printuart("STARTING MEMORY CHECK!\r\n");
-    while (addr<0xfffff){
-        read_byte_arr(0,255,dest);
-        addr += 255;
-        for (i = 0; i < 255; i++) {
-            if ((i & 1) && (dest[i] != 0xaa)) {
-                //odd
-                sprintf(msg, "Erro: addr %d should be 0xaa is %d\r\n", i, dest[i]);
-                printuart(msg);
-            } else if ( !(i & 1) && (dest[i] != 0x55)) {
-                sprintf(msg, "Erro: addr %d should be 0xaa is %d\r\n", i, dest[i]);
-                printuart(msg);
-            } 
-        }
-        page_cnt++;
-        sprintf(msg, "Checked page %lu of %lu\r\n", page_cnt, page_num);
-        printuart(msg);
+    while(read_byte_arr(256,255,dest) != TRANSFER_COMPLETED);
+    for (i = 0; i < 255; i++) {
+        if ((i & 1) && (dest[i] != 0xaa)) {
+            //odd
+            error_cnt++;
+            sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
+            printuart(msg);
+        } else if ( !(i & 1) && (dest[i] != 0x55)) {
+            error_cnt++;
+            sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
+            printuart(msg);
+        } 
     }
+    //while (addr<0xfffff){
+    //    read_byte_arr(addr,255,dest);
+    //    addr += 255;
+    //    for (i = 0; i < 255; i++) {
+    //        if ((i & 1) && (dest[i] != 0xaa)) {
+    //            //odd
+    //            error_cnt++;
+    //            sprintf(msg, "Erro: addr %d should be 0xaa is %d\r\n", i, dest[i]);
+    //            printuart(msg);
+    //        } else if ( !(i & 1) && (dest[i] != 0x55)) {
+    //            error_cnt++;
+    //            sprintf(msg, "Erro: addr %d should be 0xaa is %d\r\n", i, dest[i]);
+    //            printuart(msg);
+    //        } 
+    //    }
+    //    page_cnt++;
+    //    sprintf(msg, "Checked page %lu of %lu\r\n", page_cnt, page_num);
+    //    printuart(msg);
+    //}
     printuart("DONE!\r\n");
-
+    sprintf(msg, "Detected %lu errors\r\n", error_cnt);
+    printuart(msg);
 
     while(1) {
     //UDR0 = 0x8C;//JEDEC_ID();
