@@ -6,3 +6,6 @@ all:
 
 clean:
 	rm uart.elf
+
+prg:
+	avrdude -p m1284p -c dragon_jtag -P USB -U flash:w:uart.elf:e
