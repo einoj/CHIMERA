@@ -10,21 +10,22 @@
 #define AAI         0xAD
 #define BYTE_PRG    0x02
 #define CHIP_ERASE  0x60
+#define EBSY        0x70
 #define JEDEC       0x9F
+#define RDSR        0x05
 #define READ        0x03
 #define WREN        0x06
 #define WRSR        0x01
-#define RDSR        0x05
 
 /* Memory access status */
-#define TRANSFER_STARTED 0x0    // The write access is started without error
-#define TRANSFER_COMPLETED 0x1  // The read access is completed without error
-#define OUT_OF_RANGE 0xFD       // The address is out of range of available memory
-#define BUSY        0xFF        // The SPI memory or the SPI interface is busy.
+#define BUSY                0xFF        // The SPI memory or the SPI interface is busy.
+#define OUT_OF_RANGE        0xFD       // The address is out of range of available memory
+#define TRANSFER_COMPLETED  0x1  // The read access is completed without error
+#define TRANSFER_STARTED    0x0    // The write access is started without error
 
 /* Status register bits */
-#define WIP 0 // Bit 0 indicates whether an internal write operation is in progress
 #define WEL 1 // Bit 1 indicates whether memory is write enabled (1) or disabled (0)
+#define WIP 0 // Bit 0 indicates whether an internal write operation is in progress
 
 /* Macros */
 // Pull down chip select line

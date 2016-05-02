@@ -46,6 +46,7 @@ void spi_init(void) {
     // Set MOSI, SCK , and SS as Output
     DDRB=(1<<5)|(1<<7)|(1<<4);
     DESELECT_SERIAL_MEMORY;
+    DISABLE_MISO_INTERRUPT; // To avoid triggering a write stop interrupt when reading
 
     // Enable SPI, Set as Master
     // Prescaler: Fosc/16, Enable Interrupts
@@ -367,17 +368,29 @@ uint8_t write_aai(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
         if (read_status_reg(&status_reg) == TRANSFER_COMPLETED) {// Is the SPI interface being used?
             if (!(status_reg & (1<<WIP))) { // Is a write in progress internally on the memory?
                 // TODO should test for write protectioin
+                ENABLE_MISO_INTERRUPT; //the MISO line will be pulled high when a write command is finished
+                write_spi_command(EBSY); // configures the Serial Output (SO) pin to indicate Flash Busy status
                 write_spi_command(WREN); // Write enable always has to be sent before a write operation.
+                DISABLE_SPI_INTERRUPT;
                 // Seeting the state to INSTRUCTION will cause the spi interrupt to send the first
                 // byte of the three byte address.
-                state = INSTRUCTION; 
+                state = ADDRESS; 
                 // global variables used by interrupt function
                 nb_byte = n_bytes; 
                 byte_cnt = 0;
                 address = start_addr;
                 data_ptr = src;
                 SELECT_SERIAL_MEMORY;
-                SPDR = AAI; // write byte program command to SPI
+                // SPDR = AAI; // write byte program command to SPI
+                // Now send Address address address data data
+                spi_tx_byte(AAI)
+                spi_tx_byte((uint8_t)(address>>16);
+                spi_tx_byte((uint8_t)(address>>8);
+                spi_tx_byte((uint8_t)(address);
+                spi_tx_byte(*data_ptr); // send first half of word
+                data_ptr++;          
+                spi_tx_byte(*data_ptr); // send second half of word
+                // Next word will be sent when MOSI interrupt is received 
                 return TRANSFER_STARTED;
             } else {
                 return BUSY;
@@ -403,7 +416,15 @@ int main (void) {
     static uint8_t src[1];
 
     src[0] = 0x55;
-    src[0] = 0xAA;
+    src[1] = 0xAA;
+    src[2] = 0x55;
+    src[3] = 0xAA;
+    src[4] = 0x55;
+    src[5] = 0xAA;
+    src[6] = 0x55;
+    src[7] = 0xAA;
+    src[8] = 0x55;
+    src[9] = 0xAA;
 
     //Initialize USART0
     USART1Init();
@@ -430,7 +451,8 @@ int main (void) {
     read_status_reg(&reg_status);
     sprintf(msg,"reg status: 0x%02x\r\n",reg_status);
     printuart(msg);
-    while(write_aai(6,2,src) != TRANSFER_STARTED);
+    //while(write_aai(8,10,src) != TRANSFER_STARTED);
+    while(write_byte_array(6,1,src) != TRANSFER_STARTED);
     printuart("STARTING MEMORY CHECK!\r\n");
     while(read_byte_arr(0,255,dest) != TRANSFER_COMPLETED);
     for (i = 0; i < 255; i++) {
