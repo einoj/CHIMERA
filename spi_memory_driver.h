@@ -16,7 +16,7 @@
 #define WRSR        0x01
 #define RDSR        0x05
 
-/* Access status */
+/* Memory access status */
 #define TRANSFER_STARTED 0x0    // The write access is started without error
 #define TRANSFER_COMPLETED 0x1  // The read access is completed without error
 #define OUT_OF_RANGE 0xFD       // The address is out of range of available memory
@@ -34,7 +34,11 @@
 // disable SPI interrupts
 #define ENABLE_SPI_INTERRUPT SPCR|=(1 << SPIE);
 // enable SPI interrupts
-#define DISABLE_SPI_INTERRUPT SPCR&=~(1 << SPIE)
+#define DISABLE_SPI_INTERRUPT SPCR&=~(1 << SPIE);
+// enable MISO interrput
+#define ENABLE_MISO_INTERRUPT PCMSK1|=(1 << PCINT14);
+// disable MISO interrput
+#define DISABLE_MISO_INTERRUPT PCMSK1&=~(1 << PCINT14);
 
 /* SPI states */
 // The op_code has been transferred
@@ -43,11 +47,6 @@
 #define ADDRESS 0x2
 // The current data byte has been transferred
 #define DATA 0x4
-
-/* Memory access status */
-#define TRANSFER_STARTED 0x0    // The write access is started whithout error
-#define TRANSFER_COMPLETED 0x1  // The read access is completed whithout error
-#define BUSY 0xff
 
 /* Global variables */
 static uint32_t address; // Used by SPI to address memory device
