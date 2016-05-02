@@ -362,6 +362,23 @@ uint8_t erase_chip(void) {
     }       
 }
 
+ISR(PCINT14_vect) {
+    SELECT_SERIAL_MEMORY;
+    if (byte_cnt == nb_byte) {
+        spi_tx_byte(AAI);
+        data_ptr++;          
+        spi_tx_byte(*data_ptr);
+        data_ptr++;          
+        spi_tx_byte(*data_ptr);
+    } else {
+        spi_tx_byte(WRDI);
+        DESELECT_SERIAL_MEMORY;
+        SELECT_SERIAL_MEMORY;
+        spi_tx_byte(DBSY);
+    }
+    DESELECT_SERIAL_MEMORY;
+}
+
 uint8_t write_aai(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
     uint8_t status_reg;
     if (start_addr <= TOP_ADDR) {
@@ -377,7 +394,7 @@ uint8_t write_aai(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
                 state = ADDRESS; 
                 // global variables used by interrupt function
                 nb_byte = n_bytes; 
-                byte_cnt = 0;
+                byte_cnt = 2;
                 address = start_addr;
                 data_ptr = src;
                 SELECT_SERIAL_MEMORY;
@@ -391,6 +408,7 @@ uint8_t write_aai(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
                 data_ptr++;          
                 spi_tx_byte(*data_ptr); // send second half of word
                 // Next word will be sent when MOSI interrupt is received 
+                DESELECT_SERIAL_MEMORY;
                 return TRANSFER_STARTED;
             } else {
                 return BUSY;

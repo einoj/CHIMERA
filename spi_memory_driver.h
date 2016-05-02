@@ -10,10 +10,12 @@
 #define AAI         0xAD
 #define BYTE_PRG    0x02
 #define CHIP_ERASE  0x60
+#define DBSY        0x80
 #define EBSY        0x70
 #define JEDEC       0x9F
 #define RDSR        0x05
 #define READ        0x03
+#define WRDI        0x04
 #define WREN        0x06
 #define WRSR        0x01
 
