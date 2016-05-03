@@ -168,6 +168,22 @@ uint8_t read_status_reg(uint8_t *status) {
 
 }
 
+/* Read status register without disablign and enabling SPI_INTERRUPTS */
+uint8_t quick_read_status_reg(uint8_t *status) {
+    if (state == READY_TO_SEND) {
+        SELECT_SERIAL_MEMORY;        // Pull down chip select.
+        spi_tx_byte(RDSR);           // Send Read status register opcode.
+        *status = spi_tx_byte(0xFF); // get the status register value, by sending 0xFF we avoid toggling the MOSI line.
+        DESELECT_SERIAL_MEMORY;
+
+        return TRANSFER_COMPLETED;
+    } else {
+        *status = 1;
+        return BUSY;
+    }
+
+}
+
 uint8_t write_spi_command(uint8_t op_code) {
     uint8_t status_reg;
 
@@ -362,56 +378,107 @@ uint8_t erase_chip(void) {
     }       
 }
 
-ISR(PCINT14_vect) {
-    SELECT_SERIAL_MEMORY;
-    if (byte_cnt == nb_byte) {
-        spi_tx_byte(AAI);
-        data_ptr++;          
-        spi_tx_byte(*data_ptr);
-        data_ptr++;          
-        spi_tx_byte(*data_ptr);
-    } else {
-        spi_tx_byte(WRDI);
-        DESELECT_SERIAL_MEMORY;
-        SELECT_SERIAL_MEMORY;
-        spi_tx_byte(DBSY);
-    }
-    DESELECT_SERIAL_MEMORY;
-}
+//ISR(PCINT14_vect) {
+//    SELECT_SERIAL_MEMORY;
+//    if (byte_cnt == nb_byte) {
+//        spi_tx_byte(AAI);
+//        data_ptr++;          
+//        spi_tx_byte(*data_ptr);
+//        data_ptr++;          
+//        spi_tx_byte(*data_ptr);
+//    } else {
+//        spi_tx_byte(WRDI);
+//        DESELECT_SERIAL_MEMORY;
+//        SELECT_SERIAL_MEMORY;
+//        spi_tx_byte(DBSY);
+//    }
+//    DESELECT_SERIAL_MEMORY;
+//}
 
-uint8_t write_aai(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
+//uint8_t write_aai(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
+//    uint8_t status_reg;
+//    if (start_addr <= TOP_ADDR) {
+//        if (read_status_reg(&status_reg) == TRANSFER_COMPLETED) {// Is the SPI interface being used?
+//            if (!(status_reg & (1<<WIP))) { // Is a write in progress internally on the memory?
+//                // TODO should test for write protectioin
+//                ENABLE_MISO_INTERRUPT; //the MISO line will be pulled high when a write command is finished
+//                write_spi_command(EBSY); // configures the Serial Output (SO) pin to indicate Flash Busy status
+//                write_spi_command(WREN); // Write enable always has to be sent before a write operation.
+//                DISABLE_SPI_INTERRUPT;
+//                // Seeting the state to INSTRUCTION will cause the spi interrupt to send the first
+//                // byte of the three byte address.
+//                state = ADDRESS; 
+//                // global variables used by interrupt function
+//                nb_byte = n_bytes; 
+//                byte_cnt = 2;
+//                address = start_addr;
+//                data_ptr = src;
+//                SELECT_SERIAL_MEMORY;
+//                // SPDR = AAI; // write byte program command to SPI
+//                // Now send Address address address data data
+//                spi_tx_byte(AAI)
+//                spi_tx_byte((uint8_t)(address>>16);
+//                spi_tx_byte((uint8_t)(address>>8);
+//                spi_tx_byte((uint8_t)(address);
+//                spi_tx_byte(*data_ptr); // send first half of word
+//                data_ptr++;          
+//                spi_tx_byte(*data_ptr); // send second half of word
+//                // Next word will be sent when MOSI interrupt is received 
+//                DESELECT_SERIAL_MEMORY;
+//                return TRANSFER_STARTED;
+//            } else {
+//                return BUSY;
+//            }
+//        } else {
+//            return BUSY;
+//        }
+//    } else {
+//        return OUT_OF_RANGE;
+//    }
+//}
+
+/* Auto address increment word programming using software end-of-write detection */
+uint8_t write_aai_soft(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
     uint8_t status_reg;
     if (start_addr <= TOP_ADDR) {
         if (read_status_reg(&status_reg) == TRANSFER_COMPLETED) {// Is the SPI interface being used?
             if (!(status_reg & (1<<WIP))) { // Is a write in progress internally on the memory?
-                // TODO should test for write protectioin
-                ENABLE_MISO_INTERRUPT; //the MISO line will be pulled high when a write command is finished
-                write_spi_command(EBSY); // configures the Serial Output (SO) pin to indicate Flash Busy status
-                write_spi_command(WREN); // Write enable always has to be sent before a write operation.
+                write_spi_command(WREN);
                 DISABLE_SPI_INTERRUPT;
-                // Seeting the state to INSTRUCTION will cause the spi interrupt to send the first
-                // byte of the three byte address.
-                state = ADDRESS; 
-                // global variables used by interrupt function
+                address = start_addr;
                 nb_byte = n_bytes; 
                 byte_cnt = 2;
-                address = start_addr;
                 data_ptr = src;
                 SELECT_SERIAL_MEMORY;
-                // SPDR = AAI; // write byte program command to SPI
-                // Now send Address address address data data
-                spi_tx_byte(AAI)
-                spi_tx_byte((uint8_t)(address>>16);
-                spi_tx_byte((uint8_t)(address>>8);
-                spi_tx_byte((uint8_t)(address);
+                spi_tx_byte(AAI);
+                spi_tx_byte((uint8_t)(address>>16));
+                spi_tx_byte((uint8_t)(address>>8));
+                spi_tx_byte((uint8_t)(address));
                 spi_tx_byte(*data_ptr); // send first half of word
                 data_ptr++;          
                 spi_tx_byte(*data_ptr); // send second half of word
-                // Next word will be sent when MOSI interrupt is received 
                 DESELECT_SERIAL_MEMORY;
-                return TRANSFER_STARTED;
+                while (byte_cnt < nb_byte) {
+                    // wait for internal write to finish
+                    do {
+                        quick_read_status_reg(&status_reg);
+                    } while (status_reg & (1<<WIP));
+                    SELECT_SERIAL_MEMORY;
+                    spi_tx_byte(AAI);
+                    data_ptr++;
+                    spi_tx_byte(*data_ptr); // send first half of word
+                    data_ptr++;          
+                    //SPDR = *data_ptr; // Don't need to wait for transfer to finish, just wait untill internal write is done
+                    spi_tx_byte(*data_ptr); // send first half of word
+                    DESELECT_SERIAL_MEMORY;
+                    byte_cnt += 2;
+                }
+                while (write_spi_command(WRDI) != TRANSFER_COMPLETED);
+
+                ENABLE_SPI_INTERRUPT;
+                return TRANSFER_COMPLETED;
             } else {
-                return BUSY;
+            return BUSY;
             }
         } else {
             return BUSY;
@@ -431,7 +498,7 @@ int main (void) {
     uint8_t JEDEC_ID;
     uint8_t reg_status;
     static uint8_t dest[257*sizeof(uint8_t)];
-    static uint8_t src[1];
+    static uint8_t src[10];
 
     src[0] = 0x55;
     src[1] = 0xAA;
@@ -465,12 +532,13 @@ int main (void) {
     error_cnt = 0;
     page_num = page_num/255+1;
     write_status_reg(0x00);
-    //erase_chip();
+    erase_chip();
     read_status_reg(&reg_status);
     sprintf(msg,"reg status: 0x%02x\r\n",reg_status);
     printuart(msg);
     //while(write_aai(8,10,src) != TRANSFER_STARTED);
-    while(write_byte_array(6,1,src) != TRANSFER_STARTED);
+    //while(write_byte_array(6,1,src) != TRANSFER_STARTED);
+    while(write_aai_soft(0,10,src) != TRANSFER_COMPLETED);
     printuart("STARTING MEMORY CHECK!\r\n");
     while(read_byte_arr(0,255,dest) != TRANSFER_COMPLETED);
     for (i = 0; i < 255; i++) {
