@@ -350,7 +350,7 @@ uint8_t USART1ReceiveByte() {
     return UDR1;
 }
 
-static void printuart(int8_t *msg) {
+static void printuart(uint8_t *msg) {
     while (*msg != '\0') {
         USART1SendByte(*msg);
         *msg++;
@@ -488,13 +488,54 @@ uint8_t write_aai_soft(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
     }
 }
 
+uint8_t aai_pattern(uint32_t start_addr, uint8_t n_bytes) {
+    uint8_t status_reg;
+    uint8_t ptrn[2] = {0x55,0xAA};
+    if (start_addr <= TOP_ADDR) {
+        if (read_status_reg(&status_reg) == TRANSFER_COMPLETED) {// Is the SPI interface being used?
+            if (!(status_reg & (1<<WIP))) { // Is a write in progress internally on the memory?
+                write_spi_command(WREN);
+                DISABLE_SPI_INTERRUPT;
+                nb_byte = n_bytes; 
+                byte_cnt = 2;
+                SELECT_SERIAL_MEMORY;
+                spi_tx_byte(AAI);
+                spi_tx_byte(0);
+                spi_tx_byte(0);
+                spi_tx_byte(0);
+                spi_tx_byte(ptrn[0]); // send first half of word
+                spi_tx_byte(ptrn[1]); // send second half of word
+                DESELECT_SERIAL_MEMORY;
+                while (byte_cnt < TOP_ADDR) {
+                    // wait for internal write to finish
+                    do {
+                        quick_read_status_reg(&status_reg);
+                    } while (status_reg & (1<<WIP));
+                    SELECT_SERIAL_MEMORY;
+                    spi_tx_byte(AAI);
+                    spi_tx_byte(ptrn[0]); // send first half of word
+                    spi_tx_byte(ptrn[1]); // send first half of word
+                    DESELECT_SERIAL_MEMORY;
+                    byte_cnt += 2;
+                }
+                while (write_spi_command(WRDI) != TRANSFER_COMPLETED);
+
+                ENABLE_SPI_INTERRUPT;
+                return TRANSFER_COMPLETED;
+            } else {
+            return BUSY;
+            }
+        } else {
+            return BUSY;
+        }
+    } else {
+        return OUT_OF_RANGE;
+    }
+}
+
 int main (void) {
-    uint8_t u8TXData;
-    uint8_t u8RXData;
-    uint8_t data[4] = {1,2,4,8};
     uint16_t i = 0;
     uint32_t error_cnt;
-    uint8_t dir = 0;
     uint8_t JEDEC_ID;
     uint8_t reg_status;
     static uint8_t dest[257*sizeof(uint8_t)];
@@ -525,9 +566,7 @@ int main (void) {
         printuart("N\r\n");
     }
 
-    uint32_t addr;
     uint8_t msg[256];
-    uint32_t page_cnt = 0;
     uint32_t page_num = 0xfffff+1;
     error_cnt = 0;
     page_num = page_num/255+1;
@@ -573,7 +612,7 @@ int main (void) {
     //    printuart(msg);
     //}
     printuart("DONE!\r\n");
-    sprintf(msg, "Detected %lu errors\r\n", error_cnt);
+    sprintf((char *)msg, "Detected %lu errors\r\n", error_cnt);
     printuart(msg);
 
     while(1) {

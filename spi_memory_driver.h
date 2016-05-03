@@ -59,4 +59,4 @@ static uint8_t nb_byte; // Used by SPI interrupt to know how many bytes need to 
 static uint8_t state; // Used by SPI interrupt to indicate whether to write data or addr
 
 /* Function definitions */
-static void printuart(int8_t *msg);
+static void printuart(uint8_t *msg);
