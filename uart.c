@@ -488,48 +488,44 @@ uint8_t write_aai_soft(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
     }
 }
 
-uint8_t aai_pattern(uint32_t start_addr, uint8_t n_bytes) {
+uint8_t aai_pattern() {
     uint8_t status_reg;
     uint8_t ptrn[2] = {0x55,0xAA};
-    if (start_addr <= TOP_ADDR) {
-        if (read_status_reg(&status_reg) == TRANSFER_COMPLETED) {// Is the SPI interface being used?
-            if (!(status_reg & (1<<WIP))) { // Is a write in progress internally on the memory?
-                write_spi_command(WREN);
-                DISABLE_SPI_INTERRUPT;
-                nb_byte = n_bytes; 
-                byte_cnt = 2;
+    uint32_t cnt = 0;
+    if (read_status_reg(&status_reg) == TRANSFER_COMPLETED) {// Is the SPI interface being used?
+        if (!(status_reg & (1<<WIP))) { // Is a write in progress internally on the memory?
+            write_spi_command(WREN);
+            DISABLE_SPI_INTERRUPT;
+            cnt = 2;
+            SELECT_SERIAL_MEMORY;
+            spi_tx_byte(AAI);
+            spi_tx_byte(0);
+            spi_tx_byte(0);
+            spi_tx_byte(0);
+            spi_tx_byte(ptrn[0]); // send first half of word
+            spi_tx_byte(ptrn[1]); // send second half of word
+            DESELECT_SERIAL_MEMORY;
+            while (cnt < TOP_ADDR) {
+                // wait for internal write to finish
+                do {
+                    quick_read_status_reg(&status_reg);
+                } while (status_reg & (1<<WIP));
                 SELECT_SERIAL_MEMORY;
                 spi_tx_byte(AAI);
-                spi_tx_byte(0);
-                spi_tx_byte(0);
-                spi_tx_byte(0);
                 spi_tx_byte(ptrn[0]); // send first half of word
-                spi_tx_byte(ptrn[1]); // send second half of word
+                spi_tx_byte(ptrn[1]); // send first half of word
                 DESELECT_SERIAL_MEMORY;
-                while (byte_cnt < TOP_ADDR) {
-                    // wait for internal write to finish
-                    do {
-                        quick_read_status_reg(&status_reg);
-                    } while (status_reg & (1<<WIP));
-                    SELECT_SERIAL_MEMORY;
-                    spi_tx_byte(AAI);
-                    spi_tx_byte(ptrn[0]); // send first half of word
-                    spi_tx_byte(ptrn[1]); // send first half of word
-                    DESELECT_SERIAL_MEMORY;
-                    byte_cnt += 2;
-                }
-                while (write_spi_command(WRDI) != TRANSFER_COMPLETED);
-
-                ENABLE_SPI_INTERRUPT;
-                return TRANSFER_COMPLETED;
-            } else {
-            return BUSY;
+                cnt += 2;
             }
+            while (write_spi_command(WRDI) != TRANSFER_COMPLETED);
+
+            ENABLE_SPI_INTERRUPT;
+            return TRANSFER_COMPLETED;
         } else {
-            return BUSY;
+        return BUSY;
         }
     } else {
-        return OUT_OF_RANGE;
+        return BUSY;
     }
 }
 
@@ -577,7 +573,8 @@ int main (void) {
     printuart(msg);
     //while(write_aai(8,10,src) != TRANSFER_STARTED);
     //while(write_byte_array(6,1,src) != TRANSFER_STARTED);
-    while(write_aai_soft(0,10,src) != TRANSFER_COMPLETED);
+    //while(write_aai_soft(0,10,src) != TRANSFER_COMPLETED);
+    while(aai_pattern() != TRANSFER_COMPLETED);
     printuart("STARTING MEMORY CHECK!\r\n");
     while(read_byte_arr(0,255,dest) != TRANSFER_COMPLETED);
     for (i = 0; i < 255; i++) {
