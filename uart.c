@@ -4,6 +4,7 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include "spi_memory_driver.h"
+#include "data_packet.h"
 #define USART_BAUDRATE 115200
 #define serBAUD_DIV_CONSTANT			( ( unsigned long ) 16 )
 /* Constants for writing to UCSR0B. */
@@ -15,6 +16,11 @@
 #define serUCSR0C_SELECT					( ( unsigned char ) 0x80 )
 #define serEIGHT_DATA_BITS				( ( unsigned char ) 0x06 )
 #define UBRR_VALUE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
+
+data_packet data_arr[2];
+uint8_t write_i = 0 ; // points at which packet in the data array is being written to
+uint8_t read_i = 1; // points at which packet in the data array is beaing read and sent to the OBC
+
 
 void USART1Init(void) {
 unsigned long ulBaudRateCounter;
@@ -536,6 +542,9 @@ int main (void) {
     uint8_t reg_status;
     static uint8_t dest[257*sizeof(uint8_t)];
     static uint8_t src[10];
+    // initialize the data packet indexes
+    data_arr[0].index = 0;
+    data_arr[1].index = 0;
 
     src[0] = 0x55;
     src[1] = 0xAA;
@@ -582,6 +591,9 @@ int main (void) {
             //odd
             error_cnt++;
             sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
+            data_arr[write_i].data[data_arr[write_i].index] = 0;
+            data_arr[write_i].data[data_arr[write_i].index] |= (3 << );
+            data_arr[write_i].data[data_arr[write_i].index] = dest[i];
             printuart(msg);
         } else if ( !(i & 1) && (dest[i] != 0x55)) {
             error_cnt++;
