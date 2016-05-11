@@ -11,9 +11,9 @@ typedef struct {
 } data_packet;
 
 void put_data(data_packet *packet, uint32_t data, uint8_t memid, uint8_t dataid) {
-    packet.data[packet.index] = (dataid << UPPER_NIB);
-    packet.data[packet.index] |= (memid << LOWER_NIB);
-    packet.data[packet.index] |= (0x00ffffff & data);
-    packet.index++;
+    packet->data[packet->index] = (dataid << UPPER_NIB);
+    packet->data[packet->index] |= (memid << LOWER_NIB);
+    packet->data[packet->index] |= (0x00ffffff & data);
+    packet->index++;
 }
 
