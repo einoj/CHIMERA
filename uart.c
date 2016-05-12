@@ -48,7 +48,7 @@ unsigned char ucByte;
 void spi_init(void) {
     SPCR = (0<<SPE);  // Disable the SPI to be able to configure the #SS line as an input even if the SPI is configured as a slave
     // Set MOSI, SCK , and SS as Output
-    DDRB=(1<<5)|(1<<7)|(1<<4);
+    DDRB=(1<<MOSI)|(1<<SCK)|(1<<CS1);
     DESELECT_SERIAL_MEMORY;
     DISABLE_MISO_INTERRUPT; // To avoid triggering a write stop interrupt when reading
 

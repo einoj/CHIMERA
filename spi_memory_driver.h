@@ -51,6 +51,13 @@
 // The current data byte has been transferred
 #define DATA 0x4
 
+/* PIN Locations */
+// SPI pins are located on the PB
+// Set MOSI, SCK , and SS as Output
+#define MOSI 5
+#define SCK 7
+#define CS1 4
+
 /* Global variables */
 static uint32_t address; // Used by SPI to address memory device
 static uint8_t *data_ptr; // Used by SPI interrupt, points to data that is to be written
