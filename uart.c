@@ -46,8 +46,6 @@ unsigned char ucByte;
 }
 
 void spi_init(void) {
-    volatile uint8_t IOreg;
-
     SPCR = (0<<SPE);  // Disable the SPI to be able to configure the #SS line as an input even if the SPI is configured as a slave
     // Set MOSI, SCK , and SS as Output
     DDRB=(1<<5)|(1<<7)|(1<<4);
@@ -59,9 +57,9 @@ void spi_init(void) {
     //The MOSI, SCK pins are as per ATMega8
     SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPIE);
 
-    // Clear the SPIF flag
-    IOreg = SPSR;
-    IOreg = SPDR;
+    // Clear the SPIF flag by reading SPSR and SPDR
+    SPSR;
+    SPDR;
 
     state = READY_TO_SEND;
 
@@ -79,7 +77,7 @@ void spi_init(void) {
  */
 ISR(SPI_STC_vect)
 {
-  uint8_t msg[256];
+  char msg[256];
   switch (state) {
     ///////////////////////////////
     // INSTRUCTION STATE
@@ -356,7 +354,7 @@ uint8_t USART1ReceiveByte() {
     return UDR1;
 }
 
-static void printuart(uint8_t *msg) {
+static void printuart(char *msg) {
     while (*msg != '\0') {
         USART1SendByte(*msg);
         *msg++;
@@ -541,21 +539,21 @@ int main (void) {
     uint8_t JEDEC_ID;
     uint8_t reg_status;
     static uint8_t dest[257*sizeof(uint8_t)];
-    static uint8_t src[10];
+   // static uint8_t src[10];
     // initialize the data packet indexes
     data_arr[0].index = 0;
     data_arr[1].index = 0;
 
-    src[0] = 0x55;
-    src[1] = 0xAA;
-    src[2] = 0x55;
-    src[3] = 0xAA;
-    src[4] = 0x55;
-    src[5] = 0xAA;
-    src[6] = 0x55;
-    src[7] = 0xAA;
-    src[8] = 0x55;
-    src[9] = 0xAA;
+   // src[0] = 0x55;
+   // src[1] = 0xAA;
+   // src[2] = 0x55;
+   // src[3] = 0xAA;
+   // src[4] = 0x55;
+   // src[5] = 0xAA;
+   // src[6] = 0x55;
+   // src[7] = 0xAA;
+   // src[8] = 0x55;
+   // src[9] = 0xAA;
 
     //Initialize USART0
     USART1Init();
@@ -571,19 +569,17 @@ int main (void) {
         printuart("N\r\n");
     }
 
-    uint8_t msg[256];
+    char msg[256];
     uint32_t page_num = 0xfffff+1;
     error_cnt = 0;
     page_num = page_num/255+1;
     write_status_reg(0x00);
-    erase_chip();
+    //erase_chip();
     read_status_reg(&reg_status);
     sprintf(msg,"reg status: 0x%02x\r\n",reg_status);
     printuart(msg);
-    //while(write_aai(8,10,src) != TRANSFER_STARTED);
     //while(write_byte_array(6,1,src) != TRANSFER_STARTED);
-    //while(write_aai_soft(0,10,src) != TRANSFER_COMPLETED);
-    while(aai_pattern() != TRANSFER_COMPLETED);
+    //while(aai_pattern() != TRANSFER_COMPLETED);
     printuart("STARTING MEMORY CHECK!\r\n");
     while(read_byte_arr(0,255,dest) != TRANSFER_COMPLETED);
     for (i = 0; i < 255; i++) {
@@ -591,17 +587,17 @@ int main (void) {
             //odd
             error_cnt++;
             sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
-            put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_AA);
+     //       put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_AA);
             printuart(msg);
         } else if ( !(i & 1) && (dest[i] != 0x55)) {
             error_cnt++;
             sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
-            put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_55);
+      //      put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_55);
             printuart(msg);
         } 
     }
 
-    send_packet(&data_arr[read_i]);
+    //send_packet(&data_arr[read_i]);
     //while (addr<0xfffff){
     //    read_byte_arr(addr,255,dest);
     //    addr += 255;
