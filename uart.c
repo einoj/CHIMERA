@@ -591,16 +591,17 @@ int main (void) {
             //odd
             error_cnt++;
             sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
-            data_arr[write_i].data[data_arr[write_i].index] = 0;
-            data_arr[write_i].data[data_arr[write_i].index] |= (3 << );
-            data_arr[write_i].data[data_arr[write_i].index] = dest[i];
+            put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_AA);
             printuart(msg);
         } else if ( !(i & 1) && (dest[i] != 0x55)) {
             error_cnt++;
             sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
+            put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_55);
             printuart(msg);
         } 
     }
+
+    send_packet(&data_arr[read_i]);
     //while (addr<0xfffff){
     //    read_byte_arr(addr,255,dest);
     //    addr += 255;
