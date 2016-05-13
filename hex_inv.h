@@ -3,5 +3,13 @@
 #define VCC_EN1 4
 
 void hex_init(void) {
+    // Set MEM_VCC_EN1 as output
+    DDRA|=(1<<VCC_EN1);
 
+    // Turn off by default
+    PORTA |= (0<<VCC_EN1);
+}
+
+void toggle_hex(uint8_t port) {
+    PORTA = PORTA ^ (1<<port);
 }

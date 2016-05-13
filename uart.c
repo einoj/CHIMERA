@@ -5,6 +5,7 @@
 #include <avr/interrupt.h>
 #include "spi_memory_driver.h"
 #include "data_packet.h"
+#include "hex_inv.h"
 #define USART_BAUDRATE 115200
 #define serBAUD_DIV_CONSTANT			( ( unsigned long ) 16 )
 /* Constants for writing to UCSR0B. */
@@ -578,24 +579,30 @@ int main (void) {
     read_status_reg(&reg_status);
     sprintf(msg,"reg status: 0x%02x\r\n",reg_status);
     printuart(msg);
-    //while(write_byte_array(6,1,src) != TRANSFER_STARTED);
+    while(write_byte_array(6,1,src) != TRANSFER_STARTED);
     //while(aai_pattern() != TRANSFER_COMPLETED);
     printuart("STARTING MEMORY CHECK!\r\n");
+    hex_init();
     while(read_byte_arr(0,255,dest) != TRANSFER_COMPLETED);
     for (i = 0; i < 255; i++) {
         if ((i & 1) && (dest[i] != 0xaa)) {
             //odd
             error_cnt++;
             sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
-     //       put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_AA);
+            put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_AA);
             printuart(msg);
         } else if ( !(i & 1) && (dest[i] != 0x55)) {
             error_cnt++;
             sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
-      //      put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_55);
+            put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_55);
             printuart(msg);
         } 
     }
+    send_packet(&data_arr[write_i]);
+    _delay_ms(1000);
+    toggle_hex(VCC_EN1); 
+    _delay_ms(1000);
+    toggle_hex(VCC_EN1); 
 
     //send_packet(&data_arr[read_i]);
     //while (addr<0xfffff){
