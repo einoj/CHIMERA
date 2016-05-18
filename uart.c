@@ -210,11 +210,17 @@ uint8_t write_spi_command(uint8_t op_code) {
 
 /**
  * Reads one or more bytes from the SPI Memory
+ *
+ * @addr the start address to read from
+ *
+ * @n_bytes the number of bytes to read
+ *
+ * @*dest pointer to array into which the read bytes are written
  */
-uint8_t read_byte_arr(uint32_t addr, uint32_t n_bytes, uint8_t *dest) {
+uint8_t read_byte_arr(uint32_t addr, uint16_t n_bytes, uint8_t *dest) {
     uint8_t status_reg;
     uint8_t access_status;
-    uint8_t read_cnt;
+    uint16_t read_cnt;     // WARNING! Should be the same type as n_bytes, to avoid integer overflow when reading
     uint8_t *curr_dest;    // temporary variable for incrementing destination pointer
 
     curr_dest = dest;
@@ -539,6 +545,7 @@ int main (void) {
     uint32_t error_cnt;
     uint8_t JEDEC_ID;
     uint8_t reg_status;
+    uint32_t tmp_addr;
     static uint8_t dest[257*sizeof(uint8_t)];
    // static uint8_t src[10];
     // initialize the data packet indexes
@@ -579,30 +586,31 @@ int main (void) {
     read_status_reg(&reg_status);
     sprintf(msg,"reg status: 0x%02x\r\n",reg_status);
     printuart(msg);
-    while(write_byte_array(6,1,src) != TRANSFER_STARTED);
+    //while(write_byte_array(6,1,src) != TRANSFER_STARTED);
     //while(aai_pattern() != TRANSFER_COMPLETED);
     printuart("STARTING MEMORY CHECK!\r\n");
     hex_init();
-    while(read_byte_arr(0,255,dest) != TRANSFER_COMPLETED);
-    for (i = 0; i < 255; i++) {
-        if ((i & 1) && (dest[i] != 0xaa)) {
-            //odd
-            error_cnt++;
-            sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
-            put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_AA);
-            printuart(msg);
-        } else if ( !(i & 1) && (dest[i] != 0x55)) {
-            error_cnt++;
-            sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
-            put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_55);
-            printuart(msg);
-        } 
+    toggle_hex(VCC_EN1); 
+    for (tmp_addr = 0; tmp_addr < 0xfffff; tmp_addr+=256) {
+        while(read_byte_arr(tmp_addr,256,dest) != TRANSFER_COMPLETED);
+            for (i = 0; i < 255; i++) {
+                if ((i & 1) && (dest[i] != 0xaa)) {
+                    //odd
+                    error_cnt++;
+                    sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
+                    put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_AA);
+                    printuart(msg);
+                } else if ( !(i & 1) && (dest[i] != 0x55)) {
+                    //even
+                    error_cnt++;
+                    sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
+                    put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_55);
+                    printuart(msg);
+            } 
+        }
     }
+    toggle_hex(VCC_EN1); 
     send_packet(&data_arr[write_i]);
-    _delay_ms(1000);
-    toggle_hex(VCC_EN1); 
-    _delay_ms(1000);
-    toggle_hex(VCC_EN1); 
 
     //send_packet(&data_arr[read_i]);
     //while (addr<0xfffff){
