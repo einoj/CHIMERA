@@ -1,0 +1,40 @@
+| x OPCODE | cycles | Total cycles | Comment                  |
+|----------+--------+--------------+--------------------------|
+| 8 push   |      2 |           16 |                          |
+| 2 rcall  |      2 |            6 |                          |
+| 1 push   |      2 |            2 |                          |
+| 2 in     |      1 |            2 |                          |
+| 2 movw   |      1 |            2 |                          |
+| 1 cp     |      1 |            1 |                          |
+| 1 cpc    |      1 |            1 |                          |
+| 1 ldi    |      1 |            1 |                          |
+| 2 cpc    |      1 |            2 |                          |
+| 1 brcs   |      2 |            2 | Skips the jump           |
+| 1 movw   |      1 |            1 |                          |
+| 1 adiw   |      2 |            1 |                          |
+| 4 std+4  |      2 |            8 |                          |
+| 1 call   |      2 |            2 | calls read_status_reg    |
+|          |        |              |                          |
+| 2 push   |      2 |            4 |                          |
+| 1 lds    |      2 |            2 |                          |
+| 1 cpse   |      2 |            2 |                          |
+| 1 movw   |      1 |            1 |                          |
+| 1 in     |      1 |            1 |                          |
+| 1 andi   |      1 |            1 |                          |
+| 1 out    |      1 |            1 |                          |
+| 1 cbi    |        |              |                          |
+| 1 ldi    |        |              |                          |
+| 1 call   |        |              | calls spi_tx_byte        |
+| 1 ldi    |        |              |                          |
+| 1 call   |        |              | calls spi_tx_byte        |
+| 1 st Y   |        |              |                          |
+| 1 sbi    |        |              |                          |
+| 1 in     |        |              |                          |
+| 1 ori    |        |              |                          |
+| 1 out    |        |              |                          |
+| 1 ldi    |        |              |                          |
+| 1 rjmp   |        |              |                          |
+| 2 pop    |        |              |                          |
+| 1 ret    |        |              | returns to read_byte_arr |
+|          |        |              |                          |
+|          |        |              |                          |
