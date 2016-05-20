@@ -162,7 +162,7 @@ uint8_t read_status_reg(uint8_t *status) {
         SELECT_SERIAL_MEMORY;        // Pull down chip select.
         spi_tx_byte(RDSR);           // Send Read status register opcode.
         *status = spi_tx_byte(0xFF); // get the status register value, by sending 0xFF we avoid toggling the MOSI line.
-        DESELECT_SERIAL_MEMORY;
+        DESELECT_SERIAL_MEMORY;      // spi_tx_byte is called a second time to wait for SPDR to be filled
         ENABLE_SPI_INTERRUPT;
 
         return TRANSFER_COMPLETED;
