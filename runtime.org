@@ -1,115 +1,118 @@
 * main for loop commit 04735734dcf0609498738b2787f10a228fa3e6a9h
-| x OPCODE | cycles | Total cycles | Comment         |
-|----------+--------+--------------+-----------------|
-| 6 pop    |        |              |                 |
-| 1 subi   |        |              |                 |
-| 1 sbci   |        |              |                 |
-| 1 st     |        |              |                 |
-| 3 std    |        |              |                 |
-| 1 subi   |        |              |                 |
-| 1 sbci   |        |              |                 |
-| 2 mov    |        |              |                 |
-| 1 movw   |        |              |                 |
-| 1 ldi    |        |              |                 |
-| 1 mov    |        |              |                 |
-| 1 ldi    |        |              |                 |
-| 1 mov    |        |              |                 |
-|          |        |              | for loop starts |
-| 4 ldi    |        |              |                 |
-| 1 subi   |        |              |                 |
-| 1 sbci   |        |              |                 |
-| 1 ld     |        |              |                 |
-| 3 ldd    |        |              |                 |
-| 1 subi   |        |              |                 |
-| 1 sbci   |        |              |                 |
-| 1 call   |        |              |                 |
-| 1 cpi    |        |              |                 |
-| 1 brne   |        |              |                 |
-| 1 ldi    |        |              |                 |
-| 1 mov    |        |              |                 |
-| 1 ldi    |        |              |                 |
-| 3 mov    |        |              |                 |
-| 3 movw   |        |              |                 |
-| 1 andi   |        |              |                 |
-| 1 eor    |        |              |                 |
-| 1 movw   |        |              |                 |
-| 1 or     |        |              |                 |
-| 1 breq   |        |              |                 |
-| 1 ld     |        |              |                 |
-| 1 cpi    |        |              |                 |
-| 1 brne   |        |              |                 |
-| 1 rjmp   |        |              |                 |
-| 1 ldi    |        |              |                 |
-| 1 sub    |        |              |                 |
-| 3 sbc    |        |              |                 |
-| 4 push   |        |              |                 |
-| 2 ldi    |        |              |                 |
-| 4 push   |        |              |                 |
-| 1 call   |        |              |                 |
-| 1 lds    |        |              |                 |
-| 1 mul    |        |              |                 |
-| 1 movw   |        |              |                 |
-| 1 mul    |        |              |                 |
-| 1 add    |        |              |                 |
-| 1 eor    |        |              |                 |
-| 1 ldi    |        |              |                 |
-| 1 rjmp   |        |              |                 |
-| 1 ld     |        |              |                 |
-| 1 cpi    |        |              |                 |
-| 1 breq   |        |              |                 |
-| 1 di     |        |              |                 |
-| 1 ub     |        |              |                 |
-| 3 sbc    |        |              |                 |
-| 4 push   |        |              |                 |
-| 2 ldi    |        |              |                 |
-| 4 push   |        |              |                 |
-| 1 call   |        |              |                 |
-| 1 lds    |        |              |                 |
-| 1 mul    |        |              |                 |
-| 1 movw   |        |              |                 |
-| 1 mul    |        |              |                 |
-| 1 add    |        |              |                 |
-| 1 eor    |        |              |                 |
-| 2 ldi    |        |              |                 |
-| 2 movw   |        |              |                 |
-| 1 subi   |        |              |                 |
-| 1 sbci   |        |              |                 |
-| 1 call   |        |              |                 |
-| 1 movw   |        |              |                 |
-| 1 call   |        |              |                 |
-| 1 in     |        |              |                 |
-| 1 cli    |        |              |                 |
-| 3 out    |        |              |                 |
-| 1 ldi    |        |              |                 |
-| 1 sub    |        |              |                 |
-| 3 sbc    |        |              |                 |
-| 1 ldi    |        |              |                 |
-| 1 sub    |        |              |                 |
-| 1 sbc    |        |              |                 |
-| 1 ldi    |        |              |                 |
-| 1 cp     |        |              |                 |
-| 3 cpc    |        |              |                 |
-| 1 breq   |        |              |                 |
-| 1 rjmp   |        |              |                 |
-| 1 subi   |        |              |                 |
-| 1 sbci   |        |              |                 |
-| 1 ld     |        |              |                 |
-| 3 ldd    |        |              |                 |
-| 1 subi   |        |              |                 |
-| 1 sbci   |        |              |                 |
-| 1 subi   |        |              |                 |
-| 2 sbci   |        |              |                 |
-| 1 subi   |        |              |                 |
-| 1 sbci   |        |              |                 |
-| 1 st     |        |              |                 |
-| 3 std    |        |              |                 |
-| 1 subi   |        |              |                 |
-| 1 sbci   |        |              |                 |
-| 1 sbiw   |        |              |                 |
-| 1 sbci   |        |              |                 |
-| 1 cpc    |        |              |                 |
-| 1 breq   |        |              |                 |
-| 1 rjmp   |        |              |                 |
+| x OPCODE            |               cycles | Total cycles | Comment                                                 |
+|---------------------+----------------------+--------------+---------------------------------------------------------|
+| 6 pop               |                    2 |           12 |                                                         |
+| 1 subi              |                      |              |                                                         |
+| 1 sbci              |                      |              |                                                         |
+| 1 st                |                      |              |                                                         |
+| 3 std               |                      |              |                                                         |
+| 1 subi              |                      |              |                                                         |
+| 1 sbci              |                      |              |                                                         |
+| 2 mov               |                      |              |                                                         |
+| 1 movw              |                      |              |                                                         |
+| 1 ldi               |                      |              |                                                         |
+| 1 mov               |                      |              |                                                         |
+| 1 ldi               |                      |              |                                                         |
+| 1 mov               |                      |              |                                                         |
+|                     |                      |              | for loop starts                                         |
+| 4 ldi               |                    1 |            4 | while loop                                              |
+| 1 subi              |                    1 |            1 |                                                         |
+| 1 sbci              |                    1 |            1 |                                                         |
+| 1 ld  Y             |                    1 |            1 |                                                         |
+| 3 ldd Y+q           |                    3 |            9 |                                                         |
+| 1 subi              |                    1 |            1 |                                                         |
+| 1 sbci              |                    1 |            1 |                                                         |
+| 1 call              |              4+25893 |        25897 | read_byte_arr                                           |
+| 1 cpi               |                    1 |            1 | The while loop runs until call to read_byte_arr is done |
+| 1 brne              |                    1 |            1 |                                                         |
+| 1 ldi               |                    1 |            1 |                                                         |
+| 1 mov               |                    1 |            1 |                                                         |
+| 1 ldi               |                    1 |            1 |                                                         |
+| 3 mov               |                    1 |            3 |                                                         |
+| 1 movw              |                    1 |            1 |                                                         |
+| 2 movw              |                    1 |              | for (i = 0; i < 255; i++) { check page                  |
+| 1 andi              |                    1 |              |                                                         |
+| 1 eor               |                    1 |              |                                                         |
+| 1 movw              |                    1 |              |                                                         |
+| 1 or                |                    1 |              |                                                         |
+| 1 breq .+60; 0xaa2  | 2 when branch else 1 |              | jupms if !(i&1) which it does 50% of the time, thus 1.5 |
+| 1 ld                |                 1*.5 |              | Following instruction are only executed 50% of the time |
+| 1 cpi r18, 0xAA     |                 1*.5 |              | check i r18 equals 0xAA                                 |
+| 1 brne              |                 1*.5 |              | always equal to 0xAA so never branch                    |
+| 1 rjmp .+138; 0xaf8 |                 2*.5 |              |                                                         |
+| 1 ldi               |                      |              | Always skipped because location is equal to 0xAA        |
+| 1 sub               |                      |              | Always skipped because location is equal to 0xAA        |
+| 3 sbc               |                      |              | Always skipped because location is equal to 0xAA        |
+| 4 push              |                      |              | Always skipped because location is equal to 0xAA        |
+| 2 ldi               |                      |              | Always skipped because location is equal to 0xAA        |
+| 4 push              |                      |              | Always skipped because location is equal to 0xAA        |
+| 1 call              |                      |              | Always skipped because location is equal to 0xAA        |
+| 1 lds               |                      |              | Always skipped because location is equal to 0xAA        |
+| 1 mul               |                      |              | Always skipped because location is equal to 0xAA        |
+| 1 movw              |                      |              | Always skipped because location is equal to 0xAA        |
+| 1 mul               |                      |              | Always skipped because location is equal to 0xAA        |
+| 1 add               |                      |              | Always skipped because location is equal to 0xAA        |
+| 1 eor               |                      |              | Always skipped because location is equal to 0xAA        |
+| 1 ldi               |                      |              | Always skipped because location is equal to 0xAA        |
+| 1 rjmp              |                      |              | Always skipped because location is equal to 0xAA        |
+| 1 ld                |                 1*.5 |              |                                                         |
+| 1 cpi r18, 0x55     |                 1*.5 |              |                                                         |
+| 1 breq .+80; 0xaf8  |                 2*.5 |              | always branches because r18 is equal to 0x55            |
+| 1 di                |                      |              |                                                         |
+| 1 ub                |                      |              |                                                         |
+| 3 sbc               |                      |              |                                                         |
+| 4 push              |                      |              |                                                         |
+| 2 ldi               |                      |              |                                                         |
+| 4 push              |                      |              |                                                         |
+| 1 call              |                      |              |                                                         |
+| 1 lds               |                      |              |                                                         |
+| 1 mul               |                      |              |                                                         |
+| 1 movw              |                      |              |                                                         |
+| 1 mul               |                      |              |                                                         |
+| 1 add               |                      |              |                                                         |
+| 1 eor               |                      |              |                                                         |
+| 2 ldi               |                      |              |                                                         |
+| 2 movw              |                      |              |                                                         |
+| 1 subi              |                      |              |                                                         |
+| 1 sbci              |                      |              |                                                         |
+| 1 call              |                      |              |                                                         |
+| 1 movw              |                      |              |                                                         |
+| 1 call              |                      |              |                                                         |
+| 1 in                |                      |              |                                                         |
+| 1 cli               |                      |              |                                                         |
+| 3 out               |                      |              |                                                         |
+| 1 ldi ;0xaf8        |                    1 |              |                                                         |
+| 1 sub               |                    1 |              |                                                         |
+| 3 sbc               |                    1 |              |                                                         |
+| 1 ldi               |                    1 |              |                                                         |
+| 1 sub               |                    1 |              |                                                         |
+| 1 sbc               |                    1 |              |                                                         |
+| 1 ldi               |                    1 |              |                                                         |
+| 1 cp                |                    1 |              |                                                         |
+| 3 cpc               |                    1 |              |                                                         |
+| 1 breq              |                    1 |              | at end of for loop uses 1 extra cycle                   |
+| 1 rjmp .-190; 0xa58 |                    2 |       28*256 | } for loop end                                          |
+| 1 subi              |                    1 |            1 |                                                         |
+| 1 sbci              |                    1 |            1 |                                                         |
+| 1 ld                |                    1 |            1 |                                                         |
+| 3 ldd Y+q           |                    3 |            9 |                                                         |
+| 1 subi              |                    1 |            1 |                                                         |
+| 1 sbci              |                    1 |            1 |                                                         |
+| 1 subi              |                    1 |            1 |                                                         |
+| 2 sbci              |                    1 |            2 |                                                         |
+| 1 subi              |                    1 |            1 |                                                         |
+| 1 sbci              |                    1 |            1 |                                                         |
+| 1 st   Y            |                    1 |            1 |                                                         |
+| 3 std  Y+q          |                    2 |            6 |                                                         |
+| 1 subi              |                    1 |            1 |                                                         |
+| 1 sbci              |                    1 |            1 |                                                         |
+| 1 sbiw              |                    2 |            2 |                                                         |
+| 1 sbci              |                    1 |            1 |                                                         |
+| 1 cpc               |                    1 |            1 |                                                         |
+| 1 breq              |               1 or 2 |          1.5 |                                                         |
+| 1 rjmp              |                    2 |            2 |                                                         |
+| TOTAL               |                      |      25999.5 |                                                         |
+
 
 
 * read_byte_arr commit 35bf0cdbc03121731398042e5e9190730852defe
