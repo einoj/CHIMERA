@@ -22,7 +22,9 @@ typedef struct Memory {
     // size of device in bytes 
     const uint32_t size;
     // size of one page in bytes
-    const uint16_t pageSize;
+    const uint16_t page_size;
     // The port that the memory chip select is connected to
-    volatile uint8_t *pport;
+    volatile uint8_t *cs_port;
+    // The port for controlling memory VCC
+    volatile uint8_t *vcc_port;
 } mem;
