@@ -15,7 +15,7 @@ static const mem memory_devices[] = {
 };
 
 /* sets the direction of memory chip select and VCC pins
- * also initializes the pins to 0 */
+ * also initializes the chip select and VCC pins to 0 */
 void init_memories(void) {
 
 }
