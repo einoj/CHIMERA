@@ -541,106 +541,110 @@ uint8_t aai_pattern() {
 }
 
 int main (void) {
-    uint16_t i = 0;
-    uint32_t error_cnt;
-    uint8_t JEDEC_ID;
-    uint8_t reg_status;
-    uint32_t tmp_addr;
-    static uint8_t dest[257*sizeof(uint8_t)];
-   // static uint8_t src[10];
-    // initialize the data packet indexes
-    data_arr[0].index = 0;
-    data_arr[1].index = 0;
-
-   // src[0] = 0x55;
-   // src[1] = 0xAA;
-   // src[2] = 0x55;
-   // src[3] = 0xAA;
-   // src[4] = 0x55;
-   // src[5] = 0xAA;
-   // src[6] = 0x55;
-   // src[7] = 0xAA;
-   // src[8] = 0x55;
-   // src[9] = 0xAA;
-
-    //Initialize USART0
-    USART1Init();
-	//DDRB |= 0x0f;
-    spi_init();
-    sei();
-
-    get_jedec_id(&JEDEC_ID);
-
-    if (JEDEC_ID == 0x25) {
-        printuart("Y\r\n");
-    } else {
-        printuart("N\r\n");
-    }
-
-    char msg[256];
-    uint32_t page_num = 0xfffff+1;
-    error_cnt = 0;
-    page_num = page_num/255+1;
-    write_status_reg(0x00);
-    //erase_chip();
-    read_status_reg(&reg_status);
-    sprintf(msg,"reg status: 0x%02x\r\n",reg_status);
-    printuart(msg);
-    //while(write_byte_array(6,1,src) != TRANSFER_STARTED);
-    //while(aai_pattern() != TRANSFER_COMPLETED);
-    printuart("STARTING MEMORY CHECK!\r\n");
-    hex_init();
-    toggle_hex(VCC_EN1); 
-    for (tmp_addr = 0; tmp_addr < 0xfffff; tmp_addr+=256) {
-        while(read_byte_arr(tmp_addr,256,dest) != TRANSFER_COMPLETED);
-            for (i = 0; i < 255; i++) {
-                if ((i & 1) && (dest[i] != 0xaa)) {
-                    //odd
-                    error_cnt++;
-                    sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
-                    put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_AA);
-                    printuart(msg);
-                } else if ( !(i & 1) && (dest[i] != 0x55)) {
-                    //even
-                    error_cnt++;
-                    sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
-                    put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_55);
-                    printuart(msg);
-            } 
-        }
-    }
-    toggle_hex(VCC_EN1); 
-    send_packet(&data_arr[write_i]);
-
-    //send_packet(&data_arr[read_i]);
-    //while (addr<0xfffff){
-    //    read_byte_arr(addr,255,dest);
-    //    addr += 255;
-    //    for (i = 0; i < 255; i++) {
-    //        if ((i & 1) && (dest[i] != 0xaa)) {
-    //            //odd
-    //            error_cnt++;
-    //            sprintf(msg, "Erro: addr %d should be 0xaa is %d\r\n", i, dest[i]);
-    //            printuart(msg);
-    //        } else if ( !(i & 1) && (dest[i] != 0x55)) {
-    //            error_cnt++;
-    //            sprintf(msg, "Erro: addr %d should be 0xaa is %d\r\n", i, dest[i]);
-    //            printuart(msg);
-    //        } 
-    //    }
-    //    page_cnt++;
-    //    sprintf(msg, "Checked page %lu of %lu\r\n", page_cnt, page_num);
-    //    printuart(msg);
-    //}
-    printuart("DONE!\r\n");
-    sprintf((char *)msg, "Detected %lu errors\r\n", error_cnt);
-    printuart(msg);
-
-    while(1) {
-    //UDR0 = 0x8C;//JEDEC_ID();
-
-
-    }
+    DDRB = 0xff;
+    PORTB = 0xff;
+//    uint16_t i = 0;
+//    DDRB = 0xff;
+//    PORTB = 0b00010000;
+//    uint32_t error_cnt;
+//    uint8_t JEDEC_ID;
+//    uint8_t reg_status;
+//    uint32_t tmp_addr;
+//    static uint8_t dest[257*sizeof(uint8_t)];
+//   // static uint8_t src[10];
+//    // initialize the data packet indexes
+//    data_arr[0].index = 0;
+//    data_arr[1].index = 0;
+//
+//   // src[0] = 0x55;
+//   // src[1] = 0xAA;
+//   // src[2] = 0x55;
+//   // src[3] = 0xAA;
+//   // src[4] = 0x55;
+//   // src[5] = 0xAA;
+//   // src[6] = 0x55;
+//   // src[7] = 0xAA;
+//   // src[8] = 0x55;
+//   // src[9] = 0xAA;
+//
+//    //Initialize USART0
+//    USART1Init();
+//	//DDRB |= 0x0f;
+//    spi_init();
+//    sei();
+//
+//    get_jedec_id(&JEDEC_ID);
+//
+//    if (JEDEC_ID == 0x25) {
+//        printuart("Y\r\n");
+//    } else {
+//        printuart("N\r\n");
+//    }
+//
+//    char msg[256];
+//    uint32_t page_num = 0xfffff+1;
+//    error_cnt = 0;
+//    page_num = page_num/255+1;
+//    write_status_reg(0x00);
+//    //erase_chip();
+//    read_status_reg(&reg_status);
+//    sprintf(msg,"reg status: 0x%02x\r\n",reg_status);
+//    printuart(msg);
+//    //while(write_byte_array(6,1,src) != TRANSFER_STARTED);
+//    //while(aai_pattern() != TRANSFER_COMPLETED);
+//    printuart("STARTING MEMORY CHECK!\r\n");
+//    hex_init();
+//    toggle_hex(VCC_EN1); 
+//    for (tmp_addr = 0; tmp_addr < 0xfffff; tmp_addr+=256) {
+//        while(read_byte_arr(tmp_addr,256,dest) != TRANSFER_COMPLETED);
+//            for (i = 0; i < 255; i++) {
+//                if ((i & 1) && (dest[i] != 0xaa)) {
+//                    //odd
+//                    error_cnt++;
+//                    sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
+//                    put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_AA);
+//                    printuart(msg);
+//                } else if ( !(i & 1) && (dest[i] != 0x55)) {
+//                    //even
+//                    error_cnt++;
+//                    sprintf(msg, "Erro: addr %d should be 0xaa is %02x\r\n", i, dest[i]);
+//                    put_data(&data_arr[write_i], i, 0x5, ADDR_SEU_55);
+//                    printuart(msg);
+//            } 
+//        }
+//    }
+//    toggle_hex(VCC_EN1); 
+//    send_packet(&data_arr[write_i]);
+//
+//    //send_packet(&data_arr[read_i]);
+//    //while (addr<0xfffff){
+//    //    read_byte_arr(addr,255,dest);
+//    //    addr += 255;
+//    //    for (i = 0; i < 255; i++) {
+//    //        if ((i & 1) && (dest[i] != 0xaa)) {
+//    //            //odd
+//    //            error_cnt++;
+//    //            sprintf(msg, "Erro: addr %d should be 0xaa is %d\r\n", i, dest[i]);
+//    //            printuart(msg);
+//    //        } else if ( !(i & 1) && (dest[i] != 0x55)) {
+//    //            error_cnt++;
+//    //            sprintf(msg, "Erro: addr %d should be 0xaa is %d\r\n", i, dest[i]);
+//    //            printuart(msg);
+//    //        } 
+//    //    }
+//    //    page_cnt++;
+//    //    sprintf(msg, "Checked page %lu of %lu\r\n", page_cnt, page_num);
+//    //    printuart(msg);
+//    //}
+//    printuart("DONE!\r\n");
+//    sprintf((char *)msg, "Detected %lu errors\r\n", error_cnt);
+//    printuart(msg);
+//
+//    while(1) {
+//    //UDR0 = 0x8C;//JEDEC_ID();
+//
+//
+//    }
 }
 
 ISR(USART1_RX_vect)
