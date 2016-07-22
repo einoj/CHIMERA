@@ -1,20 +1,20 @@
 #include <avr/io.h>
 #include <stdio.h>
-#define F_CPU 11059200UL
+//#define F_CPU 11059200UL
+#define F_CPU 8000000UL
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include "spi_memory_driver.h"
 #include "data_packet.h"
 #include "hex_inv.h"
-#define USART_BAUDRATE 115200
+#define USART_BAUDRATE 9600
 #define serBAUD_DIV_CONSTANT			( ( unsigned long ) 16 )
 /* Constants for writing to UCSR0B. */
 #define serRX_INT_ENABLE				( ( unsigned char ) 0x80 )
 #define serRX_ENABLE					( ( unsigned char ) 0x10 )
 #define serTX_ENABLE					( ( unsigned char ) 0x08 )
 #define serTX_INT_ENABLE				( ( unsigned char ) 0x20 )
-/* Constants for writing to UCSR0C. */
-#define serUCSR0C_SELECT					( ( unsigned char ) 0x80 )
+/* Constants for writing to UCSR1C. */
 #define serEIGHT_DATA_BITS				( ( unsigned char ) 0x06 )
 #define UBRR_VALUE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
 
@@ -23,7 +23,7 @@ uint8_t write_i = 0 ; // points at which packet in the data array is being writt
 uint8_t read_i = 1; // points at which packet in the data array is beaing read and sent to the OBC
 
 
-void USART1Init(void) {
+void USART0Init(void) {
 unsigned long ulBaudRateCounter;
 unsigned char ucByte;
     // Set baud rate
@@ -38,12 +38,13 @@ unsigned char ucByte;
     ulBaudRateCounter >>= ( unsigned long ) 8;
     ucByte = ( unsigned char ) ( ulBaudRateCounter & ( unsigned long ) 0xff );	
     UBRR1H = ucByte;
+    
     // Set frame format to 8 data bits, no parity, 1 stop bit
     //UCSR0C |= (1<<UCSZ01)|(1<<UCSZ00);
-    UCSR1C = ( serUCSR0C_SELECT | serEIGHT_DATA_BITS );
+    //UCSR1C = (serEIGHT_DATA_BITS );
     //enable transmission and reception
-    UCSR1B |= (1<<RXEN0)|(1<<TXEN0);
-    UCSR1B |= 0x80;
+    UCSR0B |= (1<<RXEN0)|(1<<TXEN0);
+    UCSR0B |= 0x80; //This also sets the RXEN1 bit
 }
 
 void spi_init(void) {
@@ -348,22 +349,22 @@ uint8_t get_jedec_id(uint8_t *memID)
     }
 }
 
-void USART1SendByte(uint8_t u8Data) {
+void USART0SendByte(uint8_t u8Data) {
     //wait while previous byte is completed
-    while(!(UCSR1A&(1<<UDRE1))){};
+    while(!(UCSR0A&(1<<UDRE0))){};
     // Transmit data
-    UDR1 = u8Data;
+    UDR0 = u8Data;
 }
-uint8_t USART1ReceiveByte() {
+uint8_t USART0ReceiveByte() {
     // Wait for byte to be received
-    while(!(UCSR1A&(1<<RXC1))){};
+    while(!(UCSR0A&(1<<RXC0))){};
     // Return received data
-    return UDR1;
+    return UDR0;
 }
 
 static void printuart(char *msg) {
     while (*msg != '\0') {
-        USART1SendByte(*msg);
+        USART0SendByte(*msg);
         *msg++;
     }
 }
@@ -543,6 +544,40 @@ uint8_t aai_pattern() {
 int main (void) {
     DDRB = 0xff;
     PORTB = 0xff;
+    //USART0Init();
+    //sei();
+    //USART0SendByte(0xAA);
+    //USART0SendByte(0x55);
+    //USART0SendByte(0xAA);
+    //USART0SendByte(0x55);
+    UBRR0L = 0;
+    UBRR0H = 51;
+    
+    // Set frame format to 8 data bits, no parity, 1 stop bit
+    //UCSR0C |= (1<<UCSZ01)|(1<<UCSZ00);
+    //UCSR1C = (serEIGHT_DATA_BITS );
+    //enable transmission and reception
+    //UCSR0B |= (1<<RXEN0)|(1<<TXEN0);
+    //UCSR0B |= 0x80; //This also sets the RXEN1 bit
+    UCSR0B = 0x08;
+    while ( !( UCSR0A & (1<<UDRE0)) ) ;
+    UDR0 = 0xAA;
+    while ( !( UCSR0A & (1<<UDRE0)) ) ;
+    UDR0 = 0xAA;
+    while ( !( UCSR0A & (1<<UDRE0)) ) ;
+    UDR0 = 0xAA;
+    while ( !( UCSR0A & (1<<UDRE0)) ) ;
+    UDR0 = 0xAA;
+    while ( !( UCSR0A & (1<<UDRE0)) ) ;
+    UDR0 = 0xAA;
+    while ( !( UCSR0A & (1<<UDRE0)) ) ;
+    UDR0 = 0xAA;
+    //
+   // char msg[13] = "Hello World!";
+   // while (1) {
+   //     printuart(msg);
+   // }
+    //printuart("Y\r\n");
 //    uint16_t i = 0;
 //    DDRB = 0xff;
 //    PORTB = 0b00010000;
@@ -568,7 +603,6 @@ int main (void) {
 //   // src[9] = 0xAA;
 //
 //    //Initialize USART0
-//    USART1Init();
 //	//DDRB |= 0x0f;
 //    spi_init();
 //    sei();
@@ -647,14 +681,14 @@ int main (void) {
 //    }
 }
 
-ISR(USART1_RX_vect)
+ISR(USART0_RX_vect)
 {
 signed char cChar;
 
 	/* Get the character and post it on the queue of Rxed characters.
 	If the post causes a task to wake force a context switch as the woken task
 	may have a higher priority than the task we have interrupted. */
-	cChar = UDR1;
-    UDR1 = cChar;
+	cChar = UDR0;
+    UDR0 = cChar;
 
 }

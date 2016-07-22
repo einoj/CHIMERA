@@ -2,4 +2,4 @@ WARNINGS=-Wall -Wextra -Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align
 		-Waggregate-return -Wunused #-Wmissing-declarations -Wstrict-prototypes -Wmissing-prototypes 
 CFLAGS=-D GCC_MEGA_AVR -u vprintf $(WARNINGS) 
 all:
-	avr-gcc.exe -mmcu=atmega1284p -std=gnu99 -Os $(CFLAGS)  uart.c -o uart.elf
+	avr-gcc.exe -mmcu=atmega128 -std=gnu99 -Os $(CFLAGS)  uart.c -o uart.elf

@@ -67,4 +67,4 @@ static uint8_t state; // Used by SPI interrupt to indicate whether to write data
 
 /* Function definitions */
 static void printuart(char *msg);
-void USART1SendByte(uint8_t u8Data);
+void USART0SendByte(uint8_t u8Data);
