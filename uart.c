@@ -541,17 +541,32 @@ uint8_t aai_pattern() {
     }
 }
 
+#define FOSC 1000000UL
+#define BAUD 4800
+#define MYUBRR FOSC/16/BAUD-1
+void USART_Init(void ){
+    //UBRR0L = (unsigned char) (ubrr>>8);
+    //UBRR0H = (unsigned char) ubrr;
+    UCSR0B = (1<<TXEN);
+    //UCSR0C = (3<<UCSZ0);
+    //
+    UBRR0L= 12; // 8MHz internal clock, 38.4kbit
+	UBRR0H= 0;
+	//UCSR0B=0b10011000;//((1<<RXEN0)|(1<<TXEN0));
+    UCSR0B = (1<<TXEN);
+    UCSR0C = (3<<UCSZ0);
+	//UCSR0C=0b00000110;
+}
+
 int main (void) {
-    DDRB = 0xff;
-    PORTB = 0xff;
+   // DDRB = 0xff;
+   // PORTB = 0xff;
     //USART0Init();
     //sei();
     //USART0SendByte(0xAA);
     //USART0SendByte(0x55);
     //USART0SendByte(0xAA);
     //USART0SendByte(0x55);
-    UBRR0L = 0;
-    UBRR0H = 51;
     
     // Set frame format to 8 data bits, no parity, 1 stop bit
     //UCSR0C |= (1<<UCSZ01)|(1<<UCSZ00);
@@ -559,19 +574,13 @@ int main (void) {
     //enable transmission and reception
     //UCSR0B |= (1<<RXEN0)|(1<<TXEN0);
     //UCSR0B |= 0x80; //This also sets the RXEN1 bit
-    UCSR0B = 0x08;
-    while ( !( UCSR0A & (1<<UDRE0)) ) ;
-    UDR0 = 0xAA;
-    while ( !( UCSR0A & (1<<UDRE0)) ) ;
-    UDR0 = 0xAA;
-    while ( !( UCSR0A & (1<<UDRE0)) ) ;
-    UDR0 = 0xAA;
-    while ( !( UCSR0A & (1<<UDRE0)) ) ;
-    UDR0 = 0xAA;
-    while ( !( UCSR0A & (1<<UDRE0)) ) ;
-    UDR0 = 0xAA;
-    while ( !( UCSR0A & (1<<UDRE0)) ) ;
-    UDR0 = 0xAA;
+
+    USART_Init();
+
+        while ( !( UCSR0A & (1<<UDRE0)) ) ;
+        UDR0 = 0xAA;
+        while ( !( UCSR0A & (1<<UDRE0)) ) ;
+        UDR0 = 0x55;
     //
    // char msg[13] = "Hello World!";
    // while (1) {
