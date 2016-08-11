@@ -1,28 +1,26 @@
 #include <stdio.h>
+#include "kiss_tnc.h"
 
 #define BUFFMAX 100
-int main(void) {
+int check_data(uint8_t* dataframe)
+{
+   while  
+}
 
-    char buff[BUFFMAX];
+int chimera(uint8_t* kissframe) 
+{
 
-    // startup
-    if (!fgets(buff, BUFFMAX, stdin)) {
-        return 1;
-    }
-    buff[BUFFMAX] = 0;
-
-    if (!strcmp(buff, "cmd")) {
-
-        while(1){
-            fprintf(stdout, "jess");
-            usleep(1000000);
-        }
-
-    } else {
-
-        while(1){
-            fprintf(stdout, "test");
-            usleep(1000000);
-        }
+    switch (kissframe[1]) {
+        case DATA:
+            check_data(&kissframe[2])
+            break;
+        case TIME:
+            break;
+        case MODE:
+            break;
+        case ACK:
+            break;
+        case NAK:
+            break;
     }
 }
