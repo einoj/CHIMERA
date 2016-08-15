@@ -1,3 +1,4 @@
+#include <stdint.h>
 /* 
 * The local look-up table used to calculate the updated RMAP CRC 
 * byte from the intermediate CRC byte and the input byte. 
