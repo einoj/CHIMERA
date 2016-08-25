@@ -1,22 +1,21 @@
 #include "chimera.h"
 #include <stdio.h>
 #include "kiss_tnc.h"
+#include "readbin.h"
 
 int main(void) {
-    printf("Hallo\n");
-   uint8_t frame[9] = {FEND, 0x42, FESC, TFESC, 0x41, 0x40, FESC, TFEND, FEND};
-   int i;
+    int i, j;
 
-   for (i = 1; i < 8; i++) {
-       printf("%x, ",frame[i]);
-   }
+    unsigned char nFrames;
+    unsigned char **frames = readframes("dataframes.bin", &nFrames);
+    printf("%d\n",nFrames);
+    for(i=1;i<2*nFrames;i+=2){
+        printf("packet number %d size %d:\n",(i+1)/2, frames[i-1][0]);
+        // test with good frames
+        printf("Check sum = %d\n", check_data(&frames[i][1]));
+    }
 
-   printf("\n"); 
-
-   printf("Check sum = %d\n", check_data(&frame[1]));
-   for (i = 1; i < 8; i++) {
-       printf("%x, ",frame[i]);
-   }
+   // test with bad frames
 
    printf("\n");
 }

@@ -11,7 +11,7 @@ int check_data(uint8_t* dataframe)
    int j = 0; // Index used to modify dataframe by merging the FESC, TFEND and TFESC characters
    uint8_t checksum = 0;
    while (dataframe[i] != FEND) {
-       printf("round %d\n", i);
+       printf("temp checksum %d\n", checksum);
        dataframe[j] = dataframe[i];
        checksum = RMAP_CalculateCRC(checksum, dataframe[i]);
        if (dataframe[i] == FESC) {
@@ -33,6 +33,8 @@ int check_data(uint8_t* dataframe)
            j++;
        }
    }
+   // at this point the checksum should be equal to zero as the last byte to be input 
+   // is the dataframe checksum together with the incremental checksum
    return checksum;
 }
 
