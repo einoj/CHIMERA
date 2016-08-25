@@ -35,6 +35,16 @@ unsigned char** readframes(char *filename, unsigned char *nFrames)
     return buffer;
 }
 
+void freeframes(unsigned char** frames, unsigned char nframes) {
+    
+    int i;
+    for (i = 0; i < 2*nframes; i++) {
+        free(frames[i]);
+    }
+    free(frames);
+
+}
+
 //int main(void) {
 //    int i, j;
 //

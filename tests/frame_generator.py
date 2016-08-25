@@ -1,6 +1,6 @@
 from random import randint
 
-def generate_packet():
+def generate_packet(good):
     FEND  = 0xC0
     FESC  = 0xDB
     TFEND = 0xDC
@@ -60,6 +60,12 @@ def generate_packet():
     for i in data:
        checksum = RMAP_CalculateCRC(checksum, i) 
 
+    #corrupt the dataframe by changing a few values
+    #The produced frame can then be used to test that the crc8 function detects the error
+    if (good != True):
+        for i in range(5):
+            data[randint(0,len(data)-1)] = randint(0,255)
+
     data.append(checksum);
 
     # Insert frame beginning and end
@@ -70,9 +76,16 @@ def generate_packet():
 
 if __name__ == "__main__":
     nFrames = 100
-    binaryfile = open("dataframes.bin", "wb")
+    binaryfile = open("goodframes.bin", "wb")
     binaryfile.write(bytearray([nFrames]))
     for i in range(nFrames):
-        data = generate_packet()
+        data = generate_packet(True)
+        binaryfile.write(bytearray([len(data)]))
+        binaryfile.write(bytearray(data))
+
+    binaryfile = open("badframes.bin", "wb")
+    binaryfile.write(bytearray([nFrames]))
+    for i in range(nFrames):
+        data = generate_packet(False)
         binaryfile.write(bytearray([len(data)]))
         binaryfile.write(bytearray(data))
