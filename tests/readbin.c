@@ -16,17 +16,15 @@ unsigned char** readframes(char *filename, unsigned char *nFrames)
     
     fread(nFrames,sizeof(char),1,ptr); 
     //fread(buffer,sizeof(buffer),1,ptr); // read 10 bytes to our buffer
-    printf("%d\n",*nFrames);
 
     // create 2*nFrames pointer to load the frames from file
     // and the size of the frames. We will load frame size in index 0 then first frame in index 1
     // upto the last frame size in n-2 and the last frame at index n-1
-    unsigned char **buffer = malloc(2*(*nFrames)*sizeof(unsigned char *));
+    unsigned char **buffer =(unsigned char **) malloc(2*(*nFrames)*sizeof(unsigned char *));
 
     for(i=1;i<2*(*nFrames);i+=2){
         buffer[i-1] = (unsigned char *) malloc(sizeof(unsigned char));
         fread(&buffer[i-1][0],sizeof(char),1,ptr);
-        printf("%d\n",buffer[i-1][0]);
         buffer[i] = (unsigned char *) malloc(buffer[i-1][0]*sizeof(unsigned char));
         fread(buffer[i], sizeof(unsigned char), buffer[i-1][0], ptr);
         for (j = 0; j < buffer[i-1][0]; j++) {
