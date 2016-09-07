@@ -11,4 +11,8 @@
 #define TFEND 0xDC
 #define TFESC 0xDD
 
-int check_data(uint8_t* dataframe);
+uint8_t gen_crc(uint8_t* dataframe, uint16_t len);
+
+uint8_t gen_dataframe(uint8_t* data);
+
+uint8_t decode_dataframe(uint8_t* dataframe);

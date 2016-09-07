@@ -31,47 +31,9 @@ TEST(FrameTest, Badframes) {
     unsigned char nFrames;
     unsigned char **frames = readframes("badframes.bin", &nFrames);
     int len;
-    //uint8_t expect[] = {1, 2, 3, 42};
-    //uint8_t * buffer = expect;
-    //uint32_t buffer_size = sizeof(expect) / sizeof(expect[0]);
-    //ASSERT_THAT(std::vector<uint8_t>(buffer, buffer + buffer_size), 
-    //                    ::testing::ElementsAreArray(expect));
     for(int i=1;i<2*nFrames;i+=2){
-        //for(int j=0;j<frames[i-1][0];j++)
-        //    printf("%d, ",frames[i][j]);
-        //printf("\n");
         len = decode_dataframe(&frames[i][1]);
-        //printf("packet number %d size %d:\n",(i+1)/2, frames[i-1][0]);
-        //printf("Check sum = %d\n", check_data(&frames[i][1]));
-        //printf("Check sum = %d\n", check_data(&frames[i][1]));
-        // test with good frames
         EXPECT_TRUE(0 != check_crc(&frames[i][1],len)) << "Error occured in frame number: " << (i+1)/2;
     }
     freeframes(frames, nFrames);
 }
-//int main(void) {
-//    int i, j;
-//
-//    unsigned char nFrames;
-//    unsigned char **frames = readframes("goodframes.bin", &nFrames);
-//    printf("%d\n",nFrames);
-//    for(i=1;i<2*nFrames;i+=2){
-//        printf("packet number %d size %d:\n",(i+1)/2, frames[i-1][0]);
-//        // test with good frames
-//        printf("Check sum = %d\n", check_data(&frames[i][1]));
-//    }
-//    freeframes(frames, nFrames);
-//
-//    frames = readframes("badframes.bin", &nFrames);
-//    printf("%d\n",nFrames);
-//    for(i=1;i<2*nFrames;i+=2){
-//        printf("packet number %d size %d:\n",(i+1)/2, frames[i-1][0]);
-//        // test with good frames
-//        printf("Check sum = %d\n", check_data(&frames[i][1]));
-//    }
-//    freeframes(frames, nFrames);
-//
-//   // test with bad frames
-//
-//   printf("\n");
-//}k

@@ -1,4 +1,5 @@
 #include <avr/io.h>
+#include "uart.h"
 
 // CHIMERA Memory Status Structure
 struct CHI_Memory_Status_Str {
@@ -29,12 +30,29 @@ struct CHI_Board_Status_Str CHI_Board_Status;
 // Interrupt: TIMER 1ms incremented timer
 
 // Interrupt: UART Data Reception
+ISR(USART0_RX_vect)
+{
+signed char cChar;
+
+	/* Get the character and post it on the queue of Rxed characters.
+	If the post causes a task to wake force a context switch as the woken task
+	may have a higher priority than the task we have interrupted. */
+	cChar = UDR0;
+    UDR0 = cChar;
+}
 
 int main(void)
 {
 	// Update Board Status with reason for reset (i.e. Watchdog, BOD)
 	
 	// Initialize the Board
+
+    USART_Init();
+
+        while ( !( UCSR0A & (1<<UDRE0)) ) ;
+        UDR0 = 0xAA;
+        while ( !( UCSR0A & (1<<UDRE0)) ) ;
+        UDR0 = 0x55;
 	
 	// Load Configuration&Status from EEPROM (i.e. already failed memories, no LU event, what memory was processed when watchdog tripped)
 	
