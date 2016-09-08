@@ -1,6 +1,7 @@
 #include <avr/io.h>
-#include "crc8.h"
 #include "kiss_tnc.h"
+#include "crc8.h"
+#include "uart.h"
 
 /*
 uint8_t gen_crc(uint8_t* dataframe)

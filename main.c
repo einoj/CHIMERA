@@ -50,7 +50,7 @@ int main(void)
 
     USART0_Init();
     
-    transmit_test((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
+    transmit_kiss((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
     //while (1) USART0SendByte((uint8_t) CHI_Board_Status);
 	
 	// Load Configuration&Status from EEPROM (i.e. already failed memories, no LU event, what memory was processed when watchdog tripped)
