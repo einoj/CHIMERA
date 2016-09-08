@@ -2,6 +2,7 @@
 #include "uart.h"
 #include "kiss_tnc.h"
 #include "main.h"
+#include "memories.h"
 
 // The number of bytes in the CHI_Board_Status struct.
 // Needed to send the data over UART
@@ -51,6 +52,8 @@ int main(void)
     USART0_Init();
     
     transmit_kiss((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
+
+//    enable_cs_macro (*mem_arr[1].cs_port, mem_arr[1].PIN_CS);
     //while (1) USART0SendByte((uint8_t) CHI_Board_Status);
 	
 	// Load Configuration&Status from EEPROM (i.e. already failed memories, no LU event, what memory was processed when watchdog tripped)

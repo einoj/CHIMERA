@@ -62,7 +62,7 @@ uint8_t transmit_kiss(uint8_t* data, uint16_t num_bytes)
 
     USART0SendByte(FEND);
     for (i = 0; i < num_bytes; i++) {
-        RMAP_CalculateCRC(checksum, data[i]);
+        checksum = RMAP_CalculateCRC(checksum, data[i]);
         if (data[i] == FEND) {
             USART0SendByte(FESC);
             USART0SendByte(TFEND);

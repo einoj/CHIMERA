@@ -1,3 +1,4 @@
+#include <avr/io.h>
 /* This file defines the pins used by the memories and functions used to initialize the memories.*/
 
 void init_memories(void);
@@ -28,3 +29,4 @@ typedef struct Memory {
     // The port for controlling memory VCC
     volatile uint8_t *vcc_port;
 } mem;
+
