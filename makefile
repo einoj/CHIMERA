@@ -12,7 +12,7 @@ uart.o: uart.c
 	$(GCC) $(AVRFLAGS) $(CFLAGS) uart.c -c
 
 kiss_tnc.o: crc8.o
-	$(GCC) $(AVRFLAGS) $(CFLAGS) crc8.o kiss_tnc.c -c
+	$(GCC) $(AVRFLAGS) $(CFLAGS) kiss_tnc.c -c
 
 crc8.o:
 	$(GCC) $(AVRFLAGS) $(CFLAGS) crc8.c -c
