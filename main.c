@@ -1,6 +1,7 @@
 #include <avr/io.h>
 #include "uart.h"
 #include "kiss_tnc.h"
+#include "main.h"
 
 // The number of bytes in the CHI_Board_Status struct.
 // Needed to send the data over UART
@@ -47,7 +48,7 @@ int main(void)
 	CHI_Board_Status.no_SEU_detected = 71; //number of SEUs
 	CHI_Board_Status.no_SEFI_detected = 72 ; //number of SEFIs
 
-    USART_Init();
+    USART0_Init();
     
     transmit_test((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
     //while (1) USART0SendByte((uint8_t) CHI_Board_Status);

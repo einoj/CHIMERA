@@ -541,7 +541,7 @@ uint8_t aai_pattern() {
     }
 }
 
-void USART_Init(void ){
+void USART0_Init(void ){
     //UBRR0L = (unsigned char) (ubrr>>8);
     //UBRR0H = (unsigned char) ubrr;
     UCSR0B = (1<<TXEN);
