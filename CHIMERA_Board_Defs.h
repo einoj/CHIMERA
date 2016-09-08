@@ -7,6 +7,8 @@
 #define SPI_MEM_VCC_EN_PIN 4
 #define SPI_MEM_VCC_EN_PORT PORTB
 
+#define whaever adasda
+
 #define SPI_VCC_EN1_PIN 4
 #define SPI_VCC_EN1_PORT PORTC
 #define SPI_VCC_EN2_PIN 2

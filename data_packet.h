@@ -6,7 +6,7 @@
 #define UPPER_NIB  28
 #define LOWER_NIB  24
 
-void USART1SendByte(uint8_t u8Data);
+void USART0SendByte(uint8_t u8Data);
 
 typedef struct {
  uint16_t index;
@@ -28,9 +28,9 @@ void put_data(data_packet *packet, uint32_t data, uint8_t memid, uint8_t dataid)
 void send_packet(data_packet *packet) {
     uint16_t i;
     for (i=0; i<packet->index; i++) {
-        USART1SendByte((uint8_t)(packet->data[i]>>24));
-        USART1SendByte((uint8_t)(packet->data[i]>>16));
-        USART1SendByte((uint8_t)(packet->data[i]>>8));
-        USART1SendByte((uint8_t)(packet->data[i]));
+        USART0SendByte((uint8_t)(packet->data[i]>>24));
+        USART0SendByte((uint8_t)(packet->data[i]>>16));
+        USART0SendByte((uint8_t)(packet->data[i]>>8));
+        USART0SendByte((uint8_t)(packet->data[i]));
     }
 }

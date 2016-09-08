@@ -38,10 +38,15 @@
 #define ENABLE_SPI_INTERRUPT SPCR|=(1 << SPIE);
 // enable SPI interrupts
 #define DISABLE_SPI_INTERRUPT SPCR&=~(1 << SPIE);
-// enable MISO interrput
-#define ENABLE_MISO_INTERRUPT PCMSK1|=(1 << PCINT14);
+// MISO interrupts are only used if interrupt driven writing is used on the SST memories, currently it is not
+// the MISO line will be pulled high when a write command is finished if the interrupt drive mode is used.
+// For this to work jumper P9 needs to be mounted on V1 of the board. This connects MISO to PE7, and INT7 can be used to
+// interrupt and issue a new spi write command. See sst memory data sheets for more info on interrupt driven writing
+// TODO REMEMBER TO ALSO CONFIGURE THE EICRB AND EICRA REGISTERS IF USING INTERRUPT MISO!!
+// enable MISO interrput 
+#define ENABLE_MISO_INTERRUPT EIMSK|=(1 << INT7);
 // disable MISO interrput
-#define DISABLE_MISO_INTERRUPT PCMSK1&=~(1 << PCINT14);
+#define DISABLE_MISO_INTERRUPT EIMSK&=~(1 << INT7);
 
 /* SPI states */
 // The op_code has been transferred
@@ -56,7 +61,8 @@
 // Set MOSI, SCK , and SS as Output
 #define MOSI 5
 #define SCK 7
-#define CS1 4
+// TODO use definitions in memories.h instead
+#define SS1 4
 
 /* Global variables */
 static uint32_t address; // Used by SPI to address memory device
@@ -67,4 +73,4 @@ static uint8_t state; // Used by SPI interrupt to indicate whether to write data
 
 /* Function definitions */
 static void printuart(char *msg);
-void USART1SendByte(uint8_t u8Data);
+void USART0SendByte(uint8_t u8Data);
