@@ -1,28 +1,49 @@
 #include <avr/io.h>
 #include "uart.h"
+#include "kiss_tnc.h"
+
+// The number of bytes in the CHI_Board_Status struct.
+// Needed to send the data over UART
+#define CHI_BOARD_STATUS_LEN 13
+
+// CHIMERA Board Local Time
+volatile uint32_t CHI_Local_Time; // incremented every 10ms(TBC)
+//---------------------------------------------
 
 // CHIMERA Memory Status Structure
 struct CHI_Memory_Status_Str {
-	unsigned char status;
-	unsigned char no_SEU;
-	unsigned char no_SEFI_LU;
-	unsigned char Current1;
-	unsigned char Current2;
+	uint8_t status;
+	uint8_t no_SEU;
+	uint8_t no_SEFI_LU;
+	uint8_t current1;
+	uint8_t current2;
 };
+volatile struct CHI_Memory_Status_Str CHI_Memory_Status[12];
+//---------------------------------------------
+
+// CHIMERA Memory Event Structure
+struct CHI_Memory_Event_Str {
+	uint8_t memory_id;
+	uint8_t addr1;
+	uint8_t addr2;
+	uint8_t addr3;
+	uint8_t value;
+};
+volatile struct CHI_Memory_Event_Str Memory_Events[500];
 //---------------------------------------------
 
 // CHIMERA Board Status Structure
-struct CHI_Board_Status_Str {
-	unsigned char reset_type;
-	unsigned char device_mode;
-	unsigned short working_memories;
-	unsigned short no_cycles;
-	unsigned short no_LU_detected;
-	unsigned short no_SEU_detected;
-	unsigned short no_SEFI_detected;
+struct __attribute__((packed)) CHI_Board_Status_Str {
+	uint8_t reset_type; // reason for last reset
+	uint8_t device_mode; // mode of the instrument
+	uint8_t latch_up_detected; // latch up detected flag
+	uint16_t working_memories; // summary of which memory is working
+	uint16_t no_cycles; // number of SCI cycles performed on memories
+	uint16_t no_LU_detected; //number of Latch-Ups
+	uint16_t no_SEU_detected; //number of SEUs
+	uint16_t no_SEFI_detected; //number of SEFIs
 };
-
-struct CHI_Board_Status_Str CHI_Board_Status;
+volatile struct CHI_Board_Status_Str CHI_Board_Status;
 //---------------------------------------------
 
 // Interrupt: ADC Latch-Up monitoring
@@ -41,18 +62,35 @@ signed char cChar;
     UDR0 = cChar;
 }
 
+uint8_t transmit_test(uint8_t* data, uint16_t num_bytes)
+{
+    uint16_t i;
+
+    for(i = 0; i < num_bytes; i++) {
+       USART0SendByte(data[i]);
+    }
+    return 0;
+} 
+
 int main(void)
 {
 	// Update Board Status with reason for reset (i.e. Watchdog, BOD)
 	
 	// Initialize the Board
 
-    USART_Init();
+    CHI_Board_Status.reset_type = 65;
+    CHI_Board_Status.device_mode = 66;
+    CHI_Board_Status.latch_up_detected = 67;
+    CHI_Board_Status.working_memories = 68;
+    CHI_Board_Status.no_cycles = 69;
+    CHI_Board_Status.no_LU_detected = 70;
+	CHI_Board_Status.no_SEU_detected = 71; //number of SEUs
+	CHI_Board_Status.no_SEFI_detected = 72 ; //number of SEFIs
 
-        while ( !( UCSR0A & (1<<UDRE0)) ) ;
-        UDR0 = 0xAA;
-        while ( !( UCSR0A & (1<<UDRE0)) ) ;
-        UDR0 = 0x55;
+    USART_Init();
+    
+    transmit_test((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
+    //while (1) USART0SendByte((uint8_t) CHI_Board_Status);
 	
 	// Load Configuration&Status from EEPROM (i.e. already failed memories, no LU event, what memory was processed when watchdog tripped)
 	

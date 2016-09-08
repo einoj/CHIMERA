@@ -541,9 +541,6 @@ uint8_t aai_pattern() {
     }
 }
 
-#define FOSC 1000000UL
-#define BAUD 4800
-#define MYUBRR FOSC/16/BAUD-1
 void USART_Init(void ){
     //UBRR0L = (unsigned char) (ubrr>>8);
     //UBRR0H = (unsigned char) ubrr;
@@ -552,12 +549,12 @@ void USART_Init(void ){
     //
     UBRR0L= 12; // 8MHz internal clock, 38.4kbit
 	UBRR0H= 0;
-	//UCSR0B=0b10011000;//((1<<RXEN0)|(1<<TXEN0));
-    UCSR0B = (1<<TXEN);
+	UCSR0B=0b10011000;//((1<<RXEN0)|(1<<TXEN0));
+    //UCSR0B = (1<<TXEN);
     UCSR0C = (3<<UCSZ0);
 	//UCSR0C=0b00000110;
 }
-
+/*
 int main (void) {
    // DDRB = 0xff;
    // PORTB = 0xff;
@@ -577,11 +574,8 @@ int main (void) {
 
     USART_Init();
 
-        while ( !( UCSR0A & (1<<UDRE0)) ) ;
-        UDR0 = 0xAA;
-        while ( !( UCSR0A & (1<<UDRE0)) ) ;
-        UDR0 = 0x55;
-    //
+    while (1) USART0SendByte(0x56);
+    //wait while previous byte is completed
    // char msg[13] = "Hello World!";
    // while (1) {
    //     printuart(msg);
@@ -689,15 +683,18 @@ int main (void) {
 //
 //    }
 }
+*/
 
+/*k
 ISR(USART0_RX_vect)
 {
 signed char cChar;
 
-	/* Get the character and post it on the queue of Rxed characters.
-	If the post causes a task to wake force a context switch as the woken task
-	may have a higher priority than the task we have interrupted. */
+	//Get the character and post it on the queue of Rxed characters.
+	//If the post causes a task to wake force a context switch as the woken task
+	//may have a higher priority than the task we have interrupted. 
 	cChar = UDR0;
     UDR0 = cChar;
 
 }
+*/
