@@ -6,46 +6,6 @@
 // Needed to send the data over UART
 #define CHI_BOARD_STATUS_LEN 13
 
-// CHIMERA Board Local Time
-volatile uint32_t CHI_Local_Time; // incremented every 10ms(TBC)
-//---------------------------------------------
-
-// CHIMERA Memory Status Structure
-struct CHI_Memory_Status_Str {
-	uint8_t status;
-	uint8_t no_SEU;
-	uint8_t no_SEFI_LU;
-	uint8_t current1;
-	uint8_t current2;
-};
-volatile struct CHI_Memory_Status_Str CHI_Memory_Status[12];
-//---------------------------------------------
-
-// CHIMERA Memory Event Structure
-struct CHI_Memory_Event_Str {
-	uint8_t memory_id;
-	uint8_t addr1;
-	uint8_t addr2;
-	uint8_t addr3;
-	uint8_t value;
-};
-volatile struct CHI_Memory_Event_Str Memory_Events[500];
-//---------------------------------------------
-
-// CHIMERA Board Status Structure
-struct __attribute__((packed)) CHI_Board_Status_Str {
-	uint8_t reset_type; // reason for last reset
-	uint8_t device_mode; // mode of the instrument
-	uint8_t latch_up_detected; // latch up detected flag
-	uint16_t working_memories; // summary of which memory is working
-	uint16_t no_cycles; // number of SCI cycles performed on memories
-	uint16_t no_LU_detected; //number of Latch-Ups
-	uint16_t no_SEU_detected; //number of SEUs
-	uint16_t no_SEFI_detected; //number of SEFIs
-};
-volatile struct CHI_Board_Status_Str CHI_Board_Status;
-//---------------------------------------------
-
 // Interrupt: ADC Latch-Up monitoring
 
 // Interrupt: TIMER 1ms incremented timer
