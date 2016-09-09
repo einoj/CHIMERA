@@ -1,4 +1,5 @@
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include "uart.h"
 #include "kiss_tnc.h"
 #include "main.h"
