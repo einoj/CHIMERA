@@ -1,6 +1,7 @@
 #include <avr/io.h>
-#include "crc8.h"
 #include "kiss_tnc.h"
+#include "crc8.h"
+#include "uart.h"
 
 /*
 uint8_t gen_crc(uint8_t* dataframe)
@@ -61,7 +62,7 @@ uint8_t transmit_kiss(uint8_t* data, uint16_t num_bytes)
 
     USART0SendByte(FEND);
     for (i = 0; i < num_bytes; i++) {
-        RMAP_CalculateCRC(checksum, data[i]);
+        checksum = RMAP_CalculateCRC(checksum, data[i]);
         if (data[i] == FEND) {
             USART0SendByte(FESC);
             USART0SendByte(TFEND);

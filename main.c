@@ -1,6 +1,8 @@
 #include <avr/io.h>
 #include "uart.h"
 #include "kiss_tnc.h"
+#include "main.h"
+#include "memories.h"
 
 // The number of bytes in the CHI_Board_Status struct.
 // Needed to send the data over UART
@@ -47,9 +49,11 @@ int main(void)
 	CHI_Board_Status.no_SEU_detected = 71; //number of SEUs
 	CHI_Board_Status.no_SEFI_detected = 72 ; //number of SEFIs
 
-    USART_Init();
+    USART0_Init();
     
-    transmit_test((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
+    transmit_kiss((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
+
+//    enable_cs_macro (*mem_arr[1].cs_port, mem_arr[1].PIN_CS);
     //while (1) USART0SendByte((uint8_t) CHI_Board_Status);
 	
 	// Load Configuration&Status from EEPROM (i.e. already failed memories, no LU event, what memory was processed when watchdog tripped)
