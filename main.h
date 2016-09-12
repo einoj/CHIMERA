@@ -1,6 +1,3 @@
-// CHIMERA Board Local Time
-volatile uint32_t CHI_Local_Time; // incremented every 10ms(TBC)
-//---------------------------------------------
 
 // CHIMERA Memory Status Structure
 struct CHI_Memory_Status_Str {
@@ -29,6 +26,9 @@ struct __attribute__((packed)) CHI_Board_Status_Str {
 	uint8_t reset_type; // reason for last reset
 	uint8_t device_mode; // mode of the instrument
 	uint8_t latch_up_detected; // latch up detected flag
+	uint8_t SPI_timeout_detected; // SPI time-out detected flag
+	uint8_t current_memory;	// id of currently processed memory
+	uint16_t mem_to_test; // memories to be tested - each bit corresponds to one memory	
 	uint16_t working_memories; // summary of which memory is working
 	uint16_t no_cycles; // number of SCI cycles performed on memories
 	uint16_t no_LU_detected; //number of Latch-Ups
