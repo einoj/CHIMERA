@@ -95,7 +95,10 @@ int main(void)
 	CHI_Board_Status.no_SEU_detected = 71; //number of SEUs
 	CHI_Board_Status.no_SEFI_detected = 72 ; //number of SEFIs
 	
-    transmit_kiss((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
+    //transmit_kiss((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
+    // Test of detailed frame transmission
+    CHI_Board_Status.local_time = 0xDEADBEEF;
+    transmit_detailed_frame();
 
 //    enable_cs_macro (*mem_arr[1].cs_port, mem_arr[1].PIN_CS);
     //while (1) USART0SendByte((uint8_t) CHI_Board_Status);

@@ -6,7 +6,7 @@ AVRFLAGS = -mmcu=atmega128
 
 GCC = avr-gcc.exe
 
-all: uart.o kiss_tnc.o crc8.o memories.o
+all: uart.o kiss_tnc.o crc8.o memories.o HAL.o adc.o timers.o
 	$(GCC) $(AVRFLAGS) $(CFLAGS)  main.c $^ -o CHIMERA.elf
 
 memories.o: memories.c
@@ -20,6 +20,15 @@ kiss_tnc.o: kiss_tnc.c
 
 crc8.o: crc8.c
 	$(GCC) $(AVRFLAGS) $(CFLAGS) crc8.c -c
+
+HAL.o: HAL.c
+	$(GCC) $(AVRFLAGS) $(CFLAGS) HAL.c -c
+
+adc.o: adc.c
+	$(GCC) $(AVRFLAGS) $(CFLAGS) adc.c -c
+
+timers.o: timers.c
+	$(GCC) $(AVRFLAGS) $(CFLAGS) timers.c -c
 
 clean:
 	rm *.o

@@ -49,21 +49,33 @@ uint8_t decode_dataframe(uint8_t* dataframe)
    return j;
 }
 
-transmit_detailed_frame(void)
+void transmit_detailed_frame(void)
 {
     uint16_t i;
     uint8_t checksum = 0;
+    uint8_t data;
 
     USART0SendByte(FEND);
 
     // Send On Board TIME stamp
-    USART0SendByte((uint8_t) CHI_Local_Time);
-    USART0SendByte((uint8_t) (CHI_Local_Time>>8));
-    USART0SendByte((uint8_t) (CHI_Local_Time>>16));
+    data = (uint8_t) CHI_Board_Status.local_time;
+    USART0SendByte(data);
+    checksum = RMAP_CalculateCRC(checksum, data);
+
+    data = (uint8_t) (CHI_Board_Status.local_time>>8);
+    USART0SendByte(data);
+    checksum = RMAP_CalculateCRC(checksum, data);
+
+    data = (uint8_t) (CHI_Board_Status.local_time>>16);
+    USART0SendByte(data);
+    checksum = RMAP_CalculateCRC(checksum, data);
     
     // Send Instruent status
     
     // Send No. of events 
+    
+    //send end of frame
+    USART0SendByte(FEND);
 }
 /* Transmit the generated data in a kiss frame. 
  * This means sending FEND at the beginning,

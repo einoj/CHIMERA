@@ -16,3 +16,5 @@
 uint8_t transmit_kiss(uint8_t* data, uint16_t num_bytes);
 
 uint8_t decode_dataframe(uint8_t* dataframe);
+
+void transmit_detailed_frame(void);
