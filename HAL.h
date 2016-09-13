@@ -1,2 +1,2 @@
 // ATMega128 GPIO Port initialization
-void PORT_init();
+void PORT_Init();

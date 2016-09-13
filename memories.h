@@ -15,7 +15,7 @@ void poweroff_memories(void);
 #define enable_cs_macro(port,mask) ((port) |= (mask))
 #define disable_cs_macro(port,mask) ((port) ~= (mask))
 
-typedef struct Memory {
+struct Memory {
     // chip select pin
     const uint8_t PIN_CS;
     // chip VCC enable pin
@@ -28,5 +28,7 @@ typedef struct Memory {
     volatile uint8_t *cs_port;
     // The port for controlling memory VCC
     volatile uint8_t *vcc_port;
-} mem;
+};
+
+const struct Memory mem_arr[12];
 

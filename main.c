@@ -10,7 +10,7 @@
 
 // The number of bytes in the CHI_Board_Status struct.
 // Needed to send the data over UART
-#define CHI_BOARD_STATUS_LEN 13
+#define CHI_BOARD_STATUS_LEN 7
 
 // Interrupt: ADC Latch-Up monitoring
 
@@ -60,7 +60,7 @@ void static Power_On_Check() {
 // Timer 1 - Instrument Time
 ISR(TIMER1_OVF_vect) {
 	PORTB ^=0x20; // toggle TGL2 to check frequency
-	CHI_Local_Time++;
+	CHI_Board_Status.local_time++;
 	TCNT1=0xFFFF-125; // We need 125 ticks to get 1ms interrupt
 }
 
@@ -72,20 +72,20 @@ ISR(TIMER3_OVF_vect) {
 
 int main(void)
 {
-	OSCCAL=0xB3;
+	OSCCAL=0xB3; // clock calibration
 	volatile uint32_t start_time;	
 	
 	// Initialize the Board
-	PORT_init();
+	PORT_Init();
 	ADC_Init();
-	TIMER1_Init(); // Instrument Time Counter
-	TIMER3_Init(); // SPI Time-Out Counter
+	TIMER1_Init();		// Instrument Time Counter
+	TIMER3_Init();		// SPI Time-Out Counter
+	USART0_Init();		// UART0 Initialization
 		
-	sei(); // Turn on interrupts	
-	Power_On_Check(); // check what was the cause of reset
+	sei();				// Turn on interrupts	
+	Power_On_Check();	// check what was the cause of reset
 	
 	// Initialize the Board
-
     CHI_Board_Status.reset_type = 65;
     CHI_Board_Status.device_mode = 66;
     CHI_Board_Status.latch_up_detected = 67;
@@ -94,8 +94,6 @@ int main(void)
     CHI_Board_Status.no_LU_detected = 70;
 	CHI_Board_Status.no_SEU_detected = 71; //number of SEUs
 	CHI_Board_Status.no_SEFI_detected = 72 ; //number of SEFIs
-
-    USART0_Init();
     
     transmit_kiss((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
 
@@ -111,7 +109,7 @@ int main(void)
 	// Open issue: policy of watchdog, how to set-up watchdog and how/when to reset it?
     while (1) 
     {	
-		start_time=CHI_Local_Time;
+		start_time=CHI_Board_Status.local_time;
 		
 		CHI_Board_Status.no_cycles++; // increase number of memory cycles
 
@@ -126,7 +124,7 @@ int main(void)
 				// exclude the memory from the test if SEFI > 10 TBD
 				CHI_Board_Status.mem_to_test&=~(1<<i);
 			}
-	
+
 			// write it into EEPROM or after reset we start from scratch?
 		}
 
@@ -164,7 +162,7 @@ int main(void)
 			}
 		}
 		// Write all memory status to EEPROM in case there is power down
-		while(CHI_Local_Time-start_time<1000){ // wait 1 second, RESET WATCHDOG IF NEEDED
+		while(CHI_Board_Status.local_time-start_time<1000){ // wait 1 second, RESET WATCHDOG IF NEEDED
 			//TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
 		}
     }

@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 // ATMega128 GPIO Port initialization
-void PORT_init() {
+void PORT_Init() {
 	DDRA=0xFF;
 	PORTA=0x00;
 	
