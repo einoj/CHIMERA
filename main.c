@@ -94,7 +94,7 @@ int main(void)
     CHI_Board_Status.no_LU_detected = 70;
 	CHI_Board_Status.no_SEU_detected = 71; //number of SEUs
 	CHI_Board_Status.no_SEFI_detected = 72 ; //number of SEFIs
-    
+	
     transmit_kiss((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
 
 //    enable_cs_macro (*mem_arr[1].cs_port, mem_arr[1].PIN_CS);
@@ -162,7 +162,7 @@ int main(void)
 			}
 		}
 		// Write all memory status to EEPROM in case there is power down
-		while(CHI_Board_Status.local_time-start_time<1000){ // wait 1 second, RESET WATCHDOG IF NEEDED
+		while(CHI_Board_Status.local_time-start_time<10000){ // wait 1 second, RESET WATCHDOG IF NEEDED
 			//TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
 		}
     }
