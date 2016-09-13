@@ -1,6 +1,6 @@
 #include "memories.h"
 
-const mem mem_arr[12] = {
+const struct Memory mem_arr[12] = {
  {0b00000001, 0b00010000, 1024, 256, &PORTA, &PORTC},
  {0b00000010, 0b00000100, 1024, 256, &PORTA, &PORTC},
  {0b00000100, 0b00001000, 1024, 256, &PORTA, &PORTC},

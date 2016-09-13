@@ -69,7 +69,7 @@ transmit_detailed_frame(void)
  * This means sending FEND at the beginning,
  * Translateing FEND and FESC bytes in the data to
  * FESC TFEND and FESC TFESC respectively. During looping
- * a CRC-8 code has to be generated, which is to be transmittet 
+ * a CRC-8 code has to be generated, which is to be transmitted 
  * at the end of a frame before FEND. if the CRC8 equals FEND or FESC
  * it too needs to be encoded as mentioned above */
 uint8_t transmit_kiss(uint8_t* data, uint16_t num_bytes)
@@ -80,6 +80,7 @@ uint8_t transmit_kiss(uint8_t* data, uint16_t num_bytes)
     USART0SendByte(FEND);
 
     for (i = 0; i < num_bytes; i++) {
+		// is this OK? CRC calculated without special characters?
         checksum = RMAP_CalculateCRC(checksum, data[i]);
         if (data[i] == FEND) {
             USART0SendByte(FESC);
@@ -100,5 +101,6 @@ uint8_t transmit_kiss(uint8_t* data, uint16_t num_bytes)
     } else {
         USART0SendByte(checksum);
     }
+
     USART0SendByte(FEND);
 }
