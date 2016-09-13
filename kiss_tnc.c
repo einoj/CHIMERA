@@ -2,6 +2,7 @@
 #include "kiss_tnc.h"
 #include "crc8.h"
 #include "uart.h"
+#include "main.h"
 
 /*
 uint8_t gen_crc(uint8_t* dataframe)
@@ -48,6 +49,22 @@ uint8_t decode_dataframe(uint8_t* dataframe)
    return j;
 }
 
+transmit_detailed_frame(void)
+{
+    uint16_t i;
+    uint8_t checksum = 0;
+
+    USART0SendByte(FEND);
+
+    // Send On Board TIME stamp
+    USART0SendByte((uint8_t) CHI_Local_Time);
+    USART0SendByte((uint8_t) (CHI_Local_Time>>8));
+    USART0SendByte((uint8_t) (CHI_Local_Time>>16));
+    
+    // Send Instruent status
+    
+    // Send No. of events 
+}
 /* Transmit the generated data in a kiss frame. 
  * This means sending FEND at the beginning,
  * Translateing FEND and FESC bytes in the data to
@@ -61,6 +78,7 @@ uint8_t transmit_kiss(uint8_t* data, uint16_t num_bytes)
     uint8_t checksum = 0;
 
     USART0SendByte(FEND);
+
     for (i = 0; i < num_bytes; i++) {
         checksum = RMAP_CalculateCRC(checksum, data[i]);
         if (data[i] == FEND) {
