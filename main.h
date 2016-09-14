@@ -1,3 +1,4 @@
+#define NUM_MEMORIES 12
 
 // CHIMERA Memory Status Structure
 struct CHI_Memory_Status_Str {
@@ -7,7 +8,7 @@ struct CHI_Memory_Status_Str {
 	uint8_t current1;
 	uint8_t current2;
 };
-volatile struct CHI_Memory_Status_Str CHI_Memory_Status[12];
+volatile struct CHI_Memory_Status_Str CHI_Memory_Status[NUM_MEMORIES];
 //---------------------------------------------
 
 // CHIMERA Memory Event Structure
