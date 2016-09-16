@@ -93,7 +93,7 @@ int main(void)
     CHI_Board_Status.no_cycles = 69;
     CHI_Board_Status.no_LU_detected = 70;
 	CHI_Board_Status.no_SEU_detected = 71; //number of SEUs
-	CHI_Board_Status.no_SEFI_detected = 72 ; //number of SEFIs
+	CHI_Board_Status.no_SEFI_detected = FEND; //number of SEFIs
 	
     //transmit_kiss((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
     // Test of detailed frame transmission
