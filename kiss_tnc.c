@@ -49,7 +49,41 @@ uint8_t decode_dataframe(uint8_t* dataframe)
    return j;
 }
 
-void transmit_detailed_frame(void)
+
+void transmit_CHI_EVENTS(uint16_t num_events) {
+    uint16_t i;
+    uint8_t checksum = 0; // Used to store the crc8 checksum
+    uint8_t data; // Used to temporarily hold bytes of multibyte variables
+    USART0SendByte(FEND);
+    for (i = 0; i < num_events; i++) {
+        // Send Memory_id
+        data =  Memory_Events[i].memory_id;
+        checksum = RMAP_CalculateCRC(checksum, data);
+        transmit_kiss(data);
+        // Send address 
+        data =  Memory_Events[i].addr1;
+        checksum = RMAP_CalculateCRC(checksum, data);
+        transmit_kiss(data);
+        data =  Memory_Events[i].addr2;
+        checksum = RMAP_CalculateCRC(checksum, data);
+        transmit_kiss(data);
+        data =  Memory_Events[i].addr3;
+        checksum = RMAP_CalculateCRC(checksum, data);
+        transmit_kiss(data);
+        // Send value of upset 
+        data =  Memory_Events[i].value;
+        checksum = RMAP_CalculateCRC(checksum, data);
+        transmit_kiss(data);
+    }
+    //TODO wait for ack before setting num_events to 0
+    //Send checksum
+    transmit_kiss(checksum);
+    
+    //send end of frame
+    USART0SendByte(FEND);
+}
+
+void transmit_CHI_SCI_TM(void)
 {
     uint16_t i; // Used for looping over memory status
     uint8_t checksum = 0; // Used to store the crc8 checksum
@@ -59,114 +93,91 @@ void transmit_detailed_frame(void)
 
     // Send On Board TIME stamp
     data = (uint8_t) CHI_Board_Status.local_time;
-    USART0SendByte(data);
     checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
 
     data = (uint8_t) (CHI_Board_Status.local_time>>8);
-    USART0SendByte(data);
     checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
 
     data = (uint8_t) (CHI_Board_Status.local_time>>16);
-    USART0SendByte(data);
     checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
 
     data = (uint8_t) (CHI_Board_Status.local_time>>24);
-    USART0SendByte(data);
     checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
     
     // Send Instrument status
     data = (uint8_t) CHI_Board_Status.working_memories;
-    USART0SendByte(data);
     checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
     
     data = (uint8_t) (CHI_Board_Status.working_memories>>8);
-    USART0SendByte(data);
     checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
     
     // Send No. of LU events 
     data = (uint8_t) CHI_Board_Status.no_LU_detected;
-    USART0SendByte(data);
     checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
     
     data = (uint8_t) (CHI_Board_Status.no_LU_detected>>8);
-    USART0SendByte(data);
     checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
     
     // Send No. of SEU events 
     data = (uint8_t) CHI_Board_Status.no_SEU_detected;
-    USART0SendByte(data);
     checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
     
     data = (uint8_t) (CHI_Board_Status.no_SEU_detected>>8);
-    USART0SendByte(data);
     checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
     
     // Send No. of SEFI events 
     data = (uint8_t) CHI_Board_Status.no_SEFI_detected;
-    USART0SendByte(data);
     checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
     
     data = (uint8_t) (CHI_Board_Status.no_SEFI_detected>>8);
-    USART0SendByte(data);
     checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
 
     // Send memory status of the 12 memories
     for (i = 0; i < NUM_MEMORIES; i++) {
-        USART0SendByte(CHI_Memory_Status[i].status);
         checksum = RMAP_CalculateCRC(checksum, CHI_Memory_Status[i].status);
-        USART0SendByte(CHI_Memory_Status[i].no_SEU);
+        transmit_kiss(CHI_Memory_Status[i].status);
         checksum = RMAP_CalculateCRC(checksum, CHI_Memory_Status[i].no_SEU);
-        USART0SendByte(CHI_Memory_Status[i].no_SEFI_LU);
+        transmit_kiss(CHI_Memory_Status[i].no_SEU);
         checksum = RMAP_CalculateCRC(checksum, CHI_Memory_Status[i].no_SEFI_LU);
-        USART0SendByte(CHI_Memory_Status[i].current1);
+        transmit_kiss(CHI_Memory_Status[i].no_SEFI_LU);
         checksum = RMAP_CalculateCRC(checksum, CHI_Memory_Status[i].current2);
+        transmit_kiss(CHI_Memory_Status[i].current1);
     }
 
     // Send detailed Upset information
     // TODO Should the detailed upset info also include a timestamp?
     
     //Send checksum
-    USART0SendByte(checksum);
+    transmit_kiss(checksum);
     
     //send end of frame
     USART0SendByte(FEND);
 }
-/* Transmit the generated data in a kiss frame. 
- * This means sending FEND at the beginning,
- * Translateing FEND and FESC bytes in the data to
- * FESC TFEND and FESC TFESC respectively. During looping
- * a CRC-8 code has to be generated, which is to be transmitted 
- * at the end of a frame before FEND. if the CRC8 equals FEND or FESC
- * it too needs to be encoded as mentioned above */
-uint8_t transmit_kiss(uint8_t* data, uint16_t num_bytes)
+/* 
+ * Takes a byte, KISS encodes it if needed, and transmits the KISS encoded data
+ */ 
+void transmit_kiss(uint8_t data)
 {
-    uint16_t i;
-    uint8_t checksum = 0;
-
-    USART0SendByte(FEND);
-
-    for (i = 0; i < num_bytes; i++) {
-		// is this OK? CRC calculated without special characters?
-        checksum = RMAP_CalculateCRC(checksum, data[i]);
-        if (data[i] == FEND) {
-            USART0SendByte(FESC);
-            USART0SendByte(TFEND);
-        } else if (data[i] == FESC) {
-            USART0SendByte(FESC);
-            USART0SendByte(TFESC);
-        } else {
-            USART0SendByte(data[i]);
-        }
-    }
-    if (checksum == FEND) {
+    if (data == FEND) {
         USART0SendByte(FESC);
         USART0SendByte(TFEND);
-    } else if (checksum == FESC) {
+    } else if (data == FESC) {
         USART0SendByte(FESC);
         USART0SendByte(TFESC);
     } else {
-        USART0SendByte(checksum);
+        USART0SendByte(data);
     }
 
-    USART0SendByte(FEND);
 }

@@ -20,6 +20,7 @@ struct CHI_Memory_Event_Str {
 	uint8_t value;
 };
 volatile struct CHI_Memory_Event_Str Memory_Events[500];
+
 //---------------------------------------------
 
 // CHIMERA Board Status Structure

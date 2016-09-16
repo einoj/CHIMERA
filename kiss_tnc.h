@@ -13,8 +13,10 @@
 
 //uint8_t gen_crc(uint8_t* dataframe, uint16_t len);
 
-uint8_t transmit_kiss(uint8_t* data, uint16_t num_bytes);
+void transmit_kiss(uint8_t data);
 
 uint8_t decode_dataframe(uint8_t* dataframe);
 
-void transmit_detailed_frame(void);
+void transmit_CHI_SCI_TM(void);
+
+void transmit_CHI_EVENTS(uint16_t num_events);
