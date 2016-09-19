@@ -28,6 +28,21 @@ ISR(USART0_RX_vect)
 	if (CHI_UART_RX_BUFFER_INDEX>CHI_UART_RX_BUFFER_SIZE)CHI_UART_RX_BUFFER_INDEX=0;
 }
 
+// Send ACK, to be moved into proper file
+void Send_ACK() {
+	USART0SendByte(0xC0);
+	USART0SendByte(CHI_COMM_ID_ACK);
+	USART0SendByte(0xCC); // precalculated CRC
+	USART0SendByte(0xC0);
+}
+
+// Send ACK, to be moved into proper file
+void Send_NACK() {
+	USART0SendByte(0xC0);
+	USART0SendByte(CHI_COMM_ID_NACK);
+	USART0SendByte(0xCC); // precalculated CRC
+	USART0SendByte(0xC0);	
+}
 
 // Timer 1 - Instrument Time
 ISR(TIMER0_OVF_vect) {
@@ -63,9 +78,17 @@ ISR(TIMER0_OVF_vect) {
 		// CRC Parsing
 
 		switch (RX_BUFFER[0]) {
-			case (0x01): // ACK, set flag that ACK was received
+			
+			case (CHI_COMM_ID_ACK): // ACK, set flag that ACK was received
+			// Set ACK flag
 			USART0SendByte(0x55);
 			break;
+			
+			case (CHI_COMM_ID_NACK): // ACK, set flag that ACK was received
+			// set NACK flag
+			USART0SendByte(0x55);
+			break;
+			
 			case (0x02): // TIMESTAMP, 20ms delay parsing, include that?
 			if (RX_i==6) { // AFTER UPDATE OF TIMER MAIN LOOP MIGHT BE AFFECTED !!!!!!!!
 				CHI_Board_Status.local_time=(uint32_t)RX_BUFFER[1]<<24 | (uint32_t)RX_BUFFER[2]<<16 | (uint32_t)RX_BUFFER[3]<<8 | (uint32_t)RX_BUFFER[4];
