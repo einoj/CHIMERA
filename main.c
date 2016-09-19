@@ -260,8 +260,10 @@ int main(void)
 			}
 		}
 		// Write all memory status to EEPROM in case there is power down
-		while(CHI_Board_Status.local_time-start_time<10000){ // wait 1 second, RESET WATCHDOG IF NEEDED
+		
+		// Obsolete(?):
+		//while(CHI_Board_Status.local_time-start_time<10000){ // wait 1 second, RESET WATCHDOG IF NEEDED
 			//TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
-		}
+		//}
     }
 }
