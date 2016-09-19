@@ -52,10 +52,13 @@ ISR(TIMER0_OVF_vect) {
 					RX_BUFFER[RX_i]=FEND;
 					RX_i++; i++;
 				}
-				if (CHI_UART_RX_BUFFER[i+1]==TFESC) {
+				else if (CHI_UART_RX_BUFFER[i+1]==TFESC) {
                     RMAP_CalculateCRC(checksum, FESC);
 					RX_BUFFER[RX_i]=FESC;
 					RX_i++;	i++;
+				}
+				else {
+					//error of KISS
 				}
 			}
 			else {
@@ -66,7 +69,7 @@ ISR(TIMER0_OVF_vect) {
 		}
 		
 		// CRC Parsing
-        // if checksum != 0 there is something wrong with the data
+        // if checksum != 0 there is something wrong with the data, send NACK
 
 		switch (RX_BUFFER[0]) {
 			case (0x01): // ACK, set flag that ACK was received
