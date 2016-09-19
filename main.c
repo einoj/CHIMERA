@@ -33,34 +33,40 @@ ISR(USART0_RX_vect)
 ISR(TIMER0_OVF_vect) {
 	uint8_t RX_BUFFER[10];
 	uint8_t RX_i=0;
+    uint8_t checksum = 0;
 	
 	TCCR0=0x00; // turn clock off to wait for another UART RX interrupt
 	TCNT0=0xFF-CHI_PARSER_TIMEOUT; // We need 50 ticks to get 10ms interrupt
 	
 	// parser with time-out:
 	// Check if there is sens to parse the command
-	if (CHI_UART_RX_BUFFER[0]==0xC0 && CHI_UART_RX_BUFFER_COUNTER>2) {
+	if (CHI_UART_RX_BUFFER[0]==FEND && CHI_UART_RX_BUFFER_COUNTER>2) {
 		
-		// removing the KISS overhead/framing
+		// removing the KISS overhead/framing 
+        // and calculating crc
 		for (int i=0;i<CHI_UART_RX_BUFFER_COUNTER;i++) {
-			if (CHI_UART_RX_BUFFER[i]==0xC0) {}
-			else if (CHI_UART_RX_BUFFER[i]==0xDB) {
-				if (CHI_UART_RX_BUFFER[i+1]==0xDC) {
-					RX_BUFFER[RX_i]=0xC0;
+			if (CHI_UART_RX_BUFFER[i]==FEND ) {}
+			else if (CHI_UART_RX_BUFFER[i]==FESC) {
+				if (CHI_UART_RX_BUFFER[i+1]==TFEND) {
+                    RMAP_CalculateCRC(checksum, FEND);
+					RX_BUFFER[RX_i]=FEND;
 					RX_i++; i++;
 				}
-				if (CHI_UART_RX_BUFFER[i+1]==0xDD) {
-					RX_BUFFER[RX_i]=0xDB;
+				if (CHI_UART_RX_BUFFER[i+1]==TFESC) {
+                    RMAP_CalculateCRC(checksum, FESC);
+					RX_BUFFER[RX_i]=FESC;
 					RX_i++;	i++;
 				}
 			}
 			else {
+                RMAP_CalculateCRC(checksum, CHI_UART_RX_BUFFER[i]);
 				RX_BUFFER[RX_i]=CHI_UART_RX_BUFFER[i];
 				RX_i++;
 			}
 		}
 		
 		// CRC Parsing
+        // if checksum != 0 there is something wrong with the data
 
 		switch (RX_BUFFER[0]) {
 			case (0x01): // ACK, set flag that ACK was received
