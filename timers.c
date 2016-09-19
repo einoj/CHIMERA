@@ -5,6 +5,13 @@
 #include "main.h"
 #include "timers.h"
 
+// Timer 0 Initialization
+void TIMER0_Init() {
+	TCCR0=0x00; // clock off at the beginning
+	TIMSK|=0x01; // overflow interrupt ON
+	TCNT0=0xFF-CHI_PARSER_TIMEOUT; // 157 (TBD) ticks with prescaler 10254 needed to generate 20ms time-out (TBD)
+}
+
 // Timer 1 Initialization
 void TIMER1_Init() {
 	TCCR1A=0x00;

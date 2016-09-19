@@ -1,5 +1,12 @@
 #define NUM_MEMORIES 12
 
+#define CHI_UART_RX_BUFFER_SIZE 20
+#define CHI_PARSER_TIMEOUT 157
+
+volatile uint8_t CHI_UART_RX_BUFFER[CHI_UART_RX_BUFFER_SIZE];
+volatile uint8_t CHI_UART_RX_BUFFER_INDEX;
+volatile uint8_t CHI_UART_RX_BUFFER_COUNTER;
+
 // CHIMERA Memory Status Structure
 struct CHI_Memory_Status_Str {
 	uint8_t status;

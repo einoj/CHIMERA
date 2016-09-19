@@ -19,13 +19,75 @@
 // Interrupt: UART Data Reception
 ISR(USART0_RX_vect)
 {
-signed char cChar;
+	TCCR0 = 0x07; // turn on TIMER0 to parse/generate time-out
+	CHI_UART_RX_BUFFER[CHI_UART_RX_BUFFER_INDEX]=UDR0;
+	
+	CHI_UART_RX_BUFFER_COUNTER++;
+	CHI_UART_RX_BUFFER_INDEX++;
+	
+	if (CHI_UART_RX_BUFFER_INDEX>CHI_UART_RX_BUFFER_SIZE)CHI_UART_RX_BUFFER_INDEX=0;
+}
 
-	/* Get the character and post it on the queue of Rxed characters.
-	If the post causes a task to wake force a context switch as the woken task
-	may have a higher priority than the task we have interrupted. */
-	cChar = UDR0;
-    UDR0 = cChar;
+
+// Timer 1 - Instrument Time
+ISR(TIMER0_OVF_vect) {
+	uint8_t RX_BUFFER[10];
+	uint8_t RX_i=0;
+	
+	TCCR0=0x00; // turn clock off to wait for another UART RX interrupt
+	TCNT0=0xFF-CHI_PARSER_TIMEOUT; // We need 50 ticks to get 10ms interrupt
+	
+	// parser with time-out:
+	// Check if there is sens to parse the command
+	if (CHI_UART_RX_BUFFER[0]==0xC0 && CHI_UART_RX_BUFFER_COUNTER>2) {
+		
+		// removing the KISS overhead/framing
+		for (int i=0;i<CHI_UART_RX_BUFFER_COUNTER;i++) {
+			if (CHI_UART_RX_BUFFER[i]==0xC0) {}
+			else if (CHI_UART_RX_BUFFER[i]==0xDB) {
+				if (CHI_UART_RX_BUFFER[i+1]==0xDC) {
+					RX_BUFFER[RX_i]=0xC0;
+					RX_i++; i++;
+				}
+				if (CHI_UART_RX_BUFFER[i+1]==0xDD) {
+					RX_BUFFER[RX_i]=0xDB;
+					RX_i++;	i++;
+				}
+			}
+			else {
+				RX_BUFFER[RX_i]=CHI_UART_RX_BUFFER[i];
+				RX_i++;
+			}
+		}
+		
+		// CRC Parsing
+
+		switch (RX_BUFFER[0]) {
+			case (0x01): // ACK, set flag that ACK was received
+			USART0SendByte(0x55);
+			break;
+			case (0x02): // TIMESTAMP, 20ms delay parsing, include that?
+			if (RX_i==6) { // AFTER UPDATE OF TIMER MAIN LOOP MIGHT BE AFFECTED !!!!!!!!
+				CHI_Board_Status.local_time=(uint32_t)RX_BUFFER[1]<<24 | (uint32_t)RX_BUFFER[2]<<16 | (uint32_t)RX_BUFFER[3]<<8 | (uint32_t)RX_BUFFER[4];
+				// SEND ACK
+			}
+			else {
+				// SEND NACK;
+			}
+			break;
+			default:
+			// SEND NACK
+			USART0SendByte(0xFE);
+		}
+	}
+	else {
+		// SEND NACK
+		USART0SendByte(0xFE);
+	}
+	
+	// Clear buffer for next frame
+	CHI_UART_RX_BUFFER_COUNTER=0;
+	CHI_UART_RX_BUFFER_INDEX=0;
 }
 
 uint8_t transmit_test(uint8_t* data, uint16_t num_bytes)
@@ -78,9 +140,10 @@ int main(void)
 	// Initialize the Board
 	PORT_Init();
 	ADC_Init();
-	TIMER1_Init();		// Instrument Time Counter
-	TIMER3_Init();		// SPI Time-Out Counter
-	USART0_Init();		// UART0 Initialization
+	TIMER0_Init();	// Parser/time-out Timer
+	TIMER1_Init();	// Instrument Time Counter
+	TIMER3_Init();	// SPI Time-Out Counter
+	USART0_Init();	// UART0 Initialization
 		
 	sei();				// Turn on interrupts	
 	Power_On_Check();	// check what was the cause of reset
@@ -110,63 +173,63 @@ int main(void)
 	/* Main Loop */
 	
 	// Open issue: policy of watchdog, how to set-up watchdog and how/when to reset it?
-    //while (1) 
-    //{	
-	//	start_time=CHI_Board_Status.local_time;
-	//	
-	//	CHI_Board_Status.no_cycles++; // increase number of memory cycles
+    while (1) 
+    {	
+		start_time=CHI_Board_Status.local_time;
+		
+		CHI_Board_Status.no_cycles++; // increase number of memory cycles
 
-	//	transmit_kiss((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
+		transmit_CHI_SCI_TM();
 
-	//	for (int i=0;i<12;i++) {
-	//		if (((CHI_Memory_Status[i].no_SEFI_LU)&0x0F)>3)	{
-	//			// exclude the memory from the test if LU > 3 TBD
-	//			CHI_Board_Status.mem_to_test&=~(1<<i);
-	//		}
-	//		else if ((((CHI_Memory_Status[i].no_SEFI_LU)&0xF0)>>4)>10)	{
-	//			// exclude the memory from the test if SEFI > 10 TBD
-	//			CHI_Board_Status.mem_to_test&=~(1<<i);
-	//		}
+		for (int i=0;i<12;i++) {
+			if (((CHI_Memory_Status[i].no_SEFI_LU)&0x0F)>3)	{
+				// exclude the memory from the test if LU > 3 TBD
+				CHI_Board_Status.mem_to_test&=~(1<<i);
+			}
+			else if ((((CHI_Memory_Status[i].no_SEFI_LU)&0xF0)>>4)>10)	{
+				// exclude the memory from the test if SEFI > 10 TBD
+				CHI_Board_Status.mem_to_test&=~(1<<i);
+			}
 
-	//		// write it into EEPROM or after reset we start from scratch?
-	//	}
+			// write it into EEPROM or after reset we start from scratch?
+		}
 
-	//	for(unsigned char i=0;i<12;i++) {
-	//		if (CHI_Board_Status.mem_to_test & (1<<i) ) {
-	//			CHI_Board_Status.current_memory=i;
-	//	
-	//			TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
-	//	
-	//			// checked in loop, abort rest of the test if needed
-	//			if (CHI_Board_Status.latch_up_detected) {
-	//				CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU=(CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU+1)&0x0F;
-	//				CHI_Board_Status.latch_up_detected=0; // clear flag
-	//			}
-	//			if (CHI_Board_Status.SPI_timeout_detected) {
-	//				CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU=(CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU+16)&0xF0;
-	//				CHI_Board_Status.SPI_timeout_detected=0; // clear flag
-	//			}
-	//	
-	//			// Check if memory is OK, if failed skip
-	//	
-	//			// Load parameters of the memory (i.e. block size, size of memory etc.)
-	//			// Test memory (test procedure defined by device_mode(read only, write read, etc.))
-	//			// Test procedure has to foresee the possibility of timeout in case of SEFI/LU
-	//			// Proposal for test procedure
-	//			// write to EEPROM that we are testing Mem X
-	//			// set watchdog for 1.8 second
-	//			// process each memory by fixed value, 1024 Bytes?
-	//			// after each page reset watchdog timer
-	//			// open issue: what happens if watchdog is tripped? if after reboot we read from EEPROM that Mem X was being processed, we assume that watchdog tripped meanwhile?
-	//			// Write test results to proper CHI_Memory_Status_Str
-	//			// If there were some problems (SEFI,LU,SEU) write it to memory_status
-	//			// Parse Any Command
-	//	
-	//		}
-	//	}
-	//	// Write all memory status to EEPROM in case there is power down
-	//	while(CHI_Board_Status.local_time-start_time<10000){ // wait 1 second, RESET WATCHDOG IF NEEDED
-	//		//TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
-	//	}
-    //}
+		for(unsigned char i=0;i<12;i++) {
+			if (CHI_Board_Status.mem_to_test & (1<<i) ) {
+				CHI_Board_Status.current_memory=i;
+		
+				TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
+		
+				// checked in loop, abort rest of the test if needed
+				if (CHI_Board_Status.latch_up_detected) {
+					CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU=(CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU+1)&0x0F;
+					CHI_Board_Status.latch_up_detected=0; // clear flag
+				}
+				if (CHI_Board_Status.SPI_timeout_detected) {
+					CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU=(CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU+16)&0xF0;
+					CHI_Board_Status.SPI_timeout_detected=0; // clear flag
+				}
+		
+				// Check if memory is OK, if failed skip
+		
+				// Load parameters of the memory (i.e. block size, size of memory etc.)
+				// Test memory (test procedure defined by device_mode(read only, write read, etc.))
+				// Test procedure has to foresee the possibility of timeout in case of SEFI/LU
+				// Proposal for test procedure
+				// write to EEPROM that we are testing Mem X
+				// set watchdog for 1.8 second
+				// process each memory by fixed value, 1024 Bytes?
+				// after each page reset watchdog timer
+				// open issue: what happens if watchdog is tripped? if after reboot we read from EEPROM that Mem X was being processed, we assume that watchdog tripped meanwhile?
+				// Write test results to proper CHI_Memory_Status_Str
+				// If there were some problems (SEFI,LU,SEU) write it to memory_status
+				// Parse Any Command
+		
+			}
+		}
+		// Write all memory status to EEPROM in case there is power down
+		while(CHI_Board_Status.local_time-start_time<10000){ // wait 1 second, RESET WATCHDOG IF NEEDED
+			//TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
+		}
+    }
 }
