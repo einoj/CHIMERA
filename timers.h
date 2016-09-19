@@ -1,3 +1,6 @@
+// Timer 0 Initialization
+void TIMER0_Init();
+
 // Timer 1 Initialization
 void TIMER1_Init();
 
