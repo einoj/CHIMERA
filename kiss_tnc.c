@@ -1,20 +1,131 @@
 #include <avr/io.h>
+#include <avr/interrupt.h>
+
 #include "kiss_tnc.h"
 #include "crc8.h"
 #include "uart.h"
 #include "main.h"
 
-/*
-uint8_t gen_crc(uint8_t* dataframe)
+// Interrupt: UART Data Reception
+ISR(USART0_RX_vect)
 {
-    int i;
-    uint8_t checksum = 0;
-    for (i = 0; i < len; i++) {
-       checksum = RMAP_CalculateCRC(checksum, data[i]);
-    }
-    return checksum;
+	TCCR0 = 0x07; // turn on TIMER0 to parse/generate time-out
+	CHI_UART_RX_BUFFER[CHI_UART_RX_BUFFER_INDEX]=UDR0;
+	
+	CHI_UART_RX_BUFFER_COUNTER++;
+	CHI_UART_RX_BUFFER_INDEX++;
+	
+	if (CHI_UART_RX_BUFFER_INDEX>CHI_UART_RX_BUFFER_SIZE)CHI_UART_RX_BUFFER_INDEX=0;
 }
-*/
+
+// Interruprt: Timer 0 - Main Command Parser
+ISR(TIMER0_OVF_vect) {
+	uint8_t RX_BUFFER[10];
+	uint8_t RX_i=0;
+	uint8_t checksum = 0;
+	
+	TCCR0=0x00; // turn clock off to wait for another UART RX interrupt
+	TCNT0=0xFF-CHI_PARSER_TIMEOUT; // We need 50 ticks to get 10ms interrupt
+	
+	// parser with time-out:
+	// Check if there is sens to parse the command
+	if (CHI_UART_RX_BUFFER[0]==FEND && CHI_UART_RX_BUFFER_COUNTER>2) {
+		
+		// removing the KISS overhead/framing
+		// and calculating crc
+		for (int i=0;i<CHI_UART_RX_BUFFER_COUNTER;i++) {
+			if (CHI_UART_RX_BUFFER[i]==FEND ) {}
+			else if (CHI_UART_RX_BUFFER[i]==FESC) {
+				if (CHI_UART_RX_BUFFER[i+1]==TFEND) {
+					RMAP_CalculateCRC(checksum, FEND);
+					RX_BUFFER[RX_i]=FEND;
+					RX_i++; i++;
+				}
+				else if (CHI_UART_RX_BUFFER[i+1]==TFESC) {
+					RMAP_CalculateCRC(checksum, FESC);
+					RX_BUFFER[RX_i]=FESC;
+					RX_i++;	i++;
+				}
+				else {
+					//error of KISS
+					// return?
+				}
+			}
+			else {
+				RMAP_CalculateCRC(checksum, CHI_UART_RX_BUFFER[i]);
+				RX_BUFFER[RX_i]=CHI_UART_RX_BUFFER[i];
+				RX_i++;
+			}
+		}
+		
+		// CRC Parsing
+		// Off for debuging
+		/*
+		if (checksum != 0) {
+			// CRC Error
+			Send_NACK();
+			return;
+		}
+		*/
+		switch (RX_BUFFER[0]) {
+			
+			case (CHI_COMM_ID_ACK): // ACK, set flag that ACK was received
+			// Set ACK flag
+			CHI_Board_Status.COMM_flags |= 0x01;
+			break;
+			
+			case (CHI_COMM_ID_NACK): // ACK, set flag that ACK was received
+			// set NACK flag
+			CHI_Board_Status.COMM_flags |= 0x02;
+			// redo last command
+			break;
+			
+			case (CHI_COMM_ID_TIMESTAMP): // TIMESTAMP, 20ms delay parsing, include that?
+			if (RX_i==6) { // Note:AFTER UPDATE OF TIMER MAIN LOOP MIGHT BE AFFECTED !!!!!!!!
+				CHI_Board_Status.local_time=(uint32_t)RX_BUFFER[1]<<24 | (uint32_t)RX_BUFFER[2]<<16 | (uint32_t)RX_BUFFER[3]<<8 | (uint32_t)RX_BUFFER[4];
+				Send_ACK();
+			}
+			else {
+				Send_NACK();
+			}
+			break;
+			
+			case (CHI_COMM_ID_STATUS):
+			transmit_CHI_STATUS();
+			break;
+			
+			case (CHI_COMM_ID_EVENT):
+			transmit_CHI_EVENTS(0);
+			break;
+
+			case (CHI_COMM_ID_SCI_TM):
+			transmit_CHI_SCI_TM();
+			break;
+			
+			case (CHI_COMM_ID_MODE):
+			if (RX_i==5) { // 1st byte: device mode, 2nd 3rd: mem to be tested 
+				CHI_Board_Status.device_mode=RX_BUFFER[1];
+				CHI_Board_Status.mem_to_test=(uint16_t)RX_BUFFER[2]<<8 | (uint16_t)RX_BUFFER[3];
+				Send_ACK();
+			}
+			else {
+				Send_NACK();
+			}			
+			break;
+
+			default:
+			Send_NACK();
+		}
+	}
+	else {
+		// SEND NACK
+		USART0SendByte(0xFE);
+	}
+	
+	// Clear buffer for next frame
+	CHI_UART_RX_BUFFER_COUNTER=0;
+	CHI_UART_RX_BUFFER_INDEX=0;
+}
 
 /* Decodes dataframe and checks CRC-8.
  * Returns the length of the data packet 
@@ -81,6 +192,41 @@ void transmit_CHI_EVENTS(uint16_t num_events) {
     
     //send end of frame
     USART0SendByte(FEND);
+}
+
+void transmit_CHI_STATUS() {
+	uint16_t i;
+	uint8_t checksum = 0; // Used to store the crc8 checksum
+	uint8_t data; // Used to temporarily hold bytes of multibyte variables
+	
+	USART0SendByte(FEND);
+
+    // Send Instrument status
+    data = (uint8_t) SOFTWARE_VERSION;
+    checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
+    	
+    data = (uint8_t) (CHI_Board_Status.reset_type);
+    checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
+
+    data = (uint8_t) (CHI_Board_Status.device_mode);
+    checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
+
+    data = (uint8_t) CHI_Board_Status.no_cycles;
+    checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
+    
+    data = (uint8_t) (CHI_Board_Status.no_cycles>>8);
+    checksum = RMAP_CalculateCRC(checksum, data);
+    transmit_kiss(data);
+
+	//Send checksum
+	transmit_kiss(checksum);
+	
+	//send end of frame
+	USART0SendByte(FEND);
 }
 
 void transmit_CHI_SCI_TM(void)
@@ -180,4 +326,19 @@ void transmit_kiss(uint8_t data)
         USART0SendByte(data);
     }
 
+}
+
+void Send_ACK() {
+	USART0SendByte(0xC0);
+	USART0SendByte(CHI_COMM_ID_ACK);
+	USART0SendByte(0xCC); // precalculated CRC
+	USART0SendByte(0xC0);
+}
+
+// Send ACK, to be moved into proper file
+void Send_NACK() {
+	USART0SendByte(0xC0);
+	USART0SendByte(CHI_COMM_ID_NACK);
+	USART0SendByte(0xCC); // precalculated CRC
+	USART0SendByte(0xC0);
 }

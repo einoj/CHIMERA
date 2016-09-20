@@ -1,3 +1,5 @@
+#define SOFTWARE_VERSION 0x10
+
 #define NUM_MEMORIES 12
 
 #define CHI_UART_RX_BUFFER_SIZE 20
@@ -8,7 +10,9 @@
 #define CHI_COMM_ID_SCI_TM 0x01
 #define CHI_COMM_ID_STATUS 0x02
 #define CHI_COMM_ID_EVENT 0x04
+#define CHI_COMM_ID_MODE 0x07
 #define CHI_COMM_ID_TIMESTAMP 0x08
+
 
 volatile uint8_t CHI_UART_RX_BUFFER[CHI_UART_RX_BUFFER_SIZE];
 volatile uint8_t CHI_UART_RX_BUFFER_INDEX;
@@ -51,6 +55,7 @@ struct __attribute__((packed)) CHI_Board_Status_Str {
 	uint16_t no_LU_detected; //number of Latch-Ups
 	uint16_t no_SEU_detected; //number of SEUs
 	uint16_t no_SEFI_detected; //number of SEFIs
+	uint8_t COMM_flags;
 };
 volatile struct CHI_Board_Status_Str CHI_Board_Status;
 //---------------------------------------------

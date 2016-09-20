@@ -16,111 +16,7 @@
 
 // Interrupt: TIMER 1ms incremented timer
 
-// Interrupt: UART Data Reception
-ISR(USART0_RX_vect)
-{
-	TCCR0 = 0x07; // turn on TIMER0 to parse/generate time-out
-	CHI_UART_RX_BUFFER[CHI_UART_RX_BUFFER_INDEX]=UDR0;
-	
-	CHI_UART_RX_BUFFER_COUNTER++;
-	CHI_UART_RX_BUFFER_INDEX++;
-	
-	if (CHI_UART_RX_BUFFER_INDEX>CHI_UART_RX_BUFFER_SIZE)CHI_UART_RX_BUFFER_INDEX=0;
-}
-
 // Send ACK, to be moved into proper file
-void Send_ACK() {
-	USART0SendByte(0xC0);
-	USART0SendByte(CHI_COMM_ID_ACK);
-	USART0SendByte(0xCC); // precalculated CRC
-	USART0SendByte(0xC0);
-}
-
-// Send ACK, to be moved into proper file
-void Send_NACK() {
-	USART0SendByte(0xC0);
-	USART0SendByte(CHI_COMM_ID_NACK);
-	USART0SendByte(0xCC); // precalculated CRC
-	USART0SendByte(0xC0);	
-}
-
-// Timer 1 - Instrument Time
-ISR(TIMER0_OVF_vect) {
-	uint8_t RX_BUFFER[10];
-	uint8_t RX_i=0;
-    uint8_t checksum = 0;
-	
-	TCCR0=0x00; // turn clock off to wait for another UART RX interrupt
-	TCNT0=0xFF-CHI_PARSER_TIMEOUT; // We need 50 ticks to get 10ms interrupt
-	
-	// parser with time-out:
-	// Check if there is sens to parse the command
-	if (CHI_UART_RX_BUFFER[0]==FEND && CHI_UART_RX_BUFFER_COUNTER>2) {
-		
-		// removing the KISS overhead/framing 
-        // and calculating crc
-		for (int i=0;i<CHI_UART_RX_BUFFER_COUNTER;i++) {
-			if (CHI_UART_RX_BUFFER[i]==FEND ) {}
-			else if (CHI_UART_RX_BUFFER[i]==FESC) {
-				if (CHI_UART_RX_BUFFER[i+1]==TFEND) {
-                    RMAP_CalculateCRC(checksum, FEND);
-					RX_BUFFER[RX_i]=FEND;
-					RX_i++; i++;
-				}
-				else if (CHI_UART_RX_BUFFER[i+1]==TFESC) {
-                    RMAP_CalculateCRC(checksum, FESC);
-					RX_BUFFER[RX_i]=FESC;
-					RX_i++;	i++;
-				}
-				else {
-					//error of KISS
-				}
-			}
-			else {
-                RMAP_CalculateCRC(checksum, CHI_UART_RX_BUFFER[i]);
-				RX_BUFFER[RX_i]=CHI_UART_RX_BUFFER[i];
-				RX_i++;
-			}
-		}
-		
-		// CRC Parsing
-        // if checksum != 0 there is something wrong with the data, send NACK
-
-		switch (RX_BUFFER[0]) {
-			
-			case (CHI_COMM_ID_ACK): // ACK, set flag that ACK was received
-			// Set ACK flag
-			USART0SendByte(0x55);
-			break;
-			
-			case (CHI_COMM_ID_NACK): // ACK, set flag that ACK was received
-			// set NACK flag
-			USART0SendByte(0x55);
-			break;
-			
-			case (0x02): // TIMESTAMP, 20ms delay parsing, include that?
-			if (RX_i==6) { // AFTER UPDATE OF TIMER MAIN LOOP MIGHT BE AFFECTED !!!!!!!!
-				CHI_Board_Status.local_time=(uint32_t)RX_BUFFER[1]<<24 | (uint32_t)RX_BUFFER[2]<<16 | (uint32_t)RX_BUFFER[3]<<8 | (uint32_t)RX_BUFFER[4];
-				// SEND ACK
-			}
-			else {
-				// SEND NACK;
-			}
-			break;
-			default:
-			// SEND NACK
-			USART0SendByte(0xFE);
-		}
-	}
-	else {
-		// SEND NACK
-		USART0SendByte(0xFE);
-	}
-	
-	// Clear buffer for next frame
-	CHI_UART_RX_BUFFER_COUNTER=0;
-	CHI_UART_RX_BUFFER_INDEX=0;
-}
 
 uint8_t transmit_test(uint8_t* data, uint16_t num_bytes)
 {
@@ -262,8 +158,8 @@ int main(void)
 		// Write all memory status to EEPROM in case there is power down
 		
 		// Obsolete(?):
-		//while(CHI_Board_Status.local_time-start_time<10000){ // wait 1 second, RESET WATCHDOG IF NEEDED
-			//TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
-		//}
+		while(CHI_Board_Status.local_time-start_time<10000){ // wait 1 second, RESET WATCHDOG IF NEEDED
+			TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
+		}
     }
 }
