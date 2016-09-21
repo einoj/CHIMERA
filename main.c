@@ -7,6 +7,7 @@
 #include "kiss_tnc.h"
 #include "main.h"
 #include "memories.h"
+#include "spi_memory_driver.h"
 
 // The number of bytes in the CHI_Board_Status struct.
 // Needed to send the data over UART
@@ -91,6 +92,9 @@ int main(void)
     CHI_Board_Status.local_time = 0xDEADBEEF;
     transmit_CHI_SCI_TM();
 
+    //disable_memory(mem_arr[1]);
+    enable_memory(mem_arr[0]);
+    disable_memory(mem_arr[1]);
 //    enable_cs_macro (*mem_arr[1].cs_port, mem_arr[1].PIN_CS);
     //while (1) USART0SendByte((uint8_t) CHI_Board_Status);
 	

@@ -12,8 +12,8 @@ void poweroff_memories(void);
     static const mem mem_dev = {1,1024,256,&PORTB};
     enable_cs_macro (*mem_dev.port, mem_dev.PIN_CS);
 */
-#define enable_cs_macro(port,mask) ((port) |= (mask))
-#define disable_cs_macro(port,mask) ((port) ~= (mask))
+#define enable_pin_macro(port,mask) ((port) |= (mask))
+#define disable_pin_macro(port,mask) ((port) ^= (mask))
 
 struct Memory {
     // chip select pin

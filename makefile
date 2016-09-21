@@ -6,7 +6,7 @@ AVRFLAGS = -mmcu=atmega128
 
 GCC = avr-gcc.exe
 
-all: uart.o kiss_tnc.o crc8.o memories.o HAL.o adc.o timers.o
+all: uart.o kiss_tnc.o crc8.o memories.o HAL.o adc.o timers.o spi_memory_driver.o
 	$(GCC) $(AVRFLAGS) $(CFLAGS)  main.c $^ -o CHIMERA.elf
 
 memories.o: memories.c
@@ -29,6 +29,9 @@ adc.o: adc.c
 
 timers.o: timers.c
 	$(GCC) $(AVRFLAGS) $(CFLAGS) timers.c -c
+
+spi_memory_driver.o: spi_memory_driver.c
+	$(GCC) $(AVRFLAGS) $(CFLAGS) spi_memory_driver.c -c
 
 clean:
 	rm *.o

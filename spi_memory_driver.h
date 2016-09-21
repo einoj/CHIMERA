@@ -54,7 +54,7 @@
 // One of the address bytes has been transferred
 #define ADDRESS 0x2
 // The current data byte has been transferred
-#define DATA 0x4
+//#define DATA 0x4
 
 /* PIN Locations */
 // SPI pins are located on the PB
@@ -74,3 +74,5 @@ static uint8_t state; // Used by SPI interrupt to indicate whether to write data
 /* Function definitions */
 static void printuart(char *msg);
 void USART0SendByte(uint8_t u8Data);
+void enable_memory(struct Memory mem);
+void disable_memory(struct Memory mem);

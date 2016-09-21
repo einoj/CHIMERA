@@ -1,3 +1,106 @@
+#include "memories.h"
+#include "spi_memory_driver.h"
+
+void spi_init(void) {
+    SPCR = (0<<SPE);  // Disable the SPI to be able to configure the #SS line as an input even if the SPI is configured as a slave
+    // Set MOSI, SCK , and SS as Output
+    DDRB=(1<<MOSI)|(1<<SCK)|(1<<SS1);
+    //DESELECT_SERIAL_MEMORY;
+    //DISABLE_MISO_INTERRUPT; // To avoid triggering a write stop interrupt when reading
+
+    // Enable SPI, Set as Master
+    // Prescaler: Fosc/16, Enable Interrupts
+    //The MOSI, SCK pins are as per ATMega8
+    SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPIE);
+
+    // Clear the SPIF flag by reading SPSR and SPDR
+    SPSR;
+    SPDR;
+
+    state = READY_TO_SEND;
+}
+
+/*! \brief  the SPI  Transfer Complete Interrupt Handler
+ *
+ * The SPI interrupt handler manages the accesses to the I/O Reg SPDR during a memory write cycle.
+ * The values of the global variable(state,  byte_cnt, address, data_ptr) enables the handler to compute the next byte to be send
+ * over the SPI interface as well as the next state. The finite state machine diagram is provided in the application note document.  
+ *
+ *  \return  void.
+ */
+//ISR(SPI_STC_vect)
+//{
+//  char msg[256];
+//  switch (state) {
+//    ///////////////////////////////
+//    // INSTRUCTION STATE
+//    //////////////////////////////
+//    case INSTRUCTION :
+//    {
+//      printuart("I\r\n");
+//      state = ADDRESS;        
+//      byte_cnt = 1;
+//      SPDR = (uint8_t)(address>>16);      // Address phase is 3 byte long for SPI flashes
+//      sprintf(msg, "address %02x\r\n",(uint8_t)(address>>16));
+//      printuart(msg);
+//     break;
+//    }
+//
+//    ///////////////////////////////
+//    // ADDRESS STATE
+//    //////////////////////////////
+//    case ADDRESS :
+//    {
+//      if (byte_cnt == NB_ADDR_BYTE) {    // is the last address byte reached?
+//        printuart("B\r\n");
+//        state = DATA;          // go to the DATA state
+//        byte_cnt = 0;
+//        SPDR = *data_ptr;     // send the first byte
+//      sprintf(msg, "data %02x\r\n",*data_ptr);
+//      printuart(msg);
+//      } else if (byte_cnt == 1) {    // must the middle address byte be sent?
+//        printuart("C\r\n");
+//        byte_cnt ++;
+//        SPDR = (uint8_t)(address>>8);
+//      sprintf(msg, "address %02x\r\n",(uint8_t)(address>>8));
+//      printuart(msg);
+//      } else {
+//        printuart("D\r\n");
+//        byte_cnt ++;
+//        SPDR = (uint8_t)(address);
+//      sprintf(msg, "address %02x\r\n",(uint8_t)(address));
+//      printuart(msg);
+//      }
+//      break;
+//    } 
+//
+//    ///////////////////////////////
+//    // DATA STATE
+//    //////////////////////////////
+//    case DATA :
+//    {
+//      data_ptr++;                 // point to the next byte (even if it was the last)  
+//      if (byte_cnt == nb_byte ) {  // is the last byte sent?
+//        printuart("E\r\n");
+//        DESELECT_SERIAL_MEMORY;   // Pull high the chip select line of the SPI serial memory                   // terminate current write transfer
+//        state = READY_TO_SEND;    // return to the idle state
+//      } else {      
+//        printuart("X\r\n");
+//        byte_cnt ++;
+//        SPDR = *data_ptr;
+//      sprintf(msg, "data %02x\r\n",*data_ptr);
+//      printuart(msg);
+//      }
+//      break;
+//    }
+//    
+//    default :
+//    {
+//      state = READY_TO_SEND;
+//    }
+//  }  
+//}
+
 uint8_t spi_tx_byte(volatile uint8_t byte) {
     SPDR = byte;
     while (!(SPSR & (1<<SPIF)));
@@ -167,33 +270,44 @@ uint8_t write_byte_array(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
     }
 }
 
+void enable_memory(struct Memory mem)
+{
+    enable_pin_macro(*(mem.vcc_port), mem.PIN_VCC);
+}
+
+void disable_memory(struct Memory mem)
+{
+    disable_pin_macro(*(mem.vcc_port), mem.PIN_VCC);
+}
 
 /** 
  * Get Memory JEDEC ID 
  * 
  * Returns the JEDEC ID of the serial memory.
  */
-uint8_t get_jedec_id(uint8_t *memID)
+uint8_t get_jedec_id(struct Memory mem, uint8_t *memID)
 {
+    
     uint8_t status_reg;
-    if (read_status_reg(&status_reg) == TRANSFER_COMPLETED)
-    {
-        if (!(status_reg & (1<<WIP))) // Check if the memory is ready to be used. WIP is set an internal write process is in progress
-        { 
-            DISABLE_SPI_INTERRUPT;
+//    if (read_status_reg(&status_reg) == TRANSFER_COMPLETED)
+//    {
+//        if (!(status_reg & (1<<WIP))) // Check if the memory is ready to be used. WIP is set an internal write process is in progress
+//        { 
+            //DISABLE_SPI_INTERRUPT;
             SELECT_SERIAL_MEMORY;
+            enable_pin_macro(*(mem.cs_port), mem.PIN_CS);
             spi_tx_byte(JEDEC);    // Transmit JEDEC-ID opcode
             spi_tx_byte(0xff);     // Recieve manufacturer ID
-            *memID = spi_tx_byte(0xff);     // Memory ID
+ //           *memID = spi_tx_byte(0xff);     // Memory ID
             DESELECT_SERIAL_MEMORY;
-            ENABLE_SPI_INTERRUPT;
+           // ENABLE_SPI_INTERRUPT;
             return TRANSFER_COMPLETED;
-        } else {
-            return BUSY;
-        }
-    } else {
-        return BUSY;
-    }
+//        } else {
+//            return BUSY;
+//        }
+//    } else {
+//        return BUSY;
+//    }
 }
 
 uint8_t erase_chip(void) {
@@ -215,4 +329,45 @@ uint8_t erase_chip(void) {
     } else {
         return BUSY;
     }       
+}
+
+uint8_t aai_pattern() {
+    uint8_t status_reg;
+    uint8_t ptrn[2] = {0x55,0xAA};
+    uint32_t cnt = 0;
+    if (read_status_reg(&status_reg) == TRANSFER_COMPLETED) {// Is the SPI interface being used?
+        if (!(status_reg & (1<<WIP))) { // Is a write in progress internally on the memory?
+            write_spi_command(WREN);
+            DISABLE_SPI_INTERRUPT;
+            cnt = 2;
+            SELECT_SERIAL_MEMORY;
+            spi_tx_byte(AAI);
+            spi_tx_byte(0);
+            spi_tx_byte(0);
+            spi_tx_byte(0);
+            spi_tx_byte(ptrn[0]); // send first half of word
+            spi_tx_byte(ptrn[1]); // send second half of word
+            DESELECT_SERIAL_MEMORY;
+            while (cnt < TOP_ADDR) {
+                // wait for internal write to finish
+                do {
+                    quick_read_status_reg(&status_reg);
+                } while (status_reg & (1<<WIP));
+                SELECT_SERIAL_MEMORY;
+                spi_tx_byte(AAI);
+                spi_tx_byte(ptrn[0]); // send first half of word
+                spi_tx_byte(ptrn[1]); // send first half of word
+                DESELECT_SERIAL_MEMORY;
+                cnt += 2;
+            }
+            while (write_spi_command(WRDI) != TRANSFER_COMPLETED);
+
+            ENABLE_SPI_INTERRUPT;
+            return TRANSFER_COMPLETED;
+        } else {
+        return BUSY;
+        }
+    } else {
+        return BUSY;
+    }
 }
