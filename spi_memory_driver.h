@@ -59,10 +59,8 @@
 /* PIN Locations */
 // SPI pins are located on the PB
 // Set MOSI, SCK , and SS as Output
-#define MOSI 5
-#define SCK 7
-// TODO use definitions in memories.h instead
-#define SS1 4
+#define MOSI 2
+#define SCK 1
 
 /* Global variables */
 static uint32_t address; // Used by SPI to address memory device

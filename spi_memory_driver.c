@@ -4,7 +4,7 @@
 void spi_init(void) {
     SPCR = (0<<SPE);  // Disable the SPI to be able to configure the #SS line as an input even if the SPI is configured as a slave
     // Set MOSI, SCK , and SS as Output
-    DDRB=(1<<MOSI)|(1<<SCK)|(1<<SS1);
+    //DDRB=(1<<MOSI)|(1<<SCK)|(1<<SS1);
     //DESELECT_SERIAL_MEMORY;
     //DISABLE_MISO_INTERRUPT; // To avoid triggering a write stop interrupt when reading
 
