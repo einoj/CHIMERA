@@ -270,14 +270,25 @@ uint8_t write_byte_array(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
     }
 }
 
-void enable_memory(struct Memory mem)
-{
-    enable_pin_macro(*(mem.vcc_port), mem.PIN_VCC);
-}
-
-void disable_memory(struct Memory mem)
+/**
+ * Enables the VCC of the memory whose information is stored in the Memory struct mem.
+ * This is done by pulling the input pin of the inverter low, which will pull up the correspoding pin
+ * on the output of the inverter which is connected to the corresponding memory.
+ */
+void enable_memory_vcc(struct Memory mem)
 {
     disable_pin_macro(*(mem.vcc_port), mem.PIN_VCC);
+}
+
+/**
+ * Disables the VCC of the memory whose information is stored in the Memory struct mem.
+ * This is done by pulling the input pin of the inverter low, which will pull up the correspoding pin
+ * on the output of the inverter which is connected to the corresponding memory.
+ * TODO Consider using just a macro for less overhead
+ */
+void disable_memory_vcc(struct Memory mem)
+{
+    enable_pin_macro(*(mem.vcc_port), mem.PIN_VCC);
 }
 
 /** 
@@ -294,12 +305,13 @@ uint8_t get_jedec_id(struct Memory mem, uint8_t *memID)
 //        if (!(status_reg & (1<<WIP))) // Check if the memory is ready to be used. WIP is set an internal write process is in progress
 //        { 
             //DISABLE_SPI_INTERRUPT;
-            SELECT_SERIAL_MEMORY;
+            //SELECT_SERIAL_MEMORY;
             enable_pin_macro(*(mem.cs_port), mem.PIN_CS);
             spi_tx_byte(JEDEC);    // Transmit JEDEC-ID opcode
             spi_tx_byte(0xff);     // Recieve manufacturer ID
  //           *memID = spi_tx_byte(0xff);     // Memory ID
-            DESELECT_SERIAL_MEMORY;
+            //DESELECT_SERIAL_MEMORY;
+            disable_pin_macro(*(mem.cs_port), mem.PIN_CS);
            // ENABLE_SPI_INTERRUPT;
             return TRANSFER_COMPLETED;
 //        } else {

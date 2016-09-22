@@ -93,7 +93,7 @@ int main(void)
     transmit_CHI_SCI_TM();
 
     //disable_memory(mem_arr[1]);
-    enable_memory(mem_arr[0]);
+    disable_memory(mem_arr[0]);
     disable_memory(mem_arr[1]);
 //    enable_cs_macro (*mem_arr[1].cs_port, mem_arr[1].PIN_CS);
     //while (1) USART0SendByte((uint8_t) CHI_Board_Status);
