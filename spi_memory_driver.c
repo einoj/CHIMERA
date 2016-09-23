@@ -1,7 +1,7 @@
 #include "memories.h"
 #include "spi_memory_driver.h"
 
-void spi_init(void) {
+void SPI_Init(void) {
     SPCR = (0<<SPE);  // Disable the SPI to be able to configure the #SS line as an input even if the SPI is configured as a slave
     // Set MOSI, SCK , and SS as Output
     //DDRB=(1<<MOSI)|(1<<SCK)|(1<<SS1); DDRB set as output in HAL.c

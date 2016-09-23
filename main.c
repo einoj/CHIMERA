@@ -69,6 +69,7 @@ int main(void)
 	// Initialize the Board
 	PORT_Init();
 	ADC_Init();
+    SPI_Init();
 	TIMER0_Init();	// Parser/time-out Timer
 	TIMER1_Init();	// Instrument Time Counter
 	TIMER3_Init();	// SPI Time-Out Counter
@@ -93,20 +94,15 @@ int main(void)
     //transmit_CHI_SCI_TM();
 
     //disable_memory(mem_arr[1]);
-    uint8_t memid;
-    memid = 0x13;
-    USART0SendByte(memid);
-    USART0SendByte(memid);
-    USART0SendByte(memid);
-    USART0SendByte(memid);
-    USART0SendByte(memid);
+    uint8_t memid = 0;
     enable_memory_vcc(mem_arr[0]);
     get_jedec_id(mem_arr[0],&memid);
-    memid = 0x42;
+    disable_memory_vcc(mem_arr[0]);
     USART0SendByte(memid);
-    USART0SendByte(memid);
-    USART0SendByte(memid);
-    USART0SendByte(memid);
+    memid = 0;
+    enable_memory_vcc(mem_arr[1]);
+    get_jedec_id(mem_arr[1],&memid);
+    disable_memory_vcc(mem_arr[1]);
     USART0SendByte(memid);
 
 
