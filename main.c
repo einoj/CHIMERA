@@ -90,11 +90,26 @@ int main(void)
     //transmit_kiss((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
     // Test of detailed frame transmission
     CHI_Board_Status.local_time = 0xDEADBEEF;
-    transmit_CHI_SCI_TM();
+    //transmit_CHI_SCI_TM();
 
     //disable_memory(mem_arr[1]);
-    disable_memory(mem_arr[0]);
-    disable_memory(mem_arr[1]);
+    uint8_t memid;
+    memid = 0x13;
+    USART0SendByte(memid);
+    USART0SendByte(memid);
+    USART0SendByte(memid);
+    USART0SendByte(memid);
+    USART0SendByte(memid);
+    enable_memory_vcc(mem_arr[0]);
+    get_jedec_id(mem_arr[0],&memid);
+    memid = 0x42;
+    USART0SendByte(memid);
+    USART0SendByte(memid);
+    USART0SendByte(memid);
+    USART0SendByte(memid);
+    USART0SendByte(memid);
+
+
 //    enable_cs_macro (*mem_arr[1].cs_port, mem_arr[1].PIN_CS);
     //while (1) USART0SendByte((uint8_t) CHI_Board_Status);
 	
@@ -105,6 +120,7 @@ int main(void)
 	/* Main Loop */
 	
 	// Open issue: policy of watchdog, how to set-up watchdog and how/when to reset it?
+    /*
     while (1) 
     {	
 		start_time=CHI_Board_Status.local_time;
@@ -166,4 +182,5 @@ int main(void)
 			TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
 		}
     }
+    */
 }

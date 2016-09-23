@@ -4,14 +4,14 @@
 void spi_init(void) {
     SPCR = (0<<SPE);  // Disable the SPI to be able to configure the #SS line as an input even if the SPI is configured as a slave
     // Set MOSI, SCK , and SS as Output
-    //DDRB=(1<<MOSI)|(1<<SCK)|(1<<SS1);
+    //DDRB=(1<<MOSI)|(1<<SCK)|(1<<SS1); DDRB set as output in HAL.c
     //DESELECT_SERIAL_MEMORY;
     //DISABLE_MISO_INTERRUPT; // To avoid triggering a write stop interrupt when reading
 
     // Enable SPI, Set as Master
     // Prescaler: Fosc/16, Enable Interrupts
     //The MOSI, SCK pins are as per ATMega8
-    SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPIE);
+    SPCR=(1<<SPE)|(1<<MSTR);//|(1<<SPIE);
 
     // Clear the SPIF flag by reading SPSR and SPDR
     SPSR;
@@ -309,7 +309,7 @@ uint8_t get_jedec_id(struct Memory mem, uint8_t *memID)
             enable_pin_macro(*(mem.cs_port), mem.PIN_CS);
             spi_tx_byte(JEDEC);    // Transmit JEDEC-ID opcode
             spi_tx_byte(0xff);     // Recieve manufacturer ID
- //           *memID = spi_tx_byte(0xff);     // Memory ID
+            *memID = spi_tx_byte(0xff);     // Memory ID
             //DESELECT_SERIAL_MEMORY;
             disable_pin_macro(*(mem.cs_port), mem.PIN_CS);
            // ENABLE_SPI_INTERRUPT;
