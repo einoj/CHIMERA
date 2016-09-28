@@ -13,7 +13,7 @@ void poweroff_memories(void);
     enable_cs_macro (*mem_dev.port, mem_dev.PIN_CS);
 */
 #define enable_pin_macro(port,mask) ((port) |= (mask))
-#define disable_pin_macro(port,mask) ((port) ^= (mask))
+#define disable_pin_macro(port,mask) ((port) &= ~(mask))
 
 struct Memory {
     // chip select pin

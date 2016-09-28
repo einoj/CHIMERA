@@ -74,3 +74,5 @@ static void printuart(char *msg);
 void USART0SendByte(uint8_t u8Data);
 void enable_memory_vcc(struct Memory mem);
 void disable_memory_vcc(struct Memory mem);
+uint8_t read_status_reg_arr(uint8_t *status, struct Memory mem);
+void SPI_Init(void);

@@ -106,7 +106,7 @@ def main():
         port.write(commands.get('SPEED'))
         got = port.read(4)
         if got == b'\x01':
-            print('Changed speed to 115200')
+            print('Changed speed to 38400')
         else:
             print (got)
             raise FatalError('Buspirate failed to change speed')

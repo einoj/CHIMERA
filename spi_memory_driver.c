@@ -6,7 +6,7 @@ void SPI_Init(void) {
     // Set MOSI, SCK , and SS as Output
     //DDRB=(1<<MOSI)|(1<<SCK)|(1<<SS1); DDRB set as output in HAL.c
     //DESELECT_SERIAL_MEMORY;
-    //DISABLE_MISO_INTERRUPT; // To avoid triggering a write stop interrupt when reading
+    DISABLE_MISO_INTERRUPT; // To avoid triggering a write stop interrupt when reading
 
     // Enable SPI, Set as Master
     // Prescaler: Fosc/16, Enable Interrupts
@@ -106,6 +106,25 @@ uint8_t spi_tx_byte(volatile uint8_t byte) {
     while (!(SPSR & (1<<SPIF)));
     return SPDR;
 }
+uint8_t read_status_reg_arr(uint8_t *status, struct Memory mem) {
+  //  if (state == READY_TO_SEND) {
+        //DISABLE_SPI_INTERRUPT;        
+        //SELECT_SERIAL_MEMORY;        // Pull down chip select.
+        disable_pin_macro(*(mem.cs_port), mem.PIN_CS);
+        spi_tx_byte(WREN);
+        spi_tx_byte(RDSR);           // Send Read status register opcode.
+        *status = spi_tx_byte(0xFF); // get the status register value, by sending 0xFF we avoid toggling the MOSI line.
+        //DESELECT_SERIAL_MEMORY;      // spi_tx_byte is called a second time to wait for SPDR to be filled
+        enable_pin_macro(*(mem.cs_port), mem.PIN_CS);
+        //ENABLE_SPI_INTERRUPT;
+
+        return TRANSFER_COMPLETED;
+  // } else {
+  //      *status = 1;
+  //      return BUSY;
+  //  }
+
+}
 
 uint8_t read_status_reg(uint8_t *status) {
     if (state == READY_TO_SEND) {
@@ -117,7 +136,7 @@ uint8_t read_status_reg(uint8_t *status) {
         ENABLE_SPI_INTERRUPT;
 
         return TRANSFER_COMPLETED;
-    } else {
+   } else {
         *status = 1;
         return BUSY;
     }
@@ -306,12 +325,12 @@ uint8_t get_jedec_id(struct Memory mem, uint8_t *memID)
 //        { 
             //DISABLE_SPI_INTERRUPT;
             //SELECT_SERIAL_MEMORY;
-            enable_pin_macro(*(mem.cs_port), mem.PIN_CS);
+            disable_pin_macro(*(mem.cs_port), mem.PIN_CS);
             spi_tx_byte(JEDEC);    // Transmit JEDEC-ID opcode
             spi_tx_byte(0xff);     // Recieve manufacturer ID
             *memID = spi_tx_byte(0xff);     // Memory ID
             //DESELECT_SERIAL_MEMORY;
-            disable_pin_macro(*(mem.cs_port), mem.PIN_CS);
+            enable_pin_macro(*(mem.cs_port), mem.PIN_CS);
            // ENABLE_SPI_INTERRUPT;
             return TRANSFER_COMPLETED;
 //        } else {

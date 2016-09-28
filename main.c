@@ -8,6 +8,7 @@
 #include "main.h"
 #include "memories.h"
 #include "spi_memory_driver.h"
+#include "ldo.h"
 
 // The number of bytes in the CHI_Board_Status struct.
 // Needed to send the data over UART
@@ -64,11 +65,11 @@ ISR(TIMER3_OVF_vect) {
 int main(void)
 {
 	OSCCAL=0xB3; // clock calibration
-	volatile uint32_t start_time;	
+//	volatile uint32_t start_time;	
 	
 	// Initialize the Board
 	PORT_Init();
-	ADC_Init();
+	//ADC_Init();
     SPI_Init();
 	TIMER0_Init();	// Parser/time-out Timer
 	TIMER1_Init();	// Instrument Time Counter
@@ -94,17 +95,25 @@ int main(void)
     //transmit_CHI_SCI_TM();
 
     //disable_memory(mem_arr[1]);
-    uint8_t memid = 0;
-    enable_memory_vcc(mem_arr[0]);
-    get_jedec_id(mem_arr[0],&memid);
-    disable_memory_vcc(mem_arr[0]);
+    uint8_t memid = 'A';
+    uint8_t status_reg;
     USART0SendByte(memid);
-    memid = 0;
-    enable_memory_vcc(mem_arr[1]);
-    get_jedec_id(mem_arr[1],&memid);
-    disable_memory_vcc(mem_arr[1]);
-    USART0SendByte(memid);
-
+   // USART0SendByte(memid);
+   // USART0SendByte(memid);
+   // USART0SendByte(memid);
+   // enable_memory_vcc(mem_arr[0]);
+   // read_status_reg_arr(&status_reg,mem_arr[0]);
+   // disable_memory_vcc(mem_arr[0]);
+   // USART0SendByte(status_reg);
+   // memid = 0;
+   // enable_memory_vcc(mem_arr[11]);
+   // //PORTB |= 0x10;//enable LDO
+   // enable_pin_macro(PORTB, 0x10);
+   // //get_jedec_id(mem_arr[11],&memid);
+   // //USART0SendByte(memid);
+   // read_status_reg_arr(&status_reg,mem_arr[11]); 
+   // USART0SendByte(status_reg);
+    //disable_memory_vcc(mem_arr[11]);
 
 //    enable_cs_macro (*mem_arr[1].cs_port, mem_arr[1].PIN_CS);
     //while (1) USART0SendByte((uint8_t) CHI_Board_Status);
@@ -132,8 +141,7 @@ int main(void)
 			}
 			else if ((((CHI_Memory_Status[i].no_SEFI_LU)&0xF0)>>4)>10)	{
 				// exclude the memory from the test if SEFI > 10 TBD
-				CHI_Board_Status.mem_to_test&=~(1<<i);
-			}
+				CHI_Board_Status.mem_to_test&=~(1<<i); }
 
 			// write it into EEPROM or after reset we start from scratch?
 		}
