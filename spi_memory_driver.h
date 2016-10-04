@@ -61,6 +61,7 @@
 // Set MOSI, SCK , and SS as Output
 #define MOSI 2
 #define SCK 1
+#define MISO 3
 
 /* Global variables */
 static uint32_t address; // Used by SPI to address memory device

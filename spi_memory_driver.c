@@ -2,16 +2,20 @@
 #include "spi_memory_driver.h"
 
 void SPI_Init(void) {
-    SPCR = (0<<SPE);  // Disable the SPI to be able to configure the #SS line as an input even if the SPI is configured as a slave
+    //SPCR = (0<<SPE);  // Disable the SPI to be able to configure the #SS line as an input even if the SPI is configured as a slave
     // Set MOSI, SCK , and SS as Output
     //DDRB=(1<<MOSI)|(1<<SCK)|(1<<SS1); DDRB set as output in HAL.c
     //DESELECT_SERIAL_MEMORY;
-    DISABLE_MISO_INTERRUPT; // To avoid triggering a write stop interrupt when reading
+    //DISABLE_MISO_INTERRUPT; // To avoid triggering a write stop interrupt when reading
 
     // Enable SPI, Set as Master
     // Prescaler: Fosc/16, Enable Interrupts
     //The MOSI, SCK pins are as per ATMega8
-    SPCR=(1<<SPE)|(1<<MSTR);//|(1<<SPIE);
+    //DDRB |= (1<<MOSI);
+    //DDRB |= (1<<SCK);
+    //DDRB &= ~(1<<MISO);
+    DDRB = 0xF7;
+    SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR0);//|(1<<SPIE);
 
     // Clear the SPIF flag by reading SPSR and SPDR
     SPSR;
@@ -111,7 +115,6 @@ uint8_t read_status_reg_arr(uint8_t *status, struct Memory mem) {
         //DISABLE_SPI_INTERRUPT;        
         //SELECT_SERIAL_MEMORY;        // Pull down chip select.
         disable_pin_macro(*(mem.cs_port), mem.PIN_CS);
-        spi_tx_byte(WREN);
         spi_tx_byte(RDSR);           // Send Read status register opcode.
         *status = spi_tx_byte(0xFF); // get the status register value, by sending 0xFF we avoid toggling the MOSI line.
         //DESELECT_SERIAL_MEMORY;      // spi_tx_byte is called a second time to wait for SPDR to be filled

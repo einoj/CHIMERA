@@ -65,7 +65,7 @@ ISR(TIMER3_OVF_vect) {
 int main(void)
 {
 	OSCCAL=0xB3; // clock calibration
-//	volatile uint32_t start_time;	
+	volatile uint32_t start_time;	
 	
 	// Initialize the Board
 	PORT_Init();
@@ -95,24 +95,19 @@ int main(void)
     //transmit_CHI_SCI_TM();
 
     //disable_memory(mem_arr[1]);
-    uint8_t memid = 'A';
-    uint8_t status_reg;
-    USART0SendByte(memid);
-   // USART0SendByte(memid);
-   // USART0SendByte(memid);
-   // USART0SendByte(memid);
-   // enable_memory_vcc(mem_arr[0]);
-   // read_status_reg_arr(&status_reg,mem_arr[0]);
-   // disable_memory_vcc(mem_arr[0]);
-   // USART0SendByte(status_reg);
-   // memid = 0;
-   // enable_memory_vcc(mem_arr[11]);
-   // //PORTB |= 0x10;//enable LDO
-   // enable_pin_macro(PORTB, 0x10);
-   // //get_jedec_id(mem_arr[11],&memid);
-   // //USART0SendByte(memid);
-   // read_status_reg_arr(&status_reg,mem_arr[11]); 
-   // USART0SendByte(status_reg);
+    uint8_t status_reg = 0x66;
+    enable_pin_macro(PORTB, 0x10); // Turn on LDO
+
+    uint8_t i;
+    for (i = 0; i < 12; i++) {
+        enable_pin_macro(*mem_arr[i].cs_port, mem_arr[i].PIN_CS);
+        enable_memory_vcc(mem_arr[i]);
+    }
+
+    while(1){
+        read_status_reg_arr(&status_reg,mem_arr[11]); 
+        USART0SendByte(status_reg);
+    }
     //disable_memory_vcc(mem_arr[11]);
 
 //    enable_cs_macro (*mem_arr[1].cs_port, mem_arr[1].PIN_CS);
