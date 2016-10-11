@@ -4,7 +4,19 @@ CFLAGS= -std=gnu99 -Os -D GCC_MEGA_AVR -u vprintf $(WARNINGS)
 
 AVRFLAGS = -mmcu=atmega128
 
+
+ifeq ($(OS),Windows_NT)
 GCC = avr-gcc.exe
+else
+GCC = avr-gcc
+endif
+
+#programmer flags
+PARTTYPE = m128
+PRG = dragon_jtag
+PORT = /dev/ttyACM0
+FORMAT = ihex
+
 
 all: uart.o kiss_tnc.o crc8.o memories.o HAL.o adc.o timers.o spi_memory_driver.o
 	$(GCC) $(AVRFLAGS) $(CFLAGS)  main.c $^ -o CHIMERA.elf
@@ -35,3 +47,9 @@ spi_memory_driver.o: spi_memory_driver.c
 
 clean:
 	rm *.o
+
+hex: all
+	avr-objcopy -j .text -j .data -O $(FORMAT) CHIMERA.elf CHIMERA.hex
+
+prg: hex
+	avrdude -p $(PARTTYPE) -c $(PRG) -b 57600 -v -Uflash:w:CHIMERA.hex

@@ -64,6 +64,10 @@ ISR(TIMER3_OVF_vect) {
 
 int main(void)
 {
+    // Variables for memory access
+    uint32_t read_addr; // current read address
+    uint8_t curr_page; // current page that is being read
+
 	OSCCAL=0xB3; // clock calibration
 	volatile uint32_t start_time;	
 	
@@ -81,7 +85,7 @@ int main(void)
 	
 	// Initialize the Board
     CHI_Board_Status.reset_type = 65;
-    CHI_Board_Status.device_mode = 66;
+    CHI_Board_Status.device_mode = 0x01;
     CHI_Board_Status.latch_up_detected = 67;
     CHI_Board_Status.working_memories = 68;
     CHI_Board_Status.no_cycles = 69;
@@ -98,19 +102,17 @@ int main(void)
     uint8_t status_reg = 0x66;
     enable_pin_macro(PORTB, 0x10); // Turn on LDO
 
-    uint8_t i;
-    for (i = 0; i < 12; i++) {
+    // enable all memories
+    for (uint8_t i = 0; i < 12; i++) {
         enable_pin_macro(*mem_arr[i].cs_port, mem_arr[i].PIN_CS);
         enable_memory_vcc(mem_arr[i]);
     }
 
-    while(1){
-        read_status_reg_arr(&status_reg,mem_arr[11]); 
-        USART0SendByte(status_reg);
-    }
+    read_status_reg_arr(&status_reg,mem_arr[11]); 
+    //USART0SendByte(status_reg);
     //disable_memory_vcc(mem_arr[11]);
 
-//    enable_cs_macro (*mem_arr[1].cs_port, mem_arr[1].PIN_CS);
+    //enable_cs_macro (*mem_arr[1].cs_port, mem_arr[1].PIN_CS);
     //while (1) USART0SendByte((uint8_t) CHI_Board_Status);
 	
 	// Load Configuration&Status from EEPROM (i.e. already failed memories, no LU event, what memory was processed when watchdog tripped)
@@ -120,7 +122,6 @@ int main(void)
 	/* Main Loop */
 	
 	// Open issue: policy of watchdog, how to set-up watchdog and how/when to reset it?
-    /*
     while (1) 
     {	
 		start_time=CHI_Board_Status.local_time;
@@ -134,15 +135,16 @@ int main(void)
 				// exclude the memory from the test if LU > 3 TBD
 				CHI_Board_Status.mem_to_test&=~(1<<i);
 			}
+
 			else if ((((CHI_Memory_Status[i].no_SEFI_LU)&0xF0)>>4)>10)	{
 				// exclude the memory from the test if SEFI > 10 TBD
-				CHI_Board_Status.mem_to_test&=~(1<<i); }
-
+				CHI_Board_Status.mem_to_test&=~(1<<i);
+            }
 			// write it into EEPROM or after reset we start from scratch?
 		}
 
 		for(unsigned char i=0;i<12;i++) {
-			if (CHI_Board_Status.mem_to_test & (1<<i) ) {
+			if (CHI_Board_Status.mem_to_test & (1<<i)) {
 				CHI_Board_Status.current_memory=i;
 		
 				TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
@@ -152,16 +154,34 @@ int main(void)
 					CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU=(CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU+1)&0x0F;
 					CHI_Board_Status.latch_up_detected=0; // clear flag
 				}
+
 				if (CHI_Board_Status.SPI_timeout_detected) {
 					CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU=(CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU+16)&0xF0;
 					CHI_Board_Status.SPI_timeout_detected=0; // clear flag
 				}
 		
 				// Check if memory is OK, if failed skip
-		
-				// Load parameters of the memory (i.e. block size, size of memory etc.)
+
+				// Load parameters of the memory (i.e. block size, size of memory etc.) Not necessary, this is all stored in the mem_arr struct
+                 
 				// Test memory (test procedure defined by device_mode(read only, write read, etc.))
+                switch  (CHI_Board_Status.device_mode ) {
+                    case 0x01: //readmode
+                        // write to EEPROM that memory i is being tested
+                        read_memory(mem_arr[i]);
+                        break;
+
+                    case 0x02:
+                        erase_read_write(mem_arr[i]);
+                        break;
+
+                    default:
+                        read_memory(mem_arr[i]);
+                        break;
+                }
+                
 				// Test procedure has to foresee the possibility of timeout in case of SEFI/LU
+                
 				// Proposal for test procedure
 				// write to EEPROM that we are testing Mem X
 				// set watchdog for 1.8 second
@@ -181,5 +201,4 @@ int main(void)
 			TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
 		}
     }
-    */
 }

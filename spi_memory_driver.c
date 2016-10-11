@@ -14,7 +14,7 @@ void SPI_Init(void) {
     //DDRB |= (1<<MOSI);
     //DDRB |= (1<<SCK);
     //DDRB &= ~(1<<MISO);
-    DDRB = 0xF7;
+    DDRB = (1<<DDB0)|(1<<DDB1)|(1<<DDB2)|(1<<DDB4)|(1<<DDB5)|(1<<DDB6)|(1<<DDB7);//0xF7;//(1<<MOSI)|(1<<SCK);
     SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR0);//|(1<<SPIE);
 
     // Clear the SPIF flag by reading SPSR and SPDR
@@ -110,13 +110,16 @@ uint8_t spi_tx_byte(volatile uint8_t byte) {
     while (!(SPSR & (1<<SPIF)));
     return SPDR;
 }
+
+
 uint8_t read_status_reg_arr(uint8_t *status, struct Memory mem) {
   //  if (state == READY_TO_SEND) {
         //DISABLE_SPI_INTERRUPT;        
         //SELECT_SERIAL_MEMORY;        // Pull down chip select.
         disable_pin_macro(*(mem.cs_port), mem.PIN_CS);
         spi_tx_byte(RDSR);           // Send Read status register opcode.
-        *status = spi_tx_byte(0xFF); // get the status register value, by sending 0xFF we avoid toggling the MOSI line.
+        //*status = spi_tx_byte(0xFF); // get the status register value, by sending 0xFF we avoid toggling the MOSI line.
+        UDR0 = spi_tx_byte(0xFF); //*status;
         //DESELECT_SERIAL_MEMORY;      // spi_tx_byte is called a second time to wait for SPDR to be filled
         enable_pin_macro(*(mem.cs_port), mem.PIN_CS);
         //ENABLE_SPI_INTERRUPT;
