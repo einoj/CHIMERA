@@ -22,7 +22,9 @@ volatile uint8_t CHI_UART_RX_BUFFER_COUNTER;
 struct CHI_Memory_Status_Str {
 	uint8_t status;
 	uint8_t no_SEU;
-	uint8_t no_SEFI_LU;
+	uint8_t no_LU;
+    uint8_t no_SEFI_timeout;
+    uint8_t no_SEFI_wr_error;
 	uint8_t current1;
 	uint8_t current2;
 };

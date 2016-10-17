@@ -65,6 +65,8 @@ ISR(TIMER3_OVF_vect) {
 void read_memory(uint8_t mem_idx) {
     uint8_t buf[256]; // the buffer must fit a whole page of, some memories have different page sizes
     uint16_t i;
+    // If we have a timeout SEFI we want to jump to the next memory
+    uint8_t jmp_next_mem = 0;
 
     for (i = 0; i < mem_arr[mem_idx].page_num; i++) {
 
@@ -76,10 +78,24 @@ void read_memory(uint8_t mem_idx) {
         while (read_24bit_page(0, mem_idx, buf) == BUSY) {
             if (CHI_Board_Status.SPI_timeout_detected) {
                 // SEFI detected
+                CHI_Memory_Status[mem_idx].no_SEFI_timeout++;
 	            CHI_Board_Status.no_SEFI_detected++; //number of SEFIs
-                 
+                jmp_next_mem = 1;
+                break;
             }
         }
+        if (jmp_next_mem) {
+            break;
+        }
+
+        //check page
+        
+            // if pattern error..
+
+            // if pattern error > 10
+            //
+            
+        // if error erase and reprogram page
     }
 }
 
