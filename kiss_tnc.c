@@ -328,17 +328,19 @@ void transmit_kiss(uint8_t data)
 
 }
 
-void Send_ACK() {
-	USART0SendByte(0xC0);
+void Send_ACK() 
+{
+	USART0SendByte(FEND);
 	USART0SendByte(CHI_COMM_ID_ACK);
 	USART0SendByte(0xCC); // precalculated CRC
-	USART0SendByte(0xC0);
+	USART0SendByte(FEND);
 }
 
 // Send ACK, to be moved into proper file
-void Send_NACK() {
-	USART0SendByte(0xC0);
+void Send_NACK() 
+{
+	USART0SendByte(FEND);
 	USART0SendByte(CHI_COMM_ID_NACK);
 	USART0SendByte(0xCC); // precalculated CRC
-	USART0SendByte(0xC0);
+	USART0SendByte(FEND);
 }
