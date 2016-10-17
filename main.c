@@ -62,12 +62,25 @@ ISR(TIMER3_OVF_vect) {
 	TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt
 }
 
-void read_memory(struct Memory mem) {
-    //start watchdog
-   
+void read_memory(uint8_t mem_idx) {
+    uint8_t buf[256]; // the buffer must fit a whole page of, some memories have different page sizes
+    uint16_t i;
 
+    for (i = 0; i < mem_arr[mem_idx].page_num; i++) {
 
+        //reset timer
+        CHI_Board_Status.SPI_timeout_detected=0;
+        TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt
 
+        // read page
+        while (read_24bit_page(0, mem_idx, buf) == BUSY) {
+            if (CHI_Board_Status.SPI_timeout_detected) {
+                // SEFI detected
+	            CHI_Board_Status.no_SEFI_detected++; //number of SEFIs
+                 
+            }
+        }
+    }
 }
 
 int main(void)
@@ -116,6 +129,7 @@ int main(void)
         enable_memory_vcc(mem_arr[i]);
     }
 
+    /*
     spi_command(WREN,7);
     uint8_t memid;
     get_jedec_id(7, &memid);
@@ -128,6 +142,7 @@ int main(void)
     while (read_24bit_page(0, 7, buffer) == BUSY);
 
     while(1){};
+    */
 
         //read_status_reg(&status_reg,7); 
     //disable_memory_vcc(mem_arr[11]);
@@ -188,7 +203,7 @@ int main(void)
                 switch  (CHI_Board_Status.device_mode ) {
                     case 0x01: //readmode
                         // write to EEPROM that memory i is being tested
-                        read_memory(mem_arr[i]);
+                        read_memory(i);
                         break;
 
                     case 0x02:
