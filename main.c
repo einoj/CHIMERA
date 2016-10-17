@@ -62,6 +62,14 @@ ISR(TIMER3_OVF_vect) {
 	TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt
 }
 
+void read_memory(struct Memory mem) {
+    //start watchdog
+   
+
+
+
+}
+
 int main(void)
 {
     // Variables for memory access
@@ -108,8 +116,20 @@ int main(void)
         enable_memory_vcc(mem_arr[i]);
     }
 
-    read_status_reg_arr(&status_reg,mem_arr[11]); 
-    //USART0SendByte(status_reg);
+    spi_command(WREN,7);
+    uint8_t memid;
+    get_jedec_id(7, &memid);
+    USART0SendByte(memid);
+    uint8_t buffer[1024];
+    erase_chip(7);
+    uint8_t status =0x01;
+
+    while (write_24bit_page(0,7) == BUSY);
+    while (read_24bit_page(0, 7, buffer) == BUSY);
+
+    while(1){};
+
+        //read_status_reg(&status_reg,7); 
     //disable_memory_vcc(mem_arr[11]);
 
     //enable_cs_macro (*mem_arr[1].cs_port, mem_arr[1].PIN_CS);
@@ -172,7 +192,7 @@ int main(void)
                         break;
 
                     case 0x02:
-                        erase_read_write(mem_arr[i]);
+                        //erase_read_write(mem_arr[i]);
                         break;
 
                     default:
@@ -187,7 +207,7 @@ int main(void)
 				// set watchdog for 1.8 second
 				// process each memory by fixed value, 1024 Bytes?
 				// after each page reset watchdog timer
-				// open issue: what happens if watchdog is tripped? if after reboot we read from EEPROM that Mem X was being processed, we assume that watchdog tripped meanwhile?
+				// open issue: what happens if watchdog is tripped? if after reboot we read from EEPROM that Mem X was being processed, we assume that watchdog tripped meanwhile? It is possible to also check that the last reset was triggered by the watchdog
 				// Write test results to proper CHI_Memory_Status_Str
 				// If there were some problems (SEFI,LU,SEU) write it to memory_status
 				// Parse Any Command

@@ -14,12 +14,17 @@ void poweroff_memories(void);
 */
 #define enable_pin_macro(port,mask) ((port) |= (mask))
 #define disable_pin_macro(port,mask) ((port) &= ~(mask))
+#define CHIP_DESELECT(i) ((*mem_arr[i].cs_port) |= (mem_arr[i].PIN_CS))
+#define CHIP_SELECT(i) ((*mem_arr[i].cs_port) &= ~(mem_arr[i].PIN_CS))
+
+//void chip_select(uint8_t i);
+//void chip_deselect(uint8_t i);
 
 struct Memory {
     // chip select pin
-    const uint8_t PIN_CS;
+    uint8_t PIN_CS;
     // chip VCC enable pin
-    const uint8_t PIN_VCC;
+    uint8_t PIN_VCC;
     // number of pages in device
     const uint32_t page_num;
     // size of one page in bytes

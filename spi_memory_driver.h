@@ -8,7 +8,7 @@
 
 /* OP codes */
 #define AAI         0xAD
-#define BYTE_PRG    0x02
+#define PRG         0x02
 #define CHIP_ERASE  0x60
 #define DBSY        0x80
 #define EBSY        0x70
@@ -75,5 +75,10 @@ static void printuart(char *msg);
 void USART0SendByte(uint8_t u8Data);
 void enable_memory_vcc(struct Memory mem);
 void disable_memory_vcc(struct Memory mem);
-uint8_t read_status_reg_arr(uint8_t *status, struct Memory mem);
+uint8_t read_status_reg(uint8_t *status, uint8_t mem_idx);
 void SPI_Init(void);
+uint8_t read_24bit_page(uint32_t addr, uint8_t mem_idx, uint8_t *buffer);
+uint8_t write_24bit_page(uint32_t addr, uint8_t mem_idx);
+uint8_t spi_command(uint8_t op_code, uint8_t mem_idx);
+uint8_t erase_chip(uint8_t mem_idx);
+

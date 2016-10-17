@@ -127,56 +127,6 @@ static void printuart(char *msg) {
 //    }
 //}
 
-/* Auto address increment word programming using software end-of-write detection */
-uint8_t write_aai_soft(uint32_t start_addr, uint8_t n_bytes, uint8_t *src) {
-    uint8_t status_reg;
-    if (start_addr <= TOP_ADDR) {
-        if (read_status_reg(&status_reg) == TRANSFER_COMPLETED) {// Is the SPI interface being used?
-            if (!(status_reg & (1<<WIP))) { // Is a write in progress internally on the memory?
-                write_spi_command(WREN);
-                DISABLE_SPI_INTERRUPT;
-                address = start_addr;
-                nb_byte = n_bytes; 
-                byte_cnt = 2;
-                data_ptr = src;
-                SELECT_SERIAL_MEMORY;
-                spi_tx_byte(AAI);
-                spi_tx_byte((uint8_t)(address>>16));
-                spi_tx_byte((uint8_t)(address>>8));
-                spi_tx_byte((uint8_t)(address));
-                spi_tx_byte(*data_ptr); // send first half of word
-                data_ptr++;          
-                spi_tx_byte(*data_ptr); // send second half of word
-                DESELECT_SERIAL_MEMORY;
-                while (byte_cnt < nb_byte) {
-                    // wait for internal write to finish
-                    do {
-                        quick_read_status_reg(&status_reg);
-                    } while (status_reg & (1<<WIP));
-                    SELECT_SERIAL_MEMORY;
-                    spi_tx_byte(AAI);
-                    data_ptr++;
-                    spi_tx_byte(*data_ptr); // send first half of word
-                    data_ptr++;          
-                    //SPDR = *data_ptr; // Don't need to wait for transfer to finish, just wait untill internal write is done
-                    spi_tx_byte(*data_ptr); // send first half of word
-                    DESELECT_SERIAL_MEMORY;
-                    byte_cnt += 2;
-                }
-                while (write_spi_command(WRDI) != TRANSFER_COMPLETED);
-
-                ENABLE_SPI_INTERRUPT;
-                return TRANSFER_COMPLETED;
-            } else {
-            return BUSY;
-            }
-        } else {
-            return BUSY;
-        }
-    } else {
-        return OUT_OF_RANGE;
-    }
-}
 
 
 void USART0_Init(void ){
