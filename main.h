@@ -17,6 +17,7 @@
 volatile uint8_t CHI_UART_RX_BUFFER[CHI_UART_RX_BUFFER_SIZE];
 volatile uint8_t CHI_UART_RX_BUFFER_INDEX;
 volatile uint8_t CHI_UART_RX_BUFFER_COUNTER;
+volatile uint16_t Event_cnt; // The number of events to transfer, set to 0 at startup and after a data transfer
 
 // CHIMERA Memory Status Structure
 struct CHI_Memory_Status_Str {

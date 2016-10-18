@@ -272,12 +272,20 @@ uint8_t write_status_reg(uint8_t sreg) {
 }
  */
 
-uint8_t write_24bit_page(uint32_t addr, uint8_t mem_idx)
+
+/** 
+ * Write a page to memory size of the page is contained in the mem_arr[i] struct
+ * @addr first address of page
+ * @pattern each page should have a different pattern, so that a SEFI that adresses the wrong page can
+ * be detected. 0 for 0x55 0xAA, 1 for 0xAA 0x55.
+ * @mem_idx which of the 12 memories to write to, indexed 0 through 11
+ */
+uint8_t write_24bit_page(uint32_t addr, uint8_t ptr_i, uint8_t mem_idx)
 {
     uint16_t write_cnt = 0;
     uint16_t page_size = mem_arr[mem_idx].page_size;
     uint8_t pattern[2] = {0x55,0xAA};
-    uint8_t i = 0;
+    uint8_t i = ptr_i;
     uint8_t status_reg;
 
     //if (start_addr <= TOP_ADDR) {

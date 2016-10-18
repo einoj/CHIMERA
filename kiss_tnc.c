@@ -296,8 +296,10 @@ void transmit_CHI_SCI_TM(void)
         transmit_kiss(CHI_Memory_Status[i].status);
         checksum = RMAP_CalculateCRC(checksum, CHI_Memory_Status[i].no_SEU);
         transmit_kiss(CHI_Memory_Status[i].no_SEU);
-        checksum = RMAP_CalculateCRC(checksum, CHI_Memory_Status[i].no_SEFI_LU);
-        transmit_kiss(CHI_Memory_Status[i].no_SEFI_LU);
+        checksum = RMAP_CalculateCRC(checksum, CHI_Memory_Status[i].no_SEFI_timeout);
+        transmit_kiss(CHI_Memory_Status[i].no_SEFI_timeout);
+        checksum = RMAP_CalculateCRC(checksum, CHI_Memory_Status[i].no_SEFI_wr_error);
+        transmit_kiss(CHI_Memory_Status[i].no_SEFI_wr_error);
         checksum = RMAP_CalculateCRC(checksum, CHI_Memory_Status[i].current2);
         transmit_kiss(CHI_Memory_Status[i].current1);
     }

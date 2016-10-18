@@ -64,9 +64,12 @@ ISR(TIMER3_OVF_vect) {
 
 void read_memory(uint8_t mem_idx) {
     uint8_t buf[256]; // the buffer must fit a whole page of, some memories have different page sizes
-    uint16_t i;
+    uint16_t i, j;
     // If we have a timeout SEFI we want to jump to the next memory
     uint8_t jmp_next_mem = 0;
+    uint8_t pattern[2] = {0x55,0xAA};
+    uint8_t ptr_idx = 0; // because the order of the pattern changes per page
+    uint8_t page_errors;
 
     for (i = 0; i < mem_arr[mem_idx].page_num; i++) {
 
@@ -89,11 +92,41 @@ void read_memory(uint8_t mem_idx) {
         }
 
         //check page
-        
-            // if pattern error..
+        page_errors = 0;
+        for (j = 0; j < mem_arr[mem_idx].page_size; j++) {
+            if (buf[j] != pattern[ptr_idx]) {
+                // if pattern error..
+                page_errors++;
+                CHI_Memory_Status[mem_idx].no_SEU++;
+                if (page_errors > 10) {
+                    // remove the last three errors and store a SEFI
+                    Event_cnt -= 10;
+                    Memory_Events[Event_cnt].memory_id = 0x80 | mem_idx; //1 in upper memory bit signifies a SEFI
+                    Memory_Events[Event_cnt].addr1 = mem_idx;
+                    Memory_Events[Event_cnt].addr2 = mem_idx;
+                    Memory_Events[Event_cnt].addr3 = mem_idx;
+                    Memory_Events[Event_cnt].value = buf[j];
+                    break;
+                }
 
-            // if pattern error > 10
-            //
+                if (Event_cnt < 499) {
+                    Memory_Events[Event_cnt].memory_id = mem_idx;
+                    Memory_Events[Event_cnt].addr1 = mem_idx;
+                    Memory_Events[Event_cnt].addr2 = mem_idx;
+                    Memory_Events[Event_cnt].addr3 = mem_idx;
+                    Memory_Events[Event_cnt].value = buf[j];
+                    Event_cnt++;
+                } else {
+                    //transmit data
+                }
+                // CHIMERA Memory Event Structure
+
+            }
+            ptr_idx ^= ptr_idx;
+        }
+        // next page has opposite pattern
+        ptr_idx ^= ptr_idx;
+        
             
         // if error erase and reprogram page
     }
@@ -119,6 +152,8 @@ int main(void)
 		
 	sei();				// Turn on interrupts	
 	Power_On_Check();	// check what was the cause of reset
+
+    Event_cnt = 0;
 	
 	// Initialize the Board
     CHI_Board_Status.reset_type = 65;
@@ -156,9 +191,18 @@ int main(void)
 
     while (write_24bit_page(0,7) == BUSY);
     while (read_24bit_page(0, 7, buffer) == BUSY);
-
+*/
+    spi_tx_byte((uint8_t) 0xFF);
+    uint32_t a;
+    uint16_t b = 0xFFFF;
+    uint16_t c = 0x0002;
+    a = b+c;
+    spi_tx_byte((uint8_t) (c>>24));
+    spi_tx_byte((uint8_t) (c>>16));
+    spi_tx_byte((uint8_t) (c>>8));
+    spi_tx_byte((uint8_t) (c));
     while(1){};
-    */
+    
 
         //read_status_reg(&status_reg,7); 
     //disable_memory_vcc(mem_arr[11]);
@@ -182,19 +226,19 @@ int main(void)
 		transmit_CHI_SCI_TM();
 
 		for (int i=0;i<12;i++) {
-			if (((CHI_Memory_Status[i].no_SEFI_LU)&0x0F)>3)	{
+			if ((CHI_Memory_Status[i].no_LU) >3)	{
 				// exclude the memory from the test if LU > 3 TBD
 				CHI_Board_Status.mem_to_test&=~(1<<i);
 			}
 
-			else if ((((CHI_Memory_Status[i].no_SEFI_LU)&0xF0)>>4)>10)	{
+			else if ((CHI_Memory_Status[i].no_SEFI_timeout+CHI_Memory_Status[i].no_SEFI_timeout)>10)	{
 				// exclude the memory from the test if SEFI > 10 TBD
 				CHI_Board_Status.mem_to_test&=~(1<<i);
             }
 			// write it into EEPROM or after reset we start from scratch?
 		}
 
-		for(unsigned char i=0;i<12;i++) {
+		for(uint8_t i=0;i<12;i++) {
 			if (CHI_Board_Status.mem_to_test & (1<<i)) {
 				CHI_Board_Status.current_memory=i;
 		
@@ -202,15 +246,15 @@ int main(void)
 		
 				// checked in loop, abort rest of the test if needed
 				if (CHI_Board_Status.latch_up_detected) {
-					CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU=(CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU+1)&0x0F;
+					CHI_Memory_Status[CHI_Board_Status.current_memory].no_LU=CHI_Memory_Status[CHI_Board_Status.current_memory].no_LU+1;
 					CHI_Board_Status.latch_up_detected=0; // clear flag
 				}
 
-				if (CHI_Board_Status.SPI_timeout_detected) {
-					CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU=(CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU+16)&0xF0;
-					CHI_Board_Status.SPI_timeout_detected=0; // clear flag
-				}
-		
+		//		if (CHI_Board_Status.SPI_timeout_detected) {
+		//			CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU=(CHI_Memory_Status[CHI_Board_Status.current_memory].no_SEFI_LU+16)&0xF0;
+		//			CHI_Board_Status.SPI_timeout_detected=0; // clear flag
+		//		}
+		//
 				// Check if memory is OK, if failed skip
 
 				// Load parameters of the memory (i.e. block size, size of memory etc.) Not necessary, this is all stored in the mem_arr struct
@@ -227,7 +271,7 @@ int main(void)
                         break;
 
                     default:
-                        read_memory(mem_arr[i]);
+                        read_memory(i);
                         break;
                 }
                 

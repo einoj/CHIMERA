@@ -78,7 +78,7 @@ void disable_memory_vcc(struct Memory mem);
 uint8_t read_status_reg(uint8_t *status, uint8_t mem_idx);
 void SPI_Init(void);
 uint8_t read_24bit_page(uint32_t addr, uint8_t mem_idx, uint8_t *buffer);
-uint8_t write_24bit_page(uint32_t addr, uint8_t mem_idx);
+uint8_t write_24bit_page(uint32_t addr, uint8_t pattern, uint8_t mem_idx);
 uint8_t spi_command(uint8_t op_code, uint8_t mem_idx);
 uint8_t erase_chip(uint8_t mem_idx);
 
