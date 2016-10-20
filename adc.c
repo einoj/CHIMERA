@@ -47,6 +47,7 @@ ISR(ADC_vect)
 		CHI_Board_Status.latch_up_detected=1;
 		
 		// All VCC EN to LOW to not power inverter
+		// This might be verified as new board has no pull-ups, could be removed?
 		PORTB &= ~0x80;
 		PORTC &= ~0x1F;
 		PORTD &= ~0xF0;

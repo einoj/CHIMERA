@@ -132,42 +132,44 @@ uint8_t read_memory(uint8_t mem_idx) {
     return 0;
 }
 
+void Power_On_Init() {
+	    CHI_Board_Status.device_mode = 0x01;
+	    CHI_Board_Status.latch_up_detected = 0;
+	    CHI_Board_Status.mem_to_test = 0x0FFF;
+		CHI_Board_Status.working_memories = 0x0FFF;
+	    CHI_Board_Status.no_cycles = 0;
+	    CHI_Board_Status.no_LU_detected = 0;
+	    CHI_Board_Status.no_SEU_detected = 0; //number of SEUs
+	    CHI_Board_Status.no_SEFI_detected = 0; //number of SEFIs
+}
+
 int main(void)
 {
     // Variables for memory access
     uint32_t addr; // current address
     uint8_t pattern; // pattern of current page
     
-
+	Power_On_Check();	// check what was the cause of reset
+	
 	OSCCAL=0xB3; // clock calibration
 	volatile uint32_t start_time;	
 	
 	// Initialize the Board
-	PORT_Init();
-	//ADC_Init();
-    SPI_Init();
+	PORT_Init();	//Initialize the ports
+	ADC_Init();		// Initialize the ADC for latch-up
+    SPI_Init();		// Initialize the SPI
 	TIMER0_Init();	// Parser/time-out Timer
 	TIMER1_Init();	// Instrument Time Counter
 	TIMER3_Init();	// SPI Time-Out Counter
 	USART0_Init();	// UART0 Initialization
+	
+	Power_On_Init();	// Initialize variable on board
 		
 	sei();				// Turn on interrupts	
-	Power_On_Check();	// check what was the cause of reset
-
-    Event_cnt = 0;
 	
-	// Initialize the Board status for testing purposes
-    // SOFTWARE version 0x10
-    CHI_Board_Status.reset_type = 0x01;
-	CHI_Board_Status.device_mode = 0x01; // mode of the instrument
-	CHI_Board_Status.no_cycles = 0xff92; // number of SCI cycles performed on memories
-    //CHI_Board_Status.mem_to_test = 0x0fff; // memories to be tested - each bit corresponds to one memory	
-
-    //transmit_kiss((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
-    // Test of detailed frame transmission
-    CHI_Board_Status.local_time = 0xDEADBEEF;
-    //transmit_CHI_SCI_TM();
-
+    Event_cnt = 0; // ?????
+		
+	//  -v- ??????? remove?
     //disable_memory(mem_arr[1]);
     uint8_t status_reg = 0x66;
     enable_pin_macro(PORTB, 0x10); // Turn on LDO
@@ -181,25 +183,8 @@ int main(void)
     spi_command(WREN,7);
     uint8_t memid;
     get_jedec_id(7, &memid);
-    USART0SendByte(memid);
-    /*
-    uint8_t buffer[1024];
-    erase_chip(7);
-    uint8_t status =0x01;
+    USART0SendByte(memid); 
 
-    while (write_24bit_page(0,7) == BUSY);
-    while (read_24bit_page(0, 7, buffer) == BUSY);
-*/
-    transmit_CHI_STATUS();
-    while(1){};
-    
-
-        //read_status_reg(&status_reg,7); 
-    //disable_memory_vcc(mem_arr[11]);
-
-    //enable_cs_macro (*mem_arr[1].cs_port, mem_arr[1].PIN_CS);
-    //while (1) USART0SendByte((uint8_t) CHI_Board_Status);
-	
 	// Load Configuration&Status from EEPROM (i.e. already failed memories, no LU event, what memory was processed when watchdog tripped)
 	
 	// Prepare scientific program (see if maybe one of the memories is failing all the time and exclude it)
@@ -292,7 +277,7 @@ int main(void)
 		// Write all memory status to EEPROM in case there is power down
 		
 		// Obsolete(?):
-		while(CHI_Board_Status.local_time-start_time<10000){ // wait 1 second, RESET WATCHDOG IF NEEDED
+		while(CHI_Board_Status.local_time-start_time<10000){ // wait 10 second, RESET WATCHDOG IF NEEDED
 			TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
 		}
     }
