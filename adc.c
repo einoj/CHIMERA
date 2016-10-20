@@ -42,7 +42,6 @@ ISR(ADC_vect)
 	if (ADC_Sample_Cnt>2) ADC_Sample_Cnt=0;
 	
 	if (ADC_Median>(signed short)0x01F0) {
-		
 		LDO_OFF;
 		CHI_Board_Status.latch_up_detected=1;
 		
