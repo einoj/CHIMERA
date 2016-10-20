@@ -46,6 +46,7 @@ struct __attribute__((packed)) CHI_Board_Status_Str {
 	uint32_t local_time; // Instrument local time
 	uint8_t reset_type; // reason for last reset
 	uint8_t device_mode; // mode of the instrument
+	uint8_t last_cmd; // last cmd send (in case NACK arrives)
 	uint8_t latch_up_detected; // latch up detected flag
 	uint8_t SPI_timeout_detected; // SPI time-out detected flag
 	uint8_t current_memory;	// id of currently processed memory

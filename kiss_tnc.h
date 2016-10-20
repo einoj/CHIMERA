@@ -21,6 +21,8 @@ void transmit_CHI_SCI_TM(void);
 
 void transmit_CHI_EVENTS(uint16_t num_events);
 
+void transmit_CHI_STATUS(void);
+
 void Send_ACK(void);
 
 void Send_NACK(void);

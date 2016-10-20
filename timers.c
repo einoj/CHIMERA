@@ -6,6 +6,7 @@
 #include "timers.h"
 
 // Timer 0 Initialization
+// Parser timer
 void TIMER0_Init() {
 	TCCR0=0x00; // clock off at the beginning
 	TIMSK|=0x01; // overflow interrupt ON
@@ -13,6 +14,7 @@ void TIMER0_Init() {
 }
 
 // Timer 1 Initialization
+// Instrument clock timer
 void TIMER1_Init() {
 	TCCR1A=0x00;
 	TCCR1B=0x03; // prescaler %64, fin=8000000
@@ -22,6 +24,8 @@ void TIMER1_Init() {
 }
 
 // Timer 3 Initialization
+// SPI Timeout timer
+// Interrupt is executed only when there is timeout
 void TIMER3_Init() {
 	TCCR3A=0x00;
 	TCCR3B=0x07; // prescaler %1024, fin=8000000
