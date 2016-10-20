@@ -70,6 +70,7 @@ void read_memory(uint8_t mem_idx) {
     uint8_t pattern[2] = {0x55,0xAA};
     uint8_t ptr_idx = 0; // because the order of the pattern changes per page
     uint8_t page_errors;
+    uint32_t addr;
 
     for (i = 0; i < mem_arr[mem_idx].page_num; i++) {
 
@@ -83,13 +84,11 @@ void read_memory(uint8_t mem_idx) {
                 // SEFI detected
                 CHI_Memory_Status[mem_idx].no_SEFI_timeout++;
 	            CHI_Board_Status.no_SEFI_detected++; //number of SEFIs
-                jmp_next_mem = 1;
-                break;
+                // jump to next memory
+                return 0;
             }
         }
-        if (jmp_next_mem) {
-            break;
-        }
+        // TODO Stop timer?
 
         //check page
         page_errors = 0;
@@ -98,45 +97,46 @@ void read_memory(uint8_t mem_idx) {
                 // if pattern error..
                 page_errors++;
                 CHI_Memory_Status[mem_idx].no_SEU++;
+                //calculate the address of the SEU
+                // page_number*pagesize + address in page
+                addr = (uint32_t) i*mem_arr[mem_idx].page_size + j;
+
                 if (page_errors > 10) {
                     // remove the last three errors and store a SEFI
                     Event_cnt -= 10;
                     Memory_Events[Event_cnt].memory_id = 0x80 | mem_idx; //1 in upper memory bit signifies a SEFI
-                    Memory_Events[Event_cnt].addr1 = mem_idx;
-                    Memory_Events[Event_cnt].addr2 = mem_idx;
-                    Memory_Events[Event_cnt].addr3 = mem_idx;
+                    Memory_Events[Event_cnt].addr1 = (uint8_t) (addr);
+                    Memory_Events[Event_cnt].addr2 = (uint8_t) (addr>>8);
+                    Memory_Events[Event_cnt].addr3 = (uint8_t) (addr>>16);
                     Memory_Events[Event_cnt].value = buf[j];
-                    break;
+                    // Reprogram and move on to next page
+                    return 1;
                 }
 
-                if (Event_cnt < 499) {
+                if (Event_cnt < 500) {
                     Memory_Events[Event_cnt].memory_id = mem_idx;
-                    Memory_Events[Event_cnt].addr1 = mem_idx;
-                    Memory_Events[Event_cnt].addr2 = mem_idx;
-                    Memory_Events[Event_cnt].addr3 = mem_idx;
+                    Memory_Events[Event_cnt].addr1 = (uint8_t) (addr);
+                    Memory_Events[Event_cnt].addr2 = (uint8_t) (addr>>8);
+                    Memory_Events[Event_cnt].addr3 = (uint8_t) (addr>>16);
                     Memory_Events[Event_cnt].value = buf[j];
                     Event_cnt++;
                 } else {
-                    //transmit data
+                    //TODO transmit data
                 }
-                // CHIMERA Memory Event Structure
-
             }
             ptr_idx ^= ptr_idx;
         }
         // next page has opposite pattern
         ptr_idx ^= ptr_idx;
-        
-            
-        // if error erase and reprogram page
     }
 }
 
 int main(void)
 {
     // Variables for memory access
-    uint32_t read_addr; // current read address
-    uint8_t curr_page; // current page that is being read
+    uint32_t addr; // current address
+    uint8_t pattern; // pattern of current page
+    
 
 	OSCCAL=0xB3; // clock calibration
 	volatile uint32_t start_time;	
@@ -180,11 +180,11 @@ int main(void)
         enable_memory_vcc(mem_arr[i]);
     }
 
-    /*
     spi_command(WREN,7);
     uint8_t memid;
     get_jedec_id(7, &memid);
     USART0SendByte(memid);
+    /*
     uint8_t buffer[1024];
     erase_chip(7);
     uint8_t status =0x01;
@@ -192,15 +192,6 @@ int main(void)
     while (write_24bit_page(0,7) == BUSY);
     while (read_24bit_page(0, 7, buffer) == BUSY);
 */
-    spi_tx_byte((uint8_t) 0xFF);
-    uint32_t a;
-    uint16_t b = 0xFFFF;
-    uint16_t c = 0x0002;
-    a = b+c;
-    spi_tx_byte((uint8_t) (c>>24));
-    spi_tx_byte((uint8_t) (c>>16));
-    spi_tx_byte((uint8_t) (c>>8));
-    spi_tx_byte((uint8_t) (c));
     while(1){};
     
 
@@ -263,7 +254,17 @@ int main(void)
                 switch  (CHI_Board_Status.device_mode ) {
                     case 0x01: //readmode
                         // write to EEPROM that memory i is being tested
-                        read_memory(i);
+                        if (read_memory(i)) {
+                            // reprogram memory 
+                            erase_chip(i);
+                            addr = 0;
+                            pattern = 0;
+                            for (uint8_t j = 0; j < mem_arr[i].page_num; j++) {
+                                write_24bit_page(addr, pattern, i); 
+                                addr+=mem_arr[i].page_size;
+                                pattern ^= 0x01;
+                            }
+                        }
                         break;
 
                     case 0x02:

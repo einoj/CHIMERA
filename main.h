@@ -20,7 +20,7 @@ volatile uint8_t CHI_UART_RX_BUFFER_COUNTER;
 volatile uint16_t Event_cnt; // The number of events to transfer, set to 0 at startup and after a data transfer
 
 // CHIMERA Memory Status Structure
-struct CHI_Memory_Status_Str {
+struct __attribute__((packed)) CHI_Memory_Status_Str {
 	uint8_t status;
 	uint8_t no_SEU;
 	uint8_t no_LU;
@@ -33,7 +33,7 @@ volatile struct CHI_Memory_Status_Str CHI_Memory_Status[NUM_MEMORIES];
 //---------------------------------------------
 
 // CHIMERA Memory Event Structure
-struct CHI_Memory_Event_Str {
+struct __attribute__((packed)) CHI_Memory_Event_Str {
 	uint8_t memory_id;
 	uint8_t addr1;
 	uint8_t addr2;
