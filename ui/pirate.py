@@ -12,7 +12,13 @@ or:
 import sys
 import serial
 import argparse
+import logging
 from time import sleep
+
+
+# logger constants
+LOG_LEVEL = logging.DEBUG
+LOG_FORMAT = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 
 #buspirate commands
 commands = {
@@ -38,6 +44,17 @@ class FatalError(RuntimeError):
         RuntimeError.__init__(self, message)
 
 class KISS(object):
+    
+
+    _logger = logging.getLogger(__name__)
+    if not _logger.handlers: #create the handlers only once, to avoid duplicate logging
+        _logger.setLevel(LOG_LEVEL)
+        _console_handler = logging.StreamHandler()
+        _console_handler.setLevel(LOG_LEVEL)
+        _console_handler.setFormatter(LOG_FORMAT)
+        _logger.addHandler(_console_handler)
+        _logger.propagate = False
+
 
     def __init__(self, port=None, speed=None, pirate=False):
         """
@@ -51,7 +68,7 @@ class KISS(object):
         self.speed = speed
         self.interface = None
         self.interface_mode = None
-        print("INITIALIZING")
+        self._logger.debug("%s","INITIALIZING")
 
         if pirate == True and self.port is not None and self.speed is not None:
             self.interface_mode = 'buspirate'
@@ -70,7 +87,7 @@ class KISS(object):
             self.enter_buspirate_binarymode()
             
     def enter_buspirate_binarymode(self):
-        print('Entering binary mode...\n')
+        self._logger.debug('Entering binary mode...\n')
         count = 0
         done = False
         while count < 20 and not done:
@@ -78,36 +95,36 @@ class KISS(object):
             self.interface.write(commands.get('BBIO1'))
             got = self.interface.read(5)  # Read up to 5 bytes
             if got == b'BBIO1':
-                print('Entered binary mode!')
+                self._logger.debug('Entered binary mode!')
                 done = True
         if not done:
             self.interface.close()
-            print("got " + str(got))
+            self._logger.debug("got " + str(got))
             raise FatalError('Buspirate failed to enter binary mode')
 
         self.interface.write(commands.get('ART1'))
         got = self.interface.read(4)
         if got == b'ART1':
-            print('Entered UART mode')
+            self._logger.debug('Entered UART mode')
         else:
             raise FatalError('Buspirate failed to enter UART mode')
         
         self.interface.write(commands.get('SPEED'))
         got = self.interface.read(4)
         if got == b'\x01':
-            print('Changed speed to 38400')
+            self._logger.debug('Changed speed to 38400')
         else:
-            print (got)
+            self._logger.debug(got)
             raise FatalError('Buspirate failed to change speed')
 
         self.interface.write(commands.get('RX'))
         got = self.interface.read(1)
-        print (got)
+        self._logger.debug(got)
         
         # Entering Bridge mode
         self.interface.write(commands.get('BRIDGE'))
         got = self.interface.read(1)
-        print (got)
+        self._logger.debug(got)
             
     def read(self):
         while True:
@@ -115,7 +132,7 @@ class KISS(object):
             if not got:
                 sleep(0.1)
             else:
-                print(got)
+                self._logger.debug(got)
 
 
 
