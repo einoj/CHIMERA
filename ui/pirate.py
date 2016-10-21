@@ -20,6 +20,12 @@ from time import sleep
 LOG_LEVEL = logging.DEBUG
 LOG_FORMAT = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 
+#KISS constants
+FEND = chr(0xC0)
+FESC = chr(0xDB)
+TFEND = chr(0xDC)
+TFESC = chr(0xDD)
+
 #buspirate commands
 commands = {
         'BBIO1': b'\x00',    # Enter reset binary mode
@@ -127,13 +133,44 @@ class KISS(object):
         self._logger.debug(got)
             
     def read(self):
+        read_buffer = ""
         while True:
-            got = self.interface.read(1)
-            if not got:
-                sleep(0.1)
-            else:
-                self._logger.debug(got)
+            read_data = None
+            read_data = self.interface.read(1)
+            waiting_data = self.interface.inWaiting()
+            if waiting_data:
+                read_data = ''.join([read_data, self.interface.read(waiting_data)])
 
+            if read_data is not None:
+                frames = [ ] 
+                split_data = read_data.split(FEND) 
+                len_fend = len(split_data)
+                self._logger.debug(len_fend)
+
+                # No FEND in frame
+                if len_fend == 1:
+                    read_buffer = ''.join([read_buffer, split_data[0]])
+                # Single FEND in frame
+                elif len_fend == 2:
+                # Closing FEND found
+                    if split_data[0]:
+                        # Partial frame continued, otherwise drop
+                        frames.append(''.join([read_buffer, split_data[0]]))
+                        read_buffer = ''
+                    # Opening FEND found
+                else:
+                    frames.append(read_buffer)
+                    read_buffer = split_data[1] 
+               # At least one complete frame received
+           elif len_fend >= 3:
+               for i in range(0, len_fend - 1):
+                   _str = ''.join([read_buffer, split_data[i]])
+                     if _str:
+                         frames.append(_str)
+                        read_buffer = ''
+                  if split_data[len_fend - 1]:
+                      read_buffer = split_data[len_fend - 1]
+        for frame in frames
 
 
 def main():

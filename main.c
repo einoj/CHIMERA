@@ -155,16 +155,12 @@ int main(void)
 
     Event_cnt = 0;
 	
-	// Initialize the Board
-    CHI_Board_Status.reset_type = 65;
-    CHI_Board_Status.device_mode = 0x01;
-    CHI_Board_Status.latch_up_detected = 67;
-    CHI_Board_Status.working_memories = 68;
-    CHI_Board_Status.no_cycles = 69;
-    CHI_Board_Status.no_LU_detected = 70;
-	CHI_Board_Status.no_SEU_detected = 71; //number of SEUs
-	CHI_Board_Status.no_SEFI_detected = FEND; //number of SEFIs
-	
+	// Initialize the Board status for testing purposes
+	CHI_Board_Status.device_mode = 0x01; // mode of the instrument
+	CHI_Board_Status.mem_to_test = 0x0fff; // memories to be tested - each bit corresponds to one memory	
+    CHI_Board_Status.reset_type = 0x01;
+	CHI_Board_Status.no_cycles = 0x92; // number of SCI cycles performed on memories
+
     //transmit_kiss((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
     // Test of detailed frame transmission
     CHI_Board_Status.local_time = 0xDEADBEEF;
@@ -192,7 +188,7 @@ int main(void)
     while (write_24bit_page(0,7) == BUSY);
     while (read_24bit_page(0, 7, buffer) == BUSY);
 */
-    while(1){};
+    while(1){USART0SendByte("A");};
     
 
         //read_status_reg(&status_reg,7); 
