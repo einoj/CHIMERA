@@ -334,7 +334,7 @@ void Send_ACK()
 {
 	USART0SendByte(FEND);
 	USART0SendByte(CHI_COMM_ID_ACK);
-	USART0SendByte(0xCC); // precalculated CRC
+	USART0SendByte(0xF1); // precalculated CRC
 	USART0SendByte(FEND);
 }
 
@@ -343,6 +343,6 @@ void Send_NACK()
 {
 	USART0SendByte(FEND);
 	USART0SendByte(CHI_COMM_ID_NACK);
-	USART0SendByte(0xCC); // precalculated CRC
+	USART0SendByte(0x8A); // precalculated CRC
 	USART0SendByte(FEND);
 }

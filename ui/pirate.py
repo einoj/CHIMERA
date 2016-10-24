@@ -13,18 +13,41 @@ import sys
 import serial
 import argparse
 import logging
+import Queue
 from time import sleep
-
+from crc8 import RMAP_CalculateCRC 
 
 # logger constants
 LOG_LEVEL = logging.DEBUG
 LOG_FORMAT = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 
 #KISS constants
-FEND = chr(0xC0)
-FESC = chr(0xDB)
-TFEND = chr(0xDC)
-TFESC = chr(0xDD)
+FEND = b'\xC0'
+FESC =  b'\xDB'
+TFEND = b'\xDC'
+TFESC = b'\xDD'
+
+# "FEND is sent as FESC, TFEND"
+FESC_TFEND = b''.join([FESC, TFEND])
+
+# "FESC is sent as FESC, TFESC"
+FESC_TFESC = b''.join([FESC, TFESC])
+
+def decode_kiss_frame(frame):
+    """
+    Recover special codes, per KISS spec.
+    "If the FESC_TFESC or FESC_TFEND escaped codes appear in the data received, they
+    need to be recovered to the original codes. The FESC_TFESC code is replaced by
+    FESC code and FESC_TFEND is replaced by FEND code."
+    - http://en.wikipedia.org/wiki/KISS_(TNC)#Description
+    """
+    return frame.replace(
+        FESC_TFESC,
+        FESC
+    ).replace(
+        FESC_TFEND,
+        FEND
+    )
 
 #buspirate commands
 commands = {
@@ -50,6 +73,10 @@ class FatalError(RuntimeError):
         RuntimeError.__init__(self, message)
 
 class KISS(object):
+    """
+    KISS class based on https://github.com/ampledata/kiss/,
+    Changed to python3 version using bytes instead of str
+    """
     
 
     _logger = logging.getLogger(__name__)
@@ -75,6 +102,7 @@ class KISS(object):
         self.interface = None
         self.interface_mode = None
         self._logger.debug("%s","INITIALIZING")
+        self.frame_queue = Queue.Queue() #messages to be sent are put here, messages are read by sending thread
 
         if pirate == True and self.port is not None and self.speed is not None:
             self.interface_mode = 'buspirate'
@@ -133,49 +161,69 @@ class KISS(object):
         self._logger.debug(got)
             
     def read(self):
-        read_buffer = ""
+        read_buffer = b''
         while True:
             read_data = None
             read_data = self.interface.read(1)
             waiting_data = self.interface.inWaiting()
             if waiting_data:
-                read_data = ''.join([read_data, self.interface.read(waiting_data)])
+                read_data = b''.join([read_data, self.interface.read(waiting_data)])
 
-            if read_data is not None:
+            if read_data:
                 frames = [ ] 
                 split_data = read_data.split(FEND) 
                 len_fend = len(split_data)
-                self._logger.debug(len_fend)
+                self._logger.debug("frame length = %s",len_fend)
 
                 # No FEND in frame
                 if len_fend == 1:
-                    read_buffer = ''.join([read_buffer, split_data[0]])
+                    read_buffer = b''.join([read_buffer, split_data[0]])
                 # Single FEND in frame
                 elif len_fend == 2:
                 # Closing FEND found
                     if split_data[0]:
                         # Partial frame continued, otherwise drop
-                        frames.append(''.join([read_buffer, split_data[0]]))
-                        read_buffer = ''
+                        frames.append(b''.join([read_buffer, split_data[0]]))
+                        read_buffer = b''
                     # Opening FEND found
-                else:
-                    frames.append(read_buffer)
-                    read_buffer = split_data[1] 
-               # At least one complete frame received
-           elif len_fend >= 3:
-               for i in range(0, len_fend - 1):
-                   _str = ''.join([read_buffer, split_data[i]])
-                     if _str:
-                         frames.append(_str)
-                        read_buffer = ''
-                  if split_data[len_fend - 1]:
-                      read_buffer = split_data[len_fend - 1]
-        for frame in frames
+                    else:
+                        frames.append(read_buffer)
+                        read_buffer = split_data[1] 
+                # At least one complete frame received
+                elif len_fend >= 3:
+                   for i in range(0, len_fend - 1):
+                       _str = b''.join([read_buffer, split_data[i]])
+                       if _str:
+                           frames.append(_str)
+                           read_buffer = b''
+                       if split_data[len_fend - 1]:
+                           read_buffer = split_data[len_fend - 1]
+
+                for frame in frames:
+
+                    # decode frame
+                    decode_kiss_frame(frame)
+
+                    #check CRC
+                    checksum = 0
+                    for data in frame:
+                        RMAP_CalculateCRC(checksum,data)
+                    #SEND ack if crc == 0 else nak
+                    if checksum != 0:
+                        self._logger.debug("checksum= %s, sending NAK",checksum)
+                        #send nak
+                    else:
+                        self._logger.debug("checksum= %s, sending ACK",checksum)
+                        #send ack
+
+
+    def write(self):
 
 
 def main():
-    ki = KISS(port='COM7', speed='115200', pirate=True)
+    ki = KISS(port='/dev/ttyUSB0', speed='115200', pirate=True)
     ki.start()
+    ki.write()
     ki.read()
         #port.close()
 

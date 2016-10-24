@@ -62,7 +62,7 @@ ISR(TIMER3_OVF_vect) {
 	TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt
 }
 
-void read_memory(uint8_t mem_idx) {
+uint8_t read_memory(uint8_t mem_idx) {
     uint8_t buf[256]; // the buffer must fit a whole page of, some memories have different page sizes
     uint16_t i, j;
     // If we have a timeout SEFI we want to jump to the next memory
@@ -129,6 +129,7 @@ void read_memory(uint8_t mem_idx) {
         // next page has opposite pattern
         ptr_idx ^= ptr_idx;
     }
+    return 0;
 }
 
 int main(void)
@@ -156,10 +157,11 @@ int main(void)
     Event_cnt = 0;
 	
 	// Initialize the Board status for testing purposes
-	CHI_Board_Status.device_mode = 0x01; // mode of the instrument
-	CHI_Board_Status.mem_to_test = 0x0fff; // memories to be tested - each bit corresponds to one memory	
+    // SOFTWARE version 0x10
     CHI_Board_Status.reset_type = 0x01;
-	CHI_Board_Status.no_cycles = 0x92; // number of SCI cycles performed on memories
+	CHI_Board_Status.device_mode = 0x01; // mode of the instrument
+	CHI_Board_Status.no_cycles = 0xff92; // number of SCI cycles performed on memories
+    //CHI_Board_Status.mem_to_test = 0x0fff; // memories to be tested - each bit corresponds to one memory	
 
     //transmit_kiss((uint8_t*) &CHI_Board_Status, CHI_BOARD_STATUS_LEN);
     // Test of detailed frame transmission
@@ -188,7 +190,8 @@ int main(void)
     while (write_24bit_page(0,7) == BUSY);
     while (read_24bit_page(0, 7, buffer) == BUSY);
 */
-    while(1){USART0SendByte("A");};
+    transmit_CHI_STATUS();
+    while(1){};
     
 
         //read_status_reg(&status_reg,7); 
