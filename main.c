@@ -71,11 +71,9 @@ uint8_t read_memory(uint8_t mem_idx) {
     uint32_t addr;
 
     for (i = 0; i < mem_arr[mem_idx].page_num; i++) {
-
         //reset timer
 		// ENABLE TIMER
-        CHI_Board_Status.SPI_timeout_detected=0;
-        TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt
+        TIMER3_Enable();
 
         // read page
         while (read_24bit_page(0, mem_idx, buf) == BUSY) {
@@ -88,6 +86,7 @@ uint8_t read_memory(uint8_t mem_idx) {
             }
         }
 		
+	    ETIMSK|=0x04;
 		// DISABLE TIMER
 
         //check page
@@ -95,6 +94,7 @@ uint8_t read_memory(uint8_t mem_idx) {
         for (j = 0; j < mem_arr[mem_idx].page_size; j++) {
             if (buf[j] != pattern[ptr_idx]) {
                 // if pattern error..
+                CHI_Board_Status.mem_reprog |= (1<<i); // mark memory for reprogramming
                 page_errors++;
                 CHI_Memory_Status[mem_idx].no_SEU++;
                 //calculate the address of the SEU
@@ -140,7 +140,7 @@ uint8_t read_memory(uint8_t mem_idx) {
 void Power_On_Init() {
 	    CHI_Board_Status.device_mode = 0x01;
 	    CHI_Board_Status.latch_up_detected = 0;
-	    CHI_Board_Status.mem_to_test = 0x0002;
+	    CHI_Board_Status.mem_to_test = 0x0080;
 		CHI_Board_Status.mem_tested = 0;
 		CHI_Board_Status.working_memories = 0x0FFF;
 	    CHI_Board_Status.no_cycles = 0;
@@ -148,6 +148,7 @@ void Power_On_Init() {
 	    CHI_Board_Status.no_SEU_detected = 0; //number of SEUs
 	    CHI_Board_Status.no_SEFI_detected = 0; //number of SEFIs
 		CHI_Board_Status.Event_cnt = 0; // EVENT counter
+        CHI_Board_Status.mem_reprog = 0; // which memories to be reprogrammed
 }
 
 int main(void)
@@ -193,9 +194,10 @@ int main(void)
 		CHI_Board_Status.no_cycles++; // increase number of memory cycles
 		
 		while(CHI_Board_Status.mem_tested<6) {
+			
 				
 			for (int i=0;i<12;i++) {	
-				if ((CHI_Memory_Status[i].no_SEU) > 0)	{
+                if (CHI_Board_Status.mem_reprog & (1<<i)) {
 					//CHI_Memory_Status[i].no_SEU = 0;
 					// rewrite the memory
 					/*
@@ -209,7 +211,7 @@ int main(void)
 						pattern ^= 0x01;
 					}
 					*/
-					CHI_Board_Status.mem_to_test&=~(1<<i);
+					//CHI_Board_Status.mem_to_test&=~(1<<i);
 				}
 			
 				if ((CHI_Memory_Status[i].no_LU) > 3 )	{
@@ -247,7 +249,7 @@ int main(void)
 				}
 			}
 		}
-		
+
 		CHI_Board_Status.mem_tested=0;
 		transmit_CHI_SCI_TM();
     }

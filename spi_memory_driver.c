@@ -182,7 +182,6 @@ uint8_t read_24bit_page(uint32_t addr, uint8_t mem_idx, uint8_t *buffer)
 
     read_status_reg(&status_reg, mem_idx);
     if (!(status_reg & (1<<WIP))) { // Is internal write or erase is currently in progress?
-
         CHIP_SELECT(mem_idx);
         spi_tx_byte(READ);
         spi_tx_byte((uint8_t)(addr>>16)); // Send the MSB byte. Casting to uint8_t will send onlyt the lower byte
