@@ -13,7 +13,7 @@ import sys
 import serial
 import argparse
 import logging
-import Queue
+from asyncio import Queue
 from time import sleep
 from crc8 import RMAP_CalculateCRC 
 
@@ -102,7 +102,7 @@ class KISS(object):
         self.interface = None
         self.interface_mode = None
         self._logger.debug("%s","INITIALIZING")
-        self.frame_queue = Queue.Queue() #messages to be sent are put here, messages are read by sending thread
+        #self.frame_queue = Queue.Queue() #messages to be sent are put here, messages are read by sending thread
 
         if pirate == True and self.port is not None and self.speed is not None:
             self.interface_mode = 'buspirate'
@@ -217,13 +217,12 @@ class KISS(object):
                         #send ack
 
 
-    def write(self):
-
+#    def write(self):
 
 def main():
     ki = KISS(port='/dev/ttyUSB0', speed='115200', pirate=True)
     ki.start()
-    ki.write()
+    #ki.write()
     ki.read()
         #port.close()
 
