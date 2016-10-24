@@ -13,11 +13,12 @@
 #define CHI_COMM_ID_MODE 0x07
 #define CHI_COMM_ID_TIMESTAMP 0x08
 
+#define CHI_NUM_EVENT 380
 
 volatile uint8_t CHI_UART_RX_BUFFER[CHI_UART_RX_BUFFER_SIZE];
 volatile uint8_t CHI_UART_RX_BUFFER_INDEX;
 volatile uint8_t CHI_UART_RX_BUFFER_COUNTER;
-volatile uint16_t Event_cnt; // The number of events to transfer, set to 0 at startup and after a data transfer
+volatile uint16_t ; // The number of events to transfer, set to 0 at startup and after a data transfer
 
 // CHIMERA Memory Status Structure
 struct __attribute__((packed)) CHI_Memory_Status_Str {
@@ -34,13 +35,14 @@ volatile struct CHI_Memory_Status_Str CHI_Memory_Status[NUM_MEMORIES];
 
 // CHIMERA Memory Event Structure
 struct __attribute__((packed)) CHI_Memory_Event_Str {
+	uint32_t timestamp;
 	uint8_t memory_id;
 	uint8_t addr1;
 	uint8_t addr2;
 	uint8_t addr3;
 	uint8_t value;
 };
-volatile struct CHI_Memory_Event_Str Memory_Events[500];
+volatile struct CHI_Memory_Event_Str Memory_Events[CHI_NUM_EVENT];
 
 //---------------------------------------------
 
@@ -54,12 +56,14 @@ struct __attribute__((packed)) CHI_Board_Status_Str {
 	uint8_t SPI_timeout_detected; // SPI time-out detected flag
 	uint8_t current_memory;	// id of currently processed memory
 	uint16_t mem_to_test; // memories to be tested - each bit corresponds to one memory	
+	uint8_t mem_tested;	// number of memories that were tested in one cycle
 	uint16_t working_memories; // summary of which memory is working
 	uint16_t no_cycles; // number of SCI cycles performed on memories
 	uint16_t no_LU_detected; //number of Latch-Ups
 	uint16_t no_SEU_detected; //number of SEUs
 	uint16_t no_SEFI_detected; //number of SEFIs
-	uint8_t COMM_flags;
+	uint8_t COMM_flags;	// 	ACK/NACK flags ... unused now
+	uint16_t Event_cnt; // Number of EVENTs
 };
 volatile struct CHI_Board_Status_Str CHI_Board_Status;
 //---------------------------------------------

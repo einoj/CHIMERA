@@ -65,30 +65,30 @@ ISR(TIMER3_OVF_vect) {
 uint8_t read_memory(uint8_t mem_idx) {
     uint8_t buf[256]; // the buffer must fit a whole page of, some memories have different page sizes
     uint16_t i, j;
-    // If we have a timeout SEFI we want to jump to the next memory
-    uint8_t jmp_next_mem = 0;
     uint8_t pattern[2] = {0x55,0xAA};
     uint8_t ptr_idx = 0; // because the order of the pattern changes per page
-    uint8_t page_errors;
+    uint8_t page_errors; //SEU errors
     uint32_t addr;
 
     for (i = 0; i < mem_arr[mem_idx].page_num; i++) {
 
         //reset timer
+		// ENABLE TIMER
         CHI_Board_Status.SPI_timeout_detected=0;
         TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt
 
         // read page
         while (read_24bit_page(0, mem_idx, buf) == BUSY) {
             if (CHI_Board_Status.SPI_timeout_detected) {
-                // SEFI detected
+                // SEFI detected, SPI timeout
                 CHI_Memory_Status[mem_idx].no_SEFI_timeout++;
 	            CHI_Board_Status.no_SEFI_detected++; //number of SEFIs
                 // jump to next memory
                 return 0;
             }
         }
-        // TODO Stop timer?
+		
+		// DISABLE TIMER
 
         //check page
         page_errors = 0;
@@ -102,32 +102,37 @@ uint8_t read_memory(uint8_t mem_idx) {
                 addr = (uint32_t) i*mem_arr[mem_idx].page_size + j;
 
                 if (page_errors > 10) {
-                    // remove the last three errors and store a SEFI
-                    Event_cnt -= 10;
-                    Memory_Events[Event_cnt].memory_id = 0x80 | mem_idx; //1 in upper memory bit signifies a SEFI
-                    Memory_Events[Event_cnt].addr1 = (uint8_t) (addr);
-                    Memory_Events[Event_cnt].addr2 = (uint8_t) (addr>>8);
-                    Memory_Events[Event_cnt].addr3 = (uint8_t) (addr>>16);
-                    Memory_Events[Event_cnt].value = buf[j];
-                    // Reprogram and move on to next page
+                    // remove the last ten errors and store a SEFI
+					CHI_Memory_Status[mem_idx].no_SEU -= 11;
+					CHI_Memory_Status[mem_idx].no_SEFI_wr_error++;
+					CHI_Board_Status.Event_cnt -= 10;
+					Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
+                    Memory_Events[CHI_Board_Status.Event_cnt].memory_id = 0x80 | mem_idx; //1 in upper memory bit signifies a SEFI
+                    Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
+                    Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
+                    Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
+                    Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
+					CHI_Board_Status.Event_cnt++;
                     return 1;
                 }
 
-                if (Event_cnt < 500) {
-                    Memory_Events[Event_cnt].memory_id = mem_idx;
-                    Memory_Events[Event_cnt].addr1 = (uint8_t) (addr);
-                    Memory_Events[Event_cnt].addr2 = (uint8_t) (addr>>8);
-                    Memory_Events[Event_cnt].addr3 = (uint8_t) (addr>>16);
-                    Memory_Events[Event_cnt].value = buf[j];
-                    Event_cnt++;
-                } else {
-                    //TODO transmit data
+               else if (CHI_Board_Status.Event_cnt < CHI_NUM_EVENT) {
+                    Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
+					Memory_Events[CHI_Board_Status.Event_cnt].memory_id = mem_idx;
+                    Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
+                    Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
+                    Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
+                    Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
+                    CHI_Board_Status.Event_cnt++;
+                }
+				
+				else {
+                    //TODO transmit data when EVENT table if full
                 }
             }
-            ptr_idx ^= ptr_idx;
+            ptr_idx ~= ptr_idx;
         }
-        // next page has opposite pattern
-        ptr_idx ^= ptr_idx;
+        ptr_idx = 0;
     }
     return 0;
 }
@@ -136,11 +141,13 @@ void Power_On_Init() {
 	    CHI_Board_Status.device_mode = 0x01;
 	    CHI_Board_Status.latch_up_detected = 0;
 	    CHI_Board_Status.mem_to_test = 0x0FFF;
+		CHI_Board_Status.mem_tested = 0;
 		CHI_Board_Status.working_memories = 0x0FFF;
 	    CHI_Board_Status.no_cycles = 0;
 	    CHI_Board_Status.no_LU_detected = 0;
 	    CHI_Board_Status.no_SEU_detected = 0; //number of SEUs
 	    CHI_Board_Status.no_SEFI_detected = 0; //number of SEFIs
+		CHI_Board_Status.Event_cnt = 0; // EVENT counter
 }
 
 int main(void)
@@ -166,93 +173,78 @@ int main(void)
 	Power_On_Init();	// Initialize variable on board
 		
 	sei();				// Turn on interrupts	
-	
-    Event_cnt = 0; // ?????
 		
-	//  -v- ??????? remove?
-    //disable_memory(mem_arr[1]);
-    uint8_t status_reg = 0x66;
-    enable_pin_macro(PORTB, 0x10); // Turn on LDO
-
+	transmit_CHI_STATUS();
+			
     // enable all memories
     for (uint8_t i = 0; i < 12; i++) {
         enable_pin_macro(*mem_arr[i].cs_port, mem_arr[i].PIN_CS);
         enable_memory_vcc(mem_arr[i]);
     }
-
-    spi_command(WREN,7);
-    uint8_t memid;
-    get_jedec_id(7, &memid);
-    USART0SendByte(memid); 
-
-	// Load Configuration&Status from EEPROM (i.e. already failed memories, no LU event, what memory was processed when watchdog tripped)
-	
-	// Prepare scientific program (see if maybe one of the memories is failing all the time and exclude it)
 	
 	/* Main Loop */
-	
-	// Open issue: policy of watchdog, how to set-up watchdog and how/when to reset it?
     while (1) 
     {	
 		start_time=CHI_Board_Status.local_time;
 		
 		CHI_Board_Status.no_cycles++; // increase number of memory cycles
-
-		transmit_CHI_SCI_TM();
-
-		for (int i=0;i<12;i++) {	
-			if ((CHI_Memory_Status[i].no_SEU) > 0)	{
-				// rewrite the memory
-			}
+		
+		while(CHI_Board_Status.mem_tested<6) {
+				
+			for (int i=0;i<12;i++) {	
+				if ((CHI_Memory_Status[i].no_SEU) > 0)	{
+					//CHI_Memory_Status[i].no_SEU = 0;
+					// rewrite the memory
+					/*
+					// reprogram memory
+					erase_chip(i);
+					addr = 0;
+					pattern = 0;
+					for (uint8_t j = 0; j < mem_arr[i].page_num; j++) {
+						write_24bit_page(addr, pattern, i);
+						addr+=mem_arr[i].page_size;
+						pattern ^= 0x01;
+					}
+					*/
+				}
 			
-			if ((CHI_Memory_Status[i].no_LU) >3 )	{
-				// exclude the memory from the test if LU > 3 TBD
-				CHI_Board_Status.mem_to_test&=~(1<<i);
+				if ((CHI_Memory_Status[i].no_LU) > 3 )	{
+					// exclude the memory from the test if LU > 3 TBD
+					CHI_Board_Status.mem_to_test&=~(1<<i);
+				}
+
+				else if ((CHI_Memory_Status[i].no_SEFI_timeout+CHI_Memory_Status[i].no_SEFI_wr_error)>10)	{
+					// exclude the memory from the test if SEFI > 10 TBD
+					CHI_Board_Status.mem_to_test&=~(1<<i);
+				}
 			}
 
-			else if ((CHI_Memory_Status[i].no_SEFI_timeout+CHI_Memory_Status[i].no_SEFI_wr_error)>10)	{
-				// exclude the memory from the test if SEFI > 10 TBD
-				CHI_Board_Status.mem_to_test&=~(1<<i);
-            }
-		}
+			for(uint8_t i=0;i<12;i++) {
+				if (CHI_Board_Status.mem_to_test & (1<<i)) {
+				
+					CHI_Board_Status.current_memory=i;
+					CHI_Board_Status.mem_tested++;
+				
+					// Test memory (test procedure defined by device_mode(read only, write read, etc.))
+					switch  (CHI_Board_Status.device_mode ) {
+						case 0x01: //readmode
+							// write to EEPROM that memory i is being tested
+							read_memory(i);
+							break;
 
-		for(uint8_t i=0;i<12;i++) {
-			if (CHI_Board_Status.mem_to_test & (1<<i)) {
-				CHI_Board_Status.current_memory=i;
-		
-				TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
-		
-				// Test memory (test procedure defined by device_mode(read only, write read, etc.))
-                switch  (CHI_Board_Status.device_mode ) {
-                    case 0x01: //readmode
-                        // write to EEPROM that memory i is being tested
-                        if (read_memory(i)) {
-                            // reprogram memory 
-                            erase_chip(i);
-                            addr = 0;
-                            pattern = 0;
-                            for (uint8_t j = 0; j < mem_arr[i].page_num; j++) {
-                                write_24bit_page(addr, pattern, i); 
-                                addr+=mem_arr[i].page_size;
-                                pattern ^= 0x01;
-                            }
-                        }
-                        break;
-
-                    case 0x02:
-                        //erase_read_write(mem_arr[i]);
-                        break;
-
-                    default:
-                        read_memory(i);
-                        break;
-                }
+						case 0x02:
+							//erase_read_write(mem_arr[i]);
+							break;
+n
+						default:
+							read_memory(i);
+							break;
+					}
+				}
 			}
 		}
 		
-		// Could be obsolete..
-		while(CHI_Board_Status.local_time-start_time<10000){ // wait 10 second, RESET WATCHDOG IF NEEDED
-			TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt, reset CNT every time
-		}
+		CHI_Board_Status.mem_tested=0;
+		transmit_CHI_SCI_TM();
     }
 }

@@ -1,5 +1,6 @@
 #include "memories.h"
 
+// number of pages, AND THEN page size
 const struct Memory mem_arr[12] = {
  {0b00000001, 0b00010000, 256, 4, &PORTA, &PORTC},
  {0b00000010, 0b00000100, 256, 4, &PORTA, &PORTC},
