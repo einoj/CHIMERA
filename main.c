@@ -8,7 +8,7 @@
 #include "main.h"
 #include "memories.h"
 #include "spi_memory_driver.h"
-#include "ldo.h"
+#include "CHIMERA_Board_Defs.h"
 
 // The number of bytes in the CHI_Board_Status struct.
 // Needed to send the data over UART
@@ -130,7 +130,7 @@ uint8_t read_memory(uint8_t mem_idx) {
                     //TODO transmit data when EVENT table if full
                 }
             }
-            ptr_idx ~= ptr_idx;
+            ptr_idx = ~ptr_idx;
         }
         ptr_idx = 0;
     }
@@ -140,7 +140,7 @@ uint8_t read_memory(uint8_t mem_idx) {
 void Power_On_Init() {
 	    CHI_Board_Status.device_mode = 0x01;
 	    CHI_Board_Status.latch_up_detected = 0;
-	    CHI_Board_Status.mem_to_test = 0x0FFF;
+	    CHI_Board_Status.mem_to_test = 0x0002;
 		CHI_Board_Status.mem_tested = 0;
 		CHI_Board_Status.working_memories = 0x0FFF;
 	    CHI_Board_Status.no_cycles = 0;
@@ -176,7 +176,10 @@ int main(void)
 		
 	transmit_CHI_STATUS();
 			
-    // enable all memories
+	// LDO for memories ON
+	LDO_ON;
+			
+    // VCC enable all memories
     for (uint8_t i = 0; i < 12; i++) {
         enable_pin_macro(*mem_arr[i].cs_port, mem_arr[i].PIN_CS);
         enable_memory_vcc(mem_arr[i]);
@@ -206,6 +209,7 @@ int main(void)
 						pattern ^= 0x01;
 					}
 					*/
+					CHI_Board_Status.mem_to_test&=~(1<<i);
 				}
 			
 				if ((CHI_Memory_Status[i].no_LU) > 3 )	{
@@ -235,7 +239,7 @@ int main(void)
 						case 0x02:
 							//erase_read_write(mem_arr[i]);
 							break;
-n
+
 						default:
 							read_memory(i);
 							break;

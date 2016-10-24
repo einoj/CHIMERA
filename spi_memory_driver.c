@@ -191,7 +191,7 @@ uint8_t read_24bit_page(uint32_t addr, uint8_t mem_idx, uint8_t *buffer)
         while (read_cnt < page_size) {
             //*buffer_ptr++ = spi_tx_byte(0xFF);
             buffer[read_cnt] = spi_tx_byte(0xFF);
-            USART0SendByte(buffer[read_cnt]);
+            //USART0SendByte(buffer[read_cnt]);
             read_cnt++;
         }
         CHIP_DESELECT(mem_idx);

@@ -49,7 +49,8 @@ unsigned char ucByte;
 
 void USART0SendByte(uint8_t u8Data) {
     //wait while previous byte is completed
-    while(!(UCSR0A&(1<<UDRE0))){};
+    //while(!(UCSR0A&(1<<UDRE0))){};
+	while((UCSR0A & 1<<UDRE0) == 0) ;
     // Transmit data
     UDR0 = u8Data;
 }
