@@ -7,7 +7,7 @@ void PORT_Init() {
 	PORTA=0x00;
 	
 	DDRB=0xF7;
-	PORTB=0x80;
+	//PORTB=0x80;
 
 	DDRC=0xFF;
 	PORTC=0x1F;

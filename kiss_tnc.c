@@ -23,7 +23,7 @@ ISR(TIMER0_OVF_vect) {
 	uint8_t RX_BUFFER[10];
 	uint8_t RX_i=0;
 	uint8_t checksum = 0;
-	
+	uint8_t FENDi = 0; //counter of 0xC0 bytes
 	TCCR0=0x00; // turn clock off to wait for another UART RX interrupt
 	TCNT0=0xFF-CHI_PARSER_TIMEOUT; // We need 50 ticks to get 10ms interrupt
 	
@@ -34,7 +34,7 @@ ISR(TIMER0_OVF_vect) {
 		// removing the KISS overhead/framing
 		// and calculating crc
 		for (int i=0;i<CHI_UART_RX_BUFFER_COUNTER;i++) {
-			if (CHI_UART_RX_BUFFER[i]==FEND ) {}
+			if (CHI_UART_RX_BUFFER[i]==FEND ) {FENDi++;}
 			else if (CHI_UART_RX_BUFFER[i]==FESC) {
 				if (CHI_UART_RX_BUFFER[i+1]==TFEND) {
 					RMAP_CalculateCRC(checksum, FEND);
@@ -57,27 +57,54 @@ ISR(TIMER0_OVF_vect) {
 				RX_i++;
 			}
 		}
-		
+		if (FENDi!=2) {
+			Send_NACK();
+			
+			// Clear buffer for next frame
+			CHI_UART_RX_BUFFER_COUNTER=0;
+			CHI_UART_RX_BUFFER_INDEX=0;			
+			
+			return;			
+		}
 		// CRC Parsing
 		// Off for debuging
 		/*
 		if (checksum != 0) {
 			// CRC Error
 			Send_NACK();
+			
+			// Clear buffer for next frame
+			CHI_UART_RX_BUFFER_COUNTER=0;
+			CHI_UART_RX_BUFFER_INDEX=0;
+			
 			return;
 		}
 		*/
+				
 		switch (RX_BUFFER[0]) {
 			
 			case (CHI_COMM_ID_ACK): // ACK, set flag that ACK was received
-			// Set ACK flag
-			CHI_Board_Status.COMM_flags |= 0x01;
+				// Set ACK flag
+				CHI_Board_Status.COMM_flags |= 0x01;
 			break;
 			
 			case (CHI_COMM_ID_NACK): // ACK, set flag that ACK was received
-			// set NACK flag
-			CHI_Board_Status.COMM_flags |= 0x02;
-			// redo last command
+				// set NACK flag
+				CHI_Board_Status.COMM_flags |= 0x02;
+				// redo last command
+				switch (CHI_Board_Status.last_cmd) {
+					case (CHI_COMM_ID_STATUS):
+					transmit_CHI_STATUS();
+					break;
+					
+					case (CHI_COMM_ID_EVENT):
+					transmit_CHI_EVENTS(0);
+					break;
+
+					case (CHI_COMM_ID_SCI_TM):
+					transmit_CHI_SCI_TM();
+					break;										
+				}
 			break;
 			
 			case (CHI_COMM_ID_TIMESTAMP): // TIMESTAMP, 20ms delay parsing, include that?
@@ -91,14 +118,17 @@ ISR(TIMER0_OVF_vect) {
 			break;
 			
 			case (CHI_COMM_ID_STATUS):
+			CHI_Board_Status.last_cmd=RX_BUFFER[0];
 			transmit_CHI_STATUS();
 			break;
 			
 			case (CHI_COMM_ID_EVENT):
+			CHI_Board_Status.last_cmd=RX_BUFFER[0];
 			transmit_CHI_EVENTS(0);
 			break;
 
 			case (CHI_COMM_ID_SCI_TM):
+			CHI_Board_Status.last_cmd=RX_BUFFER[0];
 			transmit_CHI_SCI_TM();
 			break;
 			
@@ -119,7 +149,7 @@ ISR(TIMER0_OVF_vect) {
 	}
 	else {
 		// SEND NACK
-		USART0SendByte(0xFE);
+		Send_NACK();
 	}
 	
 	// Clear buffer for next frame
