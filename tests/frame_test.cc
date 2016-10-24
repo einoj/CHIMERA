@@ -1,8 +1,16 @@
 #include "chimera.h"
 #include <limits.h>
 #include "gtest/gtest.h"
-#include "kiss_tnc.h"
 #include "readbin.h"
+
+void printframe(uint8_t* data, int len) 
+{
+    int i;
+    for (i = 0; i < len; i++) {
+        printf("%d,",data[i]);
+    }
+    printf("\n");
+}
 
 TEST(FrameTest, Goodframes) {
     unsigned char nFrames;
@@ -31,9 +39,13 @@ TEST(FrameTest, Badframes) {
     unsigned char nFrames;
     unsigned char **frames = readframes("badframes.bin", &nFrames);
     int len;
+    unsigned char crc;
     for(int i=1;i<2*nFrames;i+=2){
         len = decode_dataframe(&frames[i][1]);
-        EXPECT_TRUE(0 != check_crc(&frames[i][1],len)) << "Error occured in frame number: " << (i+1)/2;
+        crc = check_crc(&frames[i][1],len);
+        EXPECT_TRUE(0 != crc ) << "Error occured in frame number: " << (i+1)/2;
+        if (crc == 0) 
+            printframe(&frames[i][1],len);
     }
     freeframes(frames, nFrames);
 }

@@ -200,6 +200,7 @@ class KISS(object):
                            read_buffer = split_data[len_fend - 1]
 
                 for frame in frames:
+                    self._logger.debug("frame = %s", frame)
 
                     # decode frame
                     decode_kiss_frame(frame)
@@ -207,7 +208,7 @@ class KISS(object):
                     #check CRC
                     checksum = 0
                     for data in frame:
-                        RMAP_CalculateCRC(checksum,data)
+                        checksum = RMAP_CalculateCRC(checksum,data)
                     #SEND ack if crc == 0 else nak
                     if checksum != 0:
                         self._logger.debug("checksum= %s, sending NAK",checksum)
