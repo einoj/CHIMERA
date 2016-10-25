@@ -204,17 +204,20 @@ int main(void)
 					// rewrite the memory
 					
 					// reprogram memory
-                    // START TIMER
+                    // START TIMER, Erase can take upto 6 seconds in M25P05A
 					erase_chip(i);
 
                     //END TIMER
 					addr = 0;
 					pattern = 0;
 					for (uint8_t j = 0; j < mem_arr[i].page_num; j++) {
+                        //START SPI TIMER should be less than 1 second
 						write_24bit_page(addr, pattern, i);
+                        //RESET TIMER
 						addr+=mem_arr[i].page_size;
 						pattern ^= 0x01;
 					}
+                    //END SPI TIMER
 					
 					//CHI_Board_Status.mem_to_test&=~(1<<i);
 				}
