@@ -13,7 +13,7 @@ import sys
 import serial
 import argparse
 import logging
-import Queue
+from queue import Queue
 from time import sleep
 from crc8 import RMAP_CalculateCRC 
 
@@ -102,7 +102,7 @@ class KISS(object):
         self.interface = None
         self.interface_mode = None
         self._logger.debug("%s","INITIALIZING")
-        self.frame_queue = Queue.Queue() #messages to be sent are put here, messages are read by sending thread
+        self.frame_queue = Queue() #messages to be sent are put here, messages are read by sending thread
 
         if pirate == True and self.port is not None and self.speed is not None:
             self.interface_mode = 'buspirate'
@@ -173,7 +173,7 @@ class KISS(object):
                 frames = [ ] 
                 split_data = read_data.split(FEND) 
                 len_fend = len(split_data)
-                self._logger.debug("frame length = %s",len_fend)
+                #self._logger.debug("frame length = %s",len_fend)
 
                 # No FEND in frame
                 if len_fend == 1:
@@ -199,7 +199,10 @@ class KISS(object):
                        if split_data[len_fend - 1]:
                            read_buffer = split_data[len_fend - 1]
 
+                num = 0 
                 for frame in frames:
+
+                    self._logger.debug("frame %d %s",num,frame)
 
                     # decode frame
                     decode_kiss_frame(frame)
@@ -207,24 +210,28 @@ class KISS(object):
                     #check CRC
                     checksum = 0
                     for data in frame:
-                        RMAP_CalculateCRC(checksum,data)
+                        checksum = RMAP_CalculateCRC(checksum,data)
                     #SEND ack if crc == 0 else nak
-                    if checksum != 0:
-                        self._logger.debug("checksum= %s, sending NAK",checksum)
-                        #send nak
-                    else:
-                        self._logger.debug("checksum= %s, sending ACK",checksum)
-                        #send ack
+                    #if checksum != 0:
+                    #    self._logger.debug("checksum= %s, sending NAK",checksum)
+                    #    #send nak
+                    #else:
+                    #    self._logger.debug("checksum= %s, sending ACK",checksum)
+                    #    #send ack
 
 
-    def write(self):
 
+
+    def simpleread(self):
+        while True:
+            read_data = self.interface.read(1)
+            if len(read_data)>0:
+                self._logger.debug(read_data)
 
 def main():
-    ki = KISS(port='/dev/ttyUSB0', speed='115200', pirate=True)
+    ki = KISS(port='com7', speed='115200', pirate=True)
     ki.start()
-    ki.write()
-    ki.read()
+    ki.simpleread()
         #port.close()
 
 
