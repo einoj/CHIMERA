@@ -177,7 +177,7 @@ int main(void)
 	sei();				// Turn on interrupts	
 		
 	transmit_CHI_STATUS();
-			
+    
 	// LDO for memories ON
 	LDO_ON;
 			
