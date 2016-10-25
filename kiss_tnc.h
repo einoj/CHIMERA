@@ -1,5 +1,7 @@
 // KISS TNC Commands
-#define DATA 0x00
+#define STATUS_DATA 0x00
+#define SCI_DATA    0x01
+#define EVENTS_DATA 0x03
 #define TIME 0x0F
 #define MODE 0x0C
 #define ACK  0x09

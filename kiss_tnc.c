@@ -196,6 +196,10 @@ void transmit_CHI_EVENTS(uint16_t num_events) {
     uint8_t checksum = 0; // Used to store the crc8 checksum
     uint8_t data; // Used to temporarily hold bytes of multibyte variables
     USART0SendByte(FEND);
+    // SEND DATA TYPE
+    data = (uint8_t) EVENTS_DATA;
+    checksum = _crc8_ccitt_update(checksum,data);
+    transmit_kiss(data);
     for (i = 0; i < num_events; i++) {
         // Send Memory_id
         data =  Memory_Events[i].memory_id;
@@ -230,6 +234,11 @@ void transmit_CHI_STATUS() {
 	uint8_t data; // Used to temporarily hold bytes of multibyte variables
 	
 	USART0SendByte(FEND);
+    
+    // SEND DATA TYPE
+    data = (uint8_t) STATUS_DATA;
+    checksum = _crc8_ccitt_update(checksum,data);
+    transmit_kiss(data);
 
     // Send Instrument status
     data = (uint8_t) SOFTWARE_VERSION;
@@ -266,6 +275,11 @@ void transmit_CHI_SCI_TM(void)
     uint8_t data; // Used to temporarily hold bytes of multibyte variables
 
     USART0SendByte(FEND);
+
+    // SEND DATA TYPE
+    data = (uint8_t) SCI_DATA;
+    checksum = _crc8_ccitt_update(checksum,data);
+    transmit_kiss(data);
 
     // Send On Board TIME stamp
     data = (uint8_t) CHI_Board_Status.local_time;
@@ -330,7 +344,7 @@ void transmit_CHI_SCI_TM(void)
         transmit_kiss(CHI_Memory_Status[i].no_SEFI_timeout);
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEFI_wr_error);
         transmit_kiss(CHI_Memory_Status[i].no_SEFI_wr_error);
-        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].current2);
+        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].current1);
         transmit_kiss(CHI_Memory_Status[i].current1);
     }
 

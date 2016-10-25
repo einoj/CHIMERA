@@ -46,6 +46,8 @@ def decode_kiss_frame(frame):
     frame = b''.join(frame)
     return frame.replace( FESC_TFESC, FESC).replace( FESC_TFEND, FEND)
 
+def interperate_data(
+
 #buspirate commands
 commands = {
         'BBIO1': b'\x00',    # Enter reset binary mode
@@ -61,6 +63,19 @@ commands = {
         # Set the UART at a preconfigured speed value: 0000=300, 0001=1200, 0010=2400,0011=4800,0100=9600,0101=19200,0110=31250 (MIDI), 0111=38400,1000=57600,1010=115200 
         'SPEED': b'\x67'
 }
+class CHI_SCI_DATA():
+    def __init__(self):
+        self.localtime = 0
+        self.working_memories = 0
+        self.no_LU_detected = 0
+        self.no_SEFI_detected = 0
+        self.no_SEFI_detected = 0
+        self.mem1_status = 0
+        self.mem1_no_SEU = 0 
+        self.mem1_no_SEFI_timeout = 0
+        self.mem1_no_SEFI_wr_error = 1
+        self.mem1_curren1 = 0
+        
 
 def arg_auto_int(x):
     return int(x, 0)
