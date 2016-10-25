@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "kiss_tnc.h"
 #include "crc8.h"
+#include "chimera.h"
 
 #define BUFFMAX 100
 

@@ -6,3 +6,6 @@ void TIMER1_Init();
 
 // Timer 3 Initialization
 void TIMER3_Init();
+
+// Timer 3 Enable
+void TIMER3_Enable();
