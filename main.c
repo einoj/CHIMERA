@@ -89,13 +89,14 @@ uint8_t read_memory(uint8_t mem_idx) {
         }
 		
 		// DISABLE TIMER
-
+    
         //check page
         page_errors = 0;
         for (j = 0; j < mem_arr[mem_idx].page_size; j++) {
             if (buf[j] != pattern[ptr_idx]) {
                 // if pattern error..
                 page_errors++;
+                CHI_Board_Status.mem_reprog |= (1<<mem_idx);
                 CHI_Memory_Status[mem_idx].no_SEU++;
                 //calculate the address of the SEU
                 // page_number*pagesize + address in page
@@ -140,9 +141,10 @@ uint8_t read_memory(uint8_t mem_idx) {
 void Power_On_Init() {
 	    CHI_Board_Status.device_mode = 0x01;
 	    CHI_Board_Status.latch_up_detected = 0;
-	    CHI_Board_Status.mem_to_test = 0x0002;
+	    CHI_Board_Status.mem_to_test = 0x0080;
 		CHI_Board_Status.mem_tested = 0;
 		CHI_Board_Status.working_memories = 0x0FFF;
+        CHI_Board_Status.mem_reprog = 0;
 	    CHI_Board_Status.no_cycles = 0;
 	    CHI_Board_Status.no_LU_detected = 0;
 	    CHI_Board_Status.no_SEU_detected = 0; //number of SEUs
@@ -163,7 +165,7 @@ int main(void)
 	
 	// Initialize the Board
 	PORT_Init();	//Initialize the ports
-	ADC_Init();		// Initialize the ADC for latch-up
+	//ADC_Init();		// Initialize the ADC for latch-up
     SPI_Init();		// Initialize the SPI
 	TIMER0_Init();	// Parser/time-out Timer
 	TIMER1_Init();	// Instrument Time Counter
@@ -195,12 +197,17 @@ int main(void)
 		while(CHI_Board_Status.mem_tested<6) {
 				
 			for (int i=0;i<12;i++) {	
-				if ((CHI_Memory_Status[i].no_SEU) > 0)	{
+			
+				if (CHI_Board_Status.mem_reprog & (1<<i))	{
+					transmit_CHI_STATUS();
 					//CHI_Memory_Status[i].no_SEU = 0;
 					// rewrite the memory
-					/*
+					
 					// reprogram memory
+                    // START TIMER
 					erase_chip(i);
+
+                    //END TIMER
 					addr = 0;
 					pattern = 0;
 					for (uint8_t j = 0; j < mem_arr[i].page_num; j++) {
@@ -208,8 +215,8 @@ int main(void)
 						addr+=mem_arr[i].page_size;
 						pattern ^= 0x01;
 					}
-					*/
-					CHI_Board_Status.mem_to_test&=~(1<<i);
+					
+					//CHI_Board_Status.mem_to_test&=~(1<<i);
 				}
 			
 				if ((CHI_Memory_Status[i].no_LU) > 3 )	{
@@ -247,8 +254,7 @@ int main(void)
 				}
 			}
 		}
-		
 		CHI_Board_Status.mem_tested=0;
-		transmit_CHI_SCI_TM();
+		//transmit_CHI_SCI_TM();
     }
 }
