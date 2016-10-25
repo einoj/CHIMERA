@@ -30,8 +30,9 @@ uart.o: uart.c
 kiss_tnc.o: kiss_tnc.c
 	$(GCC) $(AVRFLAGS) $(CFLAGS) kiss_tnc.c -c
 
-crc8.o: crc8.c
-	$(GCC) $(AVRFLAGS) $(CFLAGS) crc8.c -c
+#DEPRACTED
+#crc8.o: crc8.c
+#	$(GCC) $(AVRFLAGS) $(CFLAGS) crc8.c -c
 
 HAL.o: HAL.c
 	$(GCC) $(AVRFLAGS) $(CFLAGS) HAL.c -c

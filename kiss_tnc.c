@@ -1,8 +1,8 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
-
+#include <util/crc16.h>
 #include "kiss_tnc.h"
-#include "crc8.h"
+//#include "crc8.h" DEPRECTED
 #include "uart.h"
 #include "main.h"
 
@@ -37,12 +37,12 @@ ISR(TIMER0_OVF_vect) {
 			if (CHI_UART_RX_BUFFER[i]==FEND ) {FENDi++;}
 			else if (CHI_UART_RX_BUFFER[i]==FESC) {
 				if (CHI_UART_RX_BUFFER[i+1]==TFEND) {
-					RMAP_CalculateCRC(checksum, FEND);
+					_crc8_ccitt_update(checksum, FEND);
 					RX_BUFFER[RX_i]=FEND;
 					RX_i++; i++;
 				}
 				else if (CHI_UART_RX_BUFFER[i+1]==TFESC) {
-					RMAP_CalculateCRC(checksum, FESC);
+					_crc8_ccitt_update(checksum, FESC);
 					RX_BUFFER[RX_i]=FESC;
 					RX_i++;	i++;
 				}
@@ -52,7 +52,7 @@ ISR(TIMER0_OVF_vect) {
 				}
 			}
 			else {
-				RMAP_CalculateCRC(checksum, CHI_UART_RX_BUFFER[i]);
+				_crc8_ccitt_update(checksum, CHI_UART_RX_BUFFER[i]);
 				RX_BUFFER[RX_i]=CHI_UART_RX_BUFFER[i];
 				RX_i++;
 			}
@@ -199,21 +199,21 @@ void transmit_CHI_EVENTS(uint16_t num_events) {
     for (i = 0; i < num_events; i++) {
         // Send Memory_id
         data =  Memory_Events[i].memory_id;
-        checksum = RMAP_CalculateCRC(checksum, data);
+        checksum = _crc8_ccitt_update(checksum, data);
         transmit_kiss(data);
         // Send address 
         data =  Memory_Events[i].addr1;
-        checksum = RMAP_CalculateCRC(checksum, data);
+        checksum = _crc8_ccitt_update(checksum, data);
         transmit_kiss(data);
         data =  Memory_Events[i].addr2;
-        checksum = RMAP_CalculateCRC(checksum, data);
+        checksum = _crc8_ccitt_update(checksum, data);
         transmit_kiss(data);
         data =  Memory_Events[i].addr3;
-        checksum = RMAP_CalculateCRC(checksum, data);
+        checksum = _crc8_ccitt_update(checksum, data);
         transmit_kiss(data);
         // Send value of upset 
         data =  Memory_Events[i].value;
-        checksum = RMAP_CalculateCRC(checksum, data);
+        checksum = _crc8_ccitt_update(checksum, data);
         transmit_kiss(data);
     }
     //TODO wait for ack before setting num_events to 0
@@ -233,23 +233,23 @@ void transmit_CHI_STATUS() {
 
     // Send Instrument status
     data = (uint8_t) SOFTWARE_VERSION;
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
     	
     data = (uint8_t) (CHI_Board_Status.reset_type);
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 
     data = (uint8_t) (CHI_Board_Status.device_mode);
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 
     data = (uint8_t) CHI_Board_Status.no_cycles;
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
     
     data = (uint8_t) (CHI_Board_Status.no_cycles>>8);
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 
 	//Send checksum
@@ -269,68 +269,68 @@ void transmit_CHI_SCI_TM(void)
 
     // Send On Board TIME stamp
     data = (uint8_t) CHI_Board_Status.local_time;
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 
     data = (uint8_t) (CHI_Board_Status.local_time>>8);
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 
     data = (uint8_t) (CHI_Board_Status.local_time>>16);
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 
     data = (uint8_t) (CHI_Board_Status.local_time>>24);
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
     
     // Send Instrument status
     data = (uint8_t) CHI_Board_Status.working_memories;
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
     
     data = (uint8_t) (CHI_Board_Status.working_memories>>8);
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
     
     // Send No. of LU events 
     data = (uint8_t) CHI_Board_Status.no_LU_detected;
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
     
     data = (uint8_t) (CHI_Board_Status.no_LU_detected>>8);
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
     
     // Send No. of SEU events 
     data = (uint8_t) CHI_Board_Status.no_SEU_detected;
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
     
     data = (uint8_t) (CHI_Board_Status.no_SEU_detected>>8);
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
     
     // Send No. of SEFI events 
     data = (uint8_t) CHI_Board_Status.no_SEFI_detected;
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
     
     data = (uint8_t) (CHI_Board_Status.no_SEFI_detected>>8);
-    checksum = RMAP_CalculateCRC(checksum, data);
+    checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 
     // Send memory status of the 12 memories
     for (i = 0; i < NUM_MEMORIES; i++) {
-        checksum = RMAP_CalculateCRC(checksum, CHI_Memory_Status[i].status);
+        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].status);
         transmit_kiss(CHI_Memory_Status[i].status);
-        checksum = RMAP_CalculateCRC(checksum, CHI_Memory_Status[i].no_SEU);
+        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEU);
         transmit_kiss(CHI_Memory_Status[i].no_SEU);
-        checksum = RMAP_CalculateCRC(checksum, CHI_Memory_Status[i].no_SEFI_timeout);
+        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEFI_timeout);
         transmit_kiss(CHI_Memory_Status[i].no_SEFI_timeout);
-        checksum = RMAP_CalculateCRC(checksum, CHI_Memory_Status[i].no_SEFI_wr_error);
+        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEFI_wr_error);
         transmit_kiss(CHI_Memory_Status[i].no_SEFI_wr_error);
-        checksum = RMAP_CalculateCRC(checksum, CHI_Memory_Status[i].current2);
+        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].current2);
         transmit_kiss(CHI_Memory_Status[i].current1);
     }
 
