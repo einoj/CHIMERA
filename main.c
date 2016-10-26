@@ -78,8 +78,9 @@ uint8_t read_memory(uint8_t mem_idx) {
 		
         // read page
         while (read_24bit_page(0, mem_idx, buf) == BUSY) {
-			// if LU detected, return 0
-
+			
+			if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
+			
             if (CHI_Board_Status.SPI_timeout_detected) {
                 // SEFI detected, SPI timeout
                 CHI_Memory_Status[mem_idx].no_SEFI_timeout++;
@@ -90,12 +91,13 @@ uint8_t read_memory(uint8_t mem_idx) {
             }
         }
 		
-		// DISABLE TIMER
+		TIMER3_Disable();
     
         //check page
         page_errors = 0;
         for (j = 0; j < mem_arr[mem_idx].page_size; j++) {
-			// if LU detected, return 0
+			
+		
             if (buf[j] != pattern[ptr_idx]) {
                 // if pattern error..
                 page_errors++;
@@ -147,7 +149,7 @@ uint8_t read_memory(uint8_t mem_idx) {
 void Power_On_Init() {
 	    CHI_Board_Status.device_mode = 0x01;
 	    CHI_Board_Status.latch_up_detected = 0;
-	    CHI_Board_Status.mem_to_test = 0x0004;
+	    CHI_Board_Status.mem_to_test = 0x0007;
 		CHI_Board_Status.mem_tested = 0;
 		CHI_Board_Status.working_memories = 0x0FFF;
         CHI_Board_Status.mem_reprog = 0;
@@ -179,7 +181,7 @@ int main(void)
 	
 	// Initialize the Board
 	PORT_Init();	//Initialize the ports
-	//ADC_Init();		// Initialize the ADC for latch-up
+	ADC_Init();		// Initialize the ADC for latch-up
     SPI_Init();		// Initialize the SPI
 	TIMER0_Init();	// Parser/time-out Timer
 	TIMER1_Init();	// Instrument Time Counter
@@ -193,13 +195,16 @@ int main(void)
 
 	// LDO for memories ON
 	LDO_ON;
-			
+	
+	// Disable all CS
+    for (uint8_t i = 0; i < 12; i++)CHIP_DESELECT(i);
+	
     // VCC enable all memories
     for (uint8_t i = 0; i < 12; i++) {
-        enable_pin_macro(*mem_arr[i].cs_port, mem_arr[i].PIN_CS);
+        //enable_pin_macro(*mem_arr[i].cs_port, mem_arr[i].PIN_CS);
         enable_memory_vcc(mem_arr[i]);
     }
-	
+		
 	/* Main Loop */
     while (1) 
     {	
@@ -216,12 +221,19 @@ int main(void)
 						CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reporgramming flag
 						// reprogram memory
 						// START TIMER, Erase can take upto 6 seconds in M25P05A
-						// LDO ON
-						// VCC ON
-						// SPI line ON
+						LDO_ON;
+						//enable_memory_vcc(mem_arr[i]);
+						
 						erase_chip(i);
 					
+						if (CHI_Board_Status.latch_up_detected==1) {
+							CHI_Memory_Status[i].no_LU++;
+							CHI_Board_Status.latch_up_detected==0;
+							continue;
+						}
+										
 						//END TIMER
+						
 						addr = 0;
 						pattern = 0;
 						for (uint8_t j = 0; j < mem_arr[i].page_num; j++) {
@@ -232,8 +244,15 @@ int main(void)
 							pattern ^= 0x01;
 						}
 						//END SPI TIMER
-					
-						//CHI_Board_Status.mem_to_test&=~(1<<i);
+						
+						if (CHI_Board_Status.latch_up_detected==1) {
+							CHI_Memory_Status[i].no_LU++;
+							CHI_Board_Status.latch_up_detected==0;
+							continue;
+						}						
+						
+						//disable_memory_vcc(mem_arr[i]);	
+						
 					}
 			
 					if ((CHI_Memory_Status[i].no_LU) > 3 )	{
@@ -257,13 +276,21 @@ int main(void)
 					// Test memory (test procedure defined by device_mode(read only, write read, etc.))
 					switch  (CHI_Board_Status.device_mode ) {
 						case 0x01: //readmode
-							// write to EEPROM that memory i is being tested
-							// VCC on
-							// LDO ON
+						
 							//ENABLE SPI lines
-							read_memory(i);
-							// LU DETECTED, only if not retuurned 3
-							// VCC OFF
+							LDO_ON;
+							//enable_memory_vcc(mem_arr[i]);
+							
+							if (read_memory(i) == 0xAC) {
+								CHI_Memory_Status[i].no_LU++;
+								CHI_Board_Status.latch_up_detected==0;								
+							}
+							else if (CHI_Board_Status.latch_up_detected==1) {
+								CHI_Memory_Status[i].no_LU++;
+								CHI_Board_Status.latch_up_detected==0;
+							}							
+							
+							//disable_memory_vcc(mem_arr[i]);
 							break;
 
 						case 0x02:
