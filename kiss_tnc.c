@@ -344,12 +344,16 @@ void transmit_CHI_SCI_TM(void)
         transmit_kiss(CHI_Memory_Status[i].no_SEFI_seq);
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEU);
         transmit_kiss(CHI_Memory_Status[i].no_SEU);
+        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_LU);
+        transmit_kiss(CHI_Memory_Status[i].no_LU);
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEFI_timeout);
         transmit_kiss(CHI_Memory_Status[i].no_SEFI_timeout);
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEFI_wr_error);
         transmit_kiss(CHI_Memory_Status[i].no_SEFI_wr_error);
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].current1);
         transmit_kiss(CHI_Memory_Status[i].current1);
+        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].current2);
+        transmit_kiss(CHI_Memory_Status[i].current2);
     }
 
     // Send detailed Upset information
