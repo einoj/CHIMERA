@@ -67,6 +67,7 @@ ISR(TIMER0_OVF_vect) {
 			return;			
 		}
 		// CRC Parsing
+		
 		// Off for debuging
 		/*
 		if (checksum != 0) {
@@ -197,7 +198,7 @@ void transmit_CHI_EVENTS(uint16_t num_events) {
     uint8_t data; // Used to temporarily hold bytes of multibyte variables
     USART0SendByte(FEND);
     // SEND DATA TYPE
-    data = (uint8_t) EVENTS_DATA;
+    data = (uint8_t) CHI_COMM_ID_EVENT;
     checksum = _crc8_ccitt_update(checksum,data);
     transmit_kiss(data);
     for (i = 0; i < num_events; i++) {
@@ -236,7 +237,7 @@ void transmit_CHI_STATUS() {
 	USART0SendByte(FEND);
     
     // SEND DATA TYPE
-    data = (uint8_t) STATUS_DATA;
+    data = (uint8_t) CHI_COMM_ID_STATUS;
     checksum = _crc8_ccitt_update(checksum,data);
     transmit_kiss(data);
 
@@ -277,7 +278,7 @@ void transmit_CHI_SCI_TM(void)
     USART0SendByte(FEND);
 
     // SEND DATA TYPE
-    data = (uint8_t) SCI_DATA;
+    data = (uint8_t) CHI_COMM_ID_SCI_TM;
     checksum = _crc8_ccitt_update(checksum,data);
     transmit_kiss(data);
 
@@ -336,8 +337,8 @@ void transmit_CHI_SCI_TM(void)
 
     // Send memory status of the 12 memories
     for (i = 0; i < NUM_MEMORIES; i++) {
-        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].status);
-        transmit_kiss(CHI_Memory_Status[i].status);
+        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEFI_seq);
+        transmit_kiss(CHI_Memory_Status[i].no_SEFI_seq);
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEU);
         transmit_kiss(CHI_Memory_Status[i].no_SEU);
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEFI_timeout);

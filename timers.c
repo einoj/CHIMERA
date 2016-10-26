@@ -30,7 +30,7 @@ void TIMER3_Init() {
 	TCCR3A=0x00;
 	TCCR3B=0x07; // prescaler %1024, fin=8000000
 	TCCR3C=0x00;
-	ETIMSK|=0x00; // Don't enable on startup
+	ETIMSK|=0x04; // Don't enable on startup
 	TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt
 }
 

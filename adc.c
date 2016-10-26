@@ -43,8 +43,7 @@ ISR(ADC_vect)
 	
 	if (ADC_Median>(signed short)0x01F0) {
 		//LDO_OFF;
-		CHI_Board_Status.latch_up_detected=1;
-		
+		CHI_Board_Status.latch_up_detected=1;	
 		// All VCC EN to LOW to not power inverter
 		// This might be verified as new board has no pull-ups, could be removed?
 		//PORTB &= ~0x80;

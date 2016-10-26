@@ -56,7 +56,7 @@ ISR(TIMER1_OVF_vect) {
 	TCNT1=0xFFFF-125; // We need 125 ticks to get 1ms interrupt
 }
 
-// Timer 3 - Instrument Time
+// Timer 3 - Instrument TimTCNT3
 ISR(TIMER3_OVF_vect) {
 	CHI_Board_Status.SPI_timeout_detected=1;
 	TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt
@@ -78,10 +78,13 @@ uint8_t read_memory(uint8_t mem_idx) {
         TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt
 
         // read page
-        while (read_24bit_page(0, mem_idx, buf) == BUSY) {
+        while (read_24bit_page(0, mem_idx, buf) == 1) {
+			// if LU detected, return 0
+
             if (CHI_Board_Status.SPI_timeout_detected) {
                 // SEFI detected, SPI timeout
                 CHI_Memory_Status[mem_idx].no_SEFI_timeout++;
+				CHI_Memory_Status[mem_idx].no_SEFI_seq++;
 	            CHI_Board_Status.no_SEFI_detected++; //number of SEFIs
                 // jump to next memory
                 return 0;
@@ -93,6 +96,7 @@ uint8_t read_memory(uint8_t mem_idx) {
         //check page
         page_errors = 0;
         for (j = 0; j < mem_arr[mem_idx].page_size; j++) {
+			// if LU detected, return 0
             if (buf[j] != pattern[ptr_idx]) {
                 // if pattern error..
                 page_errors++;
@@ -106,6 +110,7 @@ uint8_t read_memory(uint8_t mem_idx) {
                     // remove the last ten errors and store a SEFI
 					CHI_Memory_Status[mem_idx].no_SEU -= 11;
 					CHI_Memory_Status[mem_idx].no_SEFI_wr_error++;
+					CHI_Memory_Status[mem_idx].no_SEFI_seq++;
 					CHI_Board_Status.Event_cnt -= 10;
 					Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
                     Memory_Events[CHI_Board_Status.Event_cnt].memory_id = 0x80 | mem_idx; //1 in upper memory bit signifies a SEFI
@@ -131,17 +136,19 @@ uint8_t read_memory(uint8_t mem_idx) {
                     //TODO transmit data when EVENT table if full
                 }
             }
-            ptr_idx = ~ptr_idx;
+            ptr_idx ^= 0x01;
         }
         ptr_idx = 0;
     }
+					
+	CHI_Memory_Status[mem_idx].no_SEFI_seq=0;
     return 0;
 }
 
 void Power_On_Init() {
 	    CHI_Board_Status.device_mode = 0x01;
 	    CHI_Board_Status.latch_up_detected = 0;
-	    CHI_Board_Status.mem_to_test = 0x0080;
+	    CHI_Board_Status.mem_to_test = 0x0004;
 		CHI_Board_Status.mem_tested = 0;
 		CHI_Board_Status.working_memories = 0x0FFF;
         CHI_Board_Status.mem_reprog = 0;
@@ -182,9 +189,6 @@ int main(void)
 	sei();				// Turn on interrupts	
 		
 	transmit_CHI_STATUS();
-    for (int i = 0; i<3; i++)
-        transmit_CHI_SCI_TM();
-    while (1);
     
 	// LDO for memories ON
 	LDO_ON;
@@ -205,39 +209,41 @@ int main(void)
 		while(CHI_Board_Status.mem_tested<6) {
 				
 			for (int i=0;i<12;i++) {	
-			
-				if (CHI_Board_Status.mem_reprog & (1<<i))	{
-					transmit_CHI_STATUS();
-					//CHI_Memory_Status[i].no_SEU = 0;
-					// rewrite the memory
+				if (CHI_Board_Status.mem_to_test & (1<<i)) {
+					if (CHI_Board_Status.mem_reprog & (1<<i))	{
 					
-					// reprogram memory
-                    // START TIMER, Erase can take upto 6 seconds in M25P05A
-					erase_chip(i);
-
-                    //END TIMER
-					addr = 0;
-					pattern = 0;
-					for (uint8_t j = 0; j < mem_arr[i].page_num; j++) {
-                        //START SPI TIMER should be less than 1 second
-						write_24bit_page(addr, pattern, i);
-                        //RESET TIMER
-						addr+=mem_arr[i].page_size;
-						pattern ^= 0x01;
+						CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reporgramming flag
+						// reprogram memory
+						// START TIMER, Erase can take upto 6 seconds in M25P05A
+						// LDO ON
+						// VCC ON
+						// SPI line ON
+						erase_chip(i);
+					
+						//END TIMER
+						addr = 0;
+						pattern = 0;
+						for (uint8_t j = 0; j < mem_arr[i].page_num; j++) {
+							//START SPI TIMER should be less than 1 second
+							while (write_24bit_page(addr, pattern, i) == BUSY);
+							//RESET TIMER
+							addr+=mem_arr[i].page_size;
+							pattern ^= 0x01;
+						}
+						//END SPI TIMER
+					
+						//CHI_Board_Status.mem_to_test&=~(1<<i);
 					}
-                    //END SPI TIMER
-					
-					//CHI_Board_Status.mem_to_test&=~(1<<i);
-				}
 			
-				if ((CHI_Memory_Status[i].no_LU) > 3 )	{
-					// exclude the memory from the test if LU > 3 TBD
-					CHI_Board_Status.mem_to_test&=~(1<<i);
-				}
+					if ((CHI_Memory_Status[i].no_LU) > 3 )	{
+						// exclude the memory from the test if LU > 3 TBD
+						CHI_Board_Status.mem_to_test&=~(1<<i);
+					}
 
-				else if ((CHI_Memory_Status[i].no_SEFI_timeout+CHI_Memory_Status[i].no_SEFI_wr_error)>10)	{
-					// exclude the memory from the test if SEFI > 10 TBD
-					CHI_Board_Status.mem_to_test&=~(1<<i);
+					else if ((CHI_Memory_Status[i].no_SEFI_seq)>10)	{
+						// exclude the memory from the test if SEFI > 10 TBD
+						CHI_Board_Status.mem_to_test&=~(1<<i);
+					}
 				}
 			}
 
@@ -251,7 +257,12 @@ int main(void)
 					switch  (CHI_Board_Status.device_mode ) {
 						case 0x01: //readmode
 							// write to EEPROM that memory i is being tested
+							// VCC on
+							// LDO ON
+							//ENABLE SPI lines
 							read_memory(i);
+							// LU DETECTED, only if not retuurned 3
+							// VCC OFF
 							break;
 
 						case 0x02:
@@ -266,6 +277,6 @@ int main(void)
 			}
 		}
 		CHI_Board_Status.mem_tested=0;
-		//transmit_CHI_SCI_TM();
+		transmit_CHI_SCI_TM();
     }
 }

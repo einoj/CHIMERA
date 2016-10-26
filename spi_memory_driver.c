@@ -284,7 +284,7 @@ uint8_t write_24bit_page(uint32_t addr, uint8_t ptr_i, uint8_t mem_idx)
     uint16_t write_cnt = 0;
     uint16_t page_size = mem_arr[mem_idx].page_size;
     uint8_t pattern[2] = {0x55,0xAA};
-    uint8_t i = ptr_i;
+    uint8_t i = 0;
     uint8_t status_reg;
 
     //if (start_addr <= TOP_ADDR) {

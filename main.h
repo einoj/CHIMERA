@@ -14,7 +14,7 @@ volatile uint16_t ; // The number of events to transfer, set to 0 at startup and
 
 // CHIMERA Memory Status Structure
 struct __attribute__((packed)) CHI_Memory_Status_Str {
-	uint8_t status;
+	uint8_t no_SEFI_seq; // number of SEFIs in a row
 	uint8_t no_SEU;
 	uint8_t no_LU;
     uint8_t no_SEFI_timeout;
