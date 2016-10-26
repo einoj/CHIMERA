@@ -148,6 +148,11 @@ void Power_On_Init() {
 	    CHI_Board_Status.no_SEU_detected = 0; //number of SEUs
 	    CHI_Board_Status.no_SEFI_detected = 0; //number of SEFIs
 		CHI_Board_Status.Event_cnt = 0; // EVENT counter
+		
+		// clear all statistics, for loop
+		CHI_Memory_Status[0].no_SEU=0;
+		CHI_Memory_Status[1].no_SEU=0;
+		CHI_Memory_Status[2].no_SEU=0;
 }
 
 int main(void)
