@@ -1,11 +1,11 @@
 // KISS TNC Commands
-#define STATUS_DATA 0x00
-#define SCI_DATA    0x01
-#define EVENTS_DATA 0x03
-#define TIME 0x0F
-#define MODE 0x0C
-#define ACK  0x09
-#define NAK  0x0A
+#define CHI_COMM_ID_ACK 0x1A
+#define CHI_COMM_ID_NACK 0x15
+#define CHI_COMM_ID_SCI_TM 0x01
+#define CHI_COMM_ID_STATUS 0x02
+#define CHI_COMM_ID_EVENT 0x04
+#define CHI_COMM_ID_MODE 0x07
+#define CHI_COMM_ID_TIMESTAMP 0x08
 
 // KISS TNC Frame format characters
 #define FEND 0xC0
