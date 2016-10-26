@@ -24,6 +24,7 @@ ISR(TIMER0_OVF_vect) {
 	uint8_t RX_i=0;
 	uint8_t checksum = 0;
 	uint8_t FENDi = 0; //counter of 0xC0 bytes
+	
 	TCCR0=0x00; // turn clock off to wait for another UART RX interrupt
 	TCNT0=0xFF-CHI_PARSER_TIMEOUT; // We need 50 ticks to get 10ms interrupt
 	
@@ -57,6 +58,7 @@ ISR(TIMER0_OVF_vect) {
 				RX_i++;
 			}
 		}
+		
 		if (FENDi!=2) {
 			Send_NACK();
 			
@@ -119,17 +121,14 @@ ISR(TIMER0_OVF_vect) {
 			break;
 			
 			case (CHI_COMM_ID_STATUS):
-			CHI_Board_Status.last_cmd=RX_BUFFER[0];
 			transmit_CHI_STATUS();
 			break;
 			
 			case (CHI_COMM_ID_EVENT):
-			CHI_Board_Status.last_cmd=RX_BUFFER[0];
 			transmit_CHI_EVENTS(0);
 			break;
 
 			case (CHI_COMM_ID_SCI_TM):
-			CHI_Board_Status.last_cmd=RX_BUFFER[0];
 			transmit_CHI_SCI_TM();
 			break;
 			
@@ -227,6 +226,8 @@ void transmit_CHI_EVENTS(uint16_t num_events) {
     
     //send end of frame
     USART0SendByte(FEND);
+
+	CHI_Board_Status.last_cmd=CHI_COMM_ID_EVENT;
 }
 
 void transmit_CHI_STATUS() {
@@ -267,6 +268,8 @@ void transmit_CHI_STATUS() {
 	
 	//send end of frame
 	USART0SendByte(FEND);
+
+	CHI_Board_Status.last_cmd=CHI_COMM_ID_STATUS;
 }
 
 void transmit_CHI_SCI_TM(void)
@@ -298,12 +301,12 @@ void transmit_CHI_SCI_TM(void)
     data = (uint8_t) (CHI_Board_Status.local_time>>24);
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
-    
+	
     // Send Instrument status
     data = (uint8_t) CHI_Board_Status.working_memories;
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
-    
+	
     data = (uint8_t) (CHI_Board_Status.working_memories>>8);
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
@@ -357,6 +360,8 @@ void transmit_CHI_SCI_TM(void)
     
     //send end of frame
     USART0SendByte(FEND);
+
+	CHI_Board_Status.last_cmd=CHI_COMM_ID_SCI_TM;
 }
 /* 
  * Takes a byte, KISS encodes it if needed, and transmits the KISS encoded data

@@ -8,4 +8,6 @@ void TIMER1_Init();
 void TIMER3_Init();
 
 // Timer 3 Enable
-void TIMER3_Enable();
+void TIMER3_Enable_1s();
+void TIMER3_Enable_8s();
+void TIMER3_Disable();

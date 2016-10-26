@@ -13,6 +13,9 @@
 #define TFEND 0xDC
 #define TFESC 0xDD
 
+volatile uint8_t CHI_UART_RX_BUFFER_INDEX;
+volatile uint8_t CHI_UART_RX_BUFFER_COUNTER;
+
 //uint8_t gen_crc(uint8_t* dataframe, uint16_t len);
 
 void transmit_kiss(uint8_t data);

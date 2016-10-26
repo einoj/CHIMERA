@@ -5,11 +5,10 @@
 #define CHI_UART_RX_BUFFER_SIZE 20
 #define CHI_PARSER_TIMEOUT 157
 
-#define CHI_NUM_EVENT 380
+#define CHI_NUM_EVENT 300
 
 volatile uint8_t CHI_UART_RX_BUFFER[CHI_UART_RX_BUFFER_SIZE];
-volatile uint8_t CHI_UART_RX_BUFFER_INDEX;
-volatile uint8_t CHI_UART_RX_BUFFER_COUNTER;
+
 volatile uint16_t ; // The number of events to transfer, set to 0 at startup and after a data transfer
 
 // CHIMERA Memory Status Structure

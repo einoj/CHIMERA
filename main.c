@@ -74,11 +74,10 @@ uint8_t read_memory(uint8_t mem_idx) {
 
         //reset timer
 		// ENABLE TIMER
-        CHI_Board_Status.SPI_timeout_detected=0;
-        TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt
-
+		TIMER3_Enable_1s();
+		
         // read page
-        while (read_24bit_page(0, mem_idx, buf) == 1) {
+        while (read_24bit_page(0, mem_idx, buf) == BUSY) {
 			// if LU detected, return 0
 
             if (CHI_Board_Status.SPI_timeout_detected) {
@@ -158,6 +157,9 @@ void Power_On_Init() {
 	    CHI_Board_Status.no_SEFI_detected = 0; //number of SEFIs
 		CHI_Board_Status.Event_cnt = 0; // EVENT counter
 		
+		CHI_UART_RX_BUFFER_INDEX=0;
+		CHI_UART_RX_BUFFER_COUNTER=0;
+		
 		// clear all statistics, for loop
 		CHI_Memory_Status[0].no_SEU=0;
 		CHI_Memory_Status[1].no_SEU=0;
@@ -182,14 +184,13 @@ int main(void)
 	TIMER0_Init();	// Parser/time-out Timer
 	TIMER1_Init();	// Instrument Time Counter
 	TIMER3_Init();	// SPI Time-Out Counter
-	USART0_Init();	// UART0 Initialization
-	
 	Power_On_Init();	// Initialize variable on board
+	USART0_Init();	// UART0 Initialization
 		
 	sei();				// Turn on interrupts	
 		
 	transmit_CHI_STATUS();
-    
+
 	// LDO for memories ON
 	LDO_ON;
 			

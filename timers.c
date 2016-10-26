@@ -28,14 +28,24 @@ void TIMER1_Init() {
 // Interrupt is executed only when there is timeout
 void TIMER3_Init() {
 	TCCR3A=0x00;
-	TCCR3B=0x07; // prescaler %1024, fin=8000000
+	TCCR3B=0x05; // prescaler %1024, fin=8000000
 	TCCR3C=0x00;
-	ETIMSK|=0x04; // Don't enable on startup
+	ETIMSK|=0x00; // Don't enable on startup, old: 0x04
 	TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt
 }
 
-void TIMER3_Enable() {
+void TIMER3_Enable_1s() {
     CHI_Board_Status.SPI_timeout_detected=0;
-	ETIMSK|=0x04; // Don't enable on startup
 	TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt
+	ETIMSK|=0x04; // Don't enable on startup
+}
+
+void TIMER3_Enable_8s() {
+    CHI_Board_Status.SPI_timeout_detected=0;
+	TCNT3=0xFFFF-62500; // We need 62500 ticks to get 8s interrupt
+	ETIMSK|=0x04; // Don't enable on startup
+}
+
+void TIMER3_Disable() {
+	ETIMSK &= ~ 0x04; // Don't enable on startup
 }
