@@ -72,6 +72,13 @@ uint8_t read_memory(uint8_t mem_idx) {
 
     for (i = 0; i < mem_arr[mem_idx].page_num; i++) {
 
+
+		// slowing down the procedure!!!?!!?!
+		TIMER3_Enable_1s();
+		while(CHI_Board_Status.SPI_timeout_detected==0);
+		TIMER3_Disable()
+		//---------------------------------------
+		
         //reset timer
 		// ENABLE TIMER
 		TIMER3_Enable_1s();
@@ -176,7 +183,7 @@ int main(void)
     
 	Power_On_Check();	// check what was the cause of reset
 	
-	OSCCAL=0xB3; // clock calibration
+	//OSCCAL=0xB3; // clock calibration
 	volatile uint32_t start_time;	
 	
 	// Initialize the Board
