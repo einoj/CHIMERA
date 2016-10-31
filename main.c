@@ -70,15 +70,13 @@ uint8_t read_memory(uint8_t mem_idx) {
     uint8_t page_errors; //SEU errors
     uint32_t addr;
 
-    for (i = 0; i < mem_arr[mem_idx].page_num; i++) {
-
-
 		// slowing down the procedure!!!?!!?!
-		TIMER3_Enable_1s();
+		TIMER3_Enable_8s();
 		while(CHI_Board_Status.SPI_timeout_detected==0);
-		TIMER3_Disable()
+		TIMER3_Disable();
 		//---------------------------------------
-		
+
+    for (i = 0; i < mem_arr[mem_idx].page_num; i++) {		
         //reset timer
 		// ENABLE TIMER
 		TIMER3_Enable_1s();

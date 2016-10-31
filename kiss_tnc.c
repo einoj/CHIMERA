@@ -38,12 +38,12 @@ ISR(TIMER0_OVF_vect) {
 			if (CHI_UART_RX_BUFFER[i]==FEND ) {FENDi++;}
 			else if (CHI_UART_RX_BUFFER[i]==FESC) {
 				if (CHI_UART_RX_BUFFER[i+1]==TFEND) {
-					_crc8_ccitt_update(checksum, FEND);
+					checksum=_crc8_ccitt_update(checksum, FEND);
 					RX_BUFFER[RX_i]=FEND;
 					RX_i++; i++;
 				}
 				else if (CHI_UART_RX_BUFFER[i+1]==TFESC) {
-					_crc8_ccitt_update(checksum, FESC);
+					checksum=_crc8_ccitt_update(checksum, FESC);
 					RX_BUFFER[RX_i]=FESC;
 					RX_i++;	i++;
 				}
@@ -53,7 +53,7 @@ ISR(TIMER0_OVF_vect) {
 				}
 			}
 			else {
-				_crc8_ccitt_update(checksum, CHI_UART_RX_BUFFER[i]);
+				checksum=_crc8_ccitt_update(checksum, CHI_UART_RX_BUFFER[i]);
 				RX_BUFFER[RX_i]=CHI_UART_RX_BUFFER[i];
 				RX_i++;
 			}
@@ -71,7 +71,6 @@ ISR(TIMER0_OVF_vect) {
 		// CRC Parsing
 		
 		// Off for debuging
-		/*
 		if (checksum != 0) {
 			// CRC Error
 			Send_NACK();
@@ -82,7 +81,6 @@ ISR(TIMER0_OVF_vect) {
 			
 			return;
 		}
-		*/
 				
 		switch (RX_BUFFER[0]) {
 			
@@ -255,11 +253,11 @@ void transmit_CHI_STATUS() {
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 
-    data = (uint8_t) CHI_Board_Status.no_cycles;
+    data = (uint8_t) (CHI_Board_Status.no_cycles>>8);
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
-    
-    data = (uint8_t) (CHI_Board_Status.no_cycles>>8);
+
+    data = (uint8_t) CHI_Board_Status.no_cycles;
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 
@@ -303,11 +301,11 @@ void transmit_CHI_SCI_TM(void)
     transmit_kiss(data);
 	
     // Send Instrument status
-    data = (uint8_t) CHI_Board_Status.working_memories;
+    data = (uint8_t) CHI_Board_Status.mem_to_test;
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 	
-    data = (uint8_t) (CHI_Board_Status.working_memories>>8);
+    data = (uint8_t) (CHI_Board_Status.mem_to_test>>8);
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
     
@@ -388,7 +386,7 @@ void Send_ACK()
 {
 	USART0SendByte(FEND);
 	USART0SendByte(CHI_COMM_ID_ACK);
-	USART0SendByte(0xF1); // precalculated CRC
+	USART0SendByte(0x46); // precalculated CRC
 	USART0SendByte(FEND);
 }
 
@@ -397,6 +395,6 @@ void Send_NACK()
 {
 	USART0SendByte(FEND);
 	USART0SendByte(CHI_COMM_ID_NACK);
-	USART0SendByte(0x8A); // precalculated CRC
+	USART0SendByte(0x6B); // precalculated CRC
 	USART0SendByte(FEND);
 }
