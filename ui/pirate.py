@@ -17,7 +17,7 @@ import threading
 from time import sleep
 from queue import Queue
 from time import sleep
-from crc8 import RMAP_CalculateCRC 
+from crc8 import calculateCRC8
 
 # logger constants
 LOG_LEVEL = logging.DEBUG
@@ -29,11 +29,32 @@ FESC =  b'\xDB'
 TFEND = b'\xDC'
 TFESC = b'\xDD'
 
+ACK = b'\x1A'
+NACK = b'\x15'
+SCI_TM = b'\x01'
+STATUS = b'\x02'
+EVENT = b'\x04'
+MODE = b'\x07'
+TIMESTAMP = b'\x08'
+
 # "FEND is sent as FESC, TFEND"
 FESC_TFEND = b''.join([FESC, TFEND])
 
 # "FESC is sent as FESC, TFESC"
 FESC_TFESC = b''.join([FESC, TFESC])
+
+
+def encode_kiss_frame(frame):
+    """
+    Append CRC8 to frame, then preform KISS encoding
+
+    """
+    checksum = 0
+
+    for byte in frame:
+        checksum = calculateCRC8(checksum,byte)
+    frame = b''.join([frame, bytes([checksum])])
+    return frame.replace(FESC, FESC_TFESC).replace(FEND, FESC_TFEND)
 
 def decode_kiss_frame(frame):
     """
@@ -45,7 +66,6 @@ def decode_kiss_frame(frame):
     """ 
     frame = b''.join(frame)
     return frame.replace( FESC_TFESC, FESC).replace( FESC_TFEND, FEND)
-
 
 #buspirate commands
 commands = {
@@ -74,7 +94,6 @@ class CHI_SCI_DATA():
         self.mem1_no_SEFI_timeout = 0
         self.mem1_no_SEFI_wr_error = 1
         self.mem1_curren1 = 0
-        
 
 def arg_auto_int(x):
     return int(x, 0)
@@ -172,7 +191,6 @@ class KISS(object):
         got = self.interface.read(1)
         self._logger.debug(got)
             
-
     #reads bytes 
     def simpleread(self):
         while True:
@@ -192,9 +210,22 @@ class KISS(object):
             frame = self.frame_queue.get()
             checksum = 0
             for i in frame:
-                checksum = RMAP_CalculateCRC(checksum,int.from_bytes(i, byteorder='little'))
-            self._logger.debug("Checksum = %s",checksum)
+                checksum = calculateCRC8(checksum,int.from_bytes(i, byteorder='little'))
             self._logger.debug(decode_kiss_frame(frame))
+        
+    def get_frame(self):
+        if not self.frame_queue.empty():
+            return b''.join(self.frame_queue.get())
+
+    def write(self, frame):
+        interface_handler = self.interface.write
+
+        if interface_handler is not None:
+            return interface_handler(b''.join([
+                FEND,
+                encode_kiss_frame(frame),
+                FEND
+                ]))
 
 def main():
     ki = KISS(port='com7', speed='115200', pirate=True)
@@ -202,6 +233,7 @@ def main():
     sr_read_thread = threading.Thread(target=ki.simpleread)
     sr_read_thread.daemon = True # stop when main thread stops
     sr_read_thread.start()
+
     while (1):
         ki.handle_frames()
         sleep(1)
