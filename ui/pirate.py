@@ -46,7 +46,6 @@ def decode_kiss_frame(frame):
     frame = b''.join(frame)
     return frame.replace( FESC_TFESC, FESC).replace( FESC_TFEND, FEND)
 
-def interperate_data(
 
 #buspirate commands
 commands = {
