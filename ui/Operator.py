@@ -2,24 +2,18 @@
 # -*- coding: utf-8 -*-
 
 """
-ZetCode PyQt5 tutorial 
+Ground Software for CHIMERA
 
-In this example, we create three toggle buttons.
-They will control the background colour of a 
-QFrame. 
-
-author: Jan Bodnar
-website: zetcode.com 
-last edited: January 2015
+author: Eino Oltedal
 """
 
 import sys
 from PyQt5.QtWidgets import (QWidget, QPushButton, 
-    QFrame, QApplication, QLabel)
+    QFrame, QApplication, QLabel, QTextBrowser, QGridLayout)
 from PyQt5.QtGui import QColor
 
 
-class Example(QWidget):
+class GroundSoftware(QWidget):
     
     def __init__(self):
         super().__init__()
@@ -34,6 +28,10 @@ class Example(QWidget):
 
         statusb = QPushButton('Get Status', self)
         statusb.move(10, 10)
+
+        lastFrame = QTextBrowser()
+
+        mainLayout = QGridLayout()
 
         statusb.clicked[bool].connect(self.getStatus)
 
@@ -139,5 +137,5 @@ class Example(QWidget):
 if __name__ == '__main__':
     
     app = QApplication(sys.argv)
-    ex = Example()
+    ex = GroundSoftware()
     sys.exit(app.exec_())
