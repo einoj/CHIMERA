@@ -71,26 +71,27 @@ uint8_t read_memory(uint8_t mem_idx) {
     uint32_t addr;
 
 		// slowing down the procedure!!!?!!?!
-		TIMER3_Enable_8s();
-		while(CHI_Board_Status.SPI_timeout_detected==0);
-		TIMER3_Disable();
+		//TIMER3_Enable_8s();
+		//while(CHI_Board_Status.SPI_timeout_detected==0);
+		//TIMER3_Disable();
 		//---------------------------------------
+
+	CHI_Memory_Status[mem_idx].current1=ADC_Median>>2; // Reading bias current measurement
 
     for (i = 0; i < mem_arr[mem_idx].page_num; i++) {		
         //reset timer
 		// ENABLE TIMER
 		TIMER3_Enable_1s();
-		
+
         // read page
         while (read_24bit_page(0, mem_idx, buf) == BUSY) {
-			
+
 			if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
 			
             if (CHI_Board_Status.SPI_timeout_detected) {
                 // SEFI detected, SPI timeout
                 CHI_Memory_Status[mem_idx].no_SEFI_timeout++;
 				CHI_Memory_Status[mem_idx].no_SEFI_seq++;
-	            CHI_Board_Status.no_SEFI_detected++; //number of SEFIs
                 // jump to next memory
                 return 0;
             }
@@ -104,13 +105,15 @@ uint8_t read_memory(uint8_t mem_idx) {
 			
 		
             if (buf[j] != pattern[ptr_idx]) {
-                // if pattern error..
+
+				if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
+
                 page_errors++;
                 CHI_Board_Status.mem_reprog |= (1<<mem_idx);
                 CHI_Memory_Status[mem_idx].no_SEU++;
-                //calculate the address of the SEU
+				
                 // page_number*pagesize + address in page
-                addr = (uint32_t) i*mem_arr[mem_idx].page_size + j;
+                addr = (uint32_t) i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
 
                 if (page_errors > 10) {
                     // remove the last ten errors and store a SEFI
@@ -154,23 +157,22 @@ uint8_t read_memory(uint8_t mem_idx) {
 void Power_On_Init() {
 	    CHI_Board_Status.device_mode = 0x01;
 	    CHI_Board_Status.latch_up_detected = 0;
-	    CHI_Board_Status.mem_to_test = 0x0007;
+	    CHI_Board_Status.mem_to_test = 0x0032;
 		CHI_Board_Status.mem_tested = 0;
-		CHI_Board_Status.working_memories = 0x0FFF;
         CHI_Board_Status.mem_reprog = 0;
 	    CHI_Board_Status.no_cycles = 0;
-	    CHI_Board_Status.no_LU_detected = 0;
-	    CHI_Board_Status.no_SEU_detected = 0; //number of SEUs
-	    CHI_Board_Status.no_SEFI_detected = 0; //number of SEFIs
 		CHI_Board_Status.Event_cnt = 0; // EVENT counter
 		
 		CHI_UART_RX_BUFFER_INDEX=0;
 		CHI_UART_RX_BUFFER_COUNTER=0;
 		
 		// clear all statistics, for loop
-		CHI_Memory_Status[0].no_SEU=0;
-		CHI_Memory_Status[1].no_SEU=0;
-		CHI_Memory_Status[2].no_SEU=0;
+		for (char i=0;i<12;i++) {
+			CHI_Memory_Status[i].no_SEU=0;
+			CHI_Memory_Status[i].no_LU=0;
+			CHI_Memory_Status[i].no_SEFI_timeout=0;
+			CHI_Memory_Status[i].no_SEFI_wr_error=0;
+		}
 }
 
 int main(void)
@@ -181,7 +183,7 @@ int main(void)
     
 	Power_On_Check();	// check what was the cause of reset
 	
-	//OSCCAL=0xB3; // clock calibration
+	OSCCAL=0xB3; // clock calibration
 	volatile uint32_t start_time;	
 	
 	// Initialize the Board
@@ -221,23 +223,35 @@ int main(void)
 				
 			for (int i=0;i<12;i++) {	
 				if (CHI_Board_Status.mem_to_test & (1<<i)) {
+					
+					if ((CHI_Memory_Status[i].no_LU) > 3 )	{
+						// exclude the memory from the test if LU > 3 TBD
+						CHI_Board_Status.mem_to_test&=~(1<<i);
+					}
+
+					else if ((CHI_Memory_Status[i].no_SEFI_seq)>10)	{
+						// exclude the memory from the test if SEFI > 10 TBD
+						CHI_Board_Status.mem_to_test&=~(1<<i);
+					}					
+					
 					if (CHI_Board_Status.mem_reprog & (1<<i))	{
 					
-						CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reporgramming flag
-						// reprogram memory
-						// START TIMER, Erase can take upto 6 seconds in M25P05A
 						LDO_ON;
-						//enable_memory_vcc(mem_arr[i]);
-						
 						erase_chip(i);
-					
+						
+						// Wait for status register to go down
+						// It this does not happen in 8 seconds, -> SEFI
+						
 						if (CHI_Board_Status.latch_up_detected==1) {
+							
+							TIMER3_Enable_1s();
+							while(CHI_Board_Status.SPI_timeout_detected==0);
+							TIMER3_Disable();
+							
 							CHI_Memory_Status[i].no_LU++;
-							CHI_Board_Status.latch_up_detected==0;
+							CHI_Board_Status.latch_up_detected=0;
 							continue;
 						}
-										
-						//END TIMER
 						
 						addr = 0;
 						pattern = 0;
@@ -247,27 +261,20 @@ int main(void)
 							//RESET TIMER
 							addr+=mem_arr[i].page_size;
 							pattern ^= 0x01;
-						}
-						//END SPI TIMER
+							
+							if (CHI_Board_Status.latch_up_detected==1) {
+								
+								TIMER3_Enable_1s();
+								while(CHI_Board_Status.SPI_timeout_detected==0);
+								TIMER3_Disable();
+								
+								CHI_Memory_Status[i].no_LU++;
+								CHI_Board_Status.latch_up_detected=0;
+								continue;
+							}
+						}					
 						
-						if (CHI_Board_Status.latch_up_detected==1) {
-							CHI_Memory_Status[i].no_LU++;
-							CHI_Board_Status.latch_up_detected==0;
-							continue;
-						}						
-						
-						//disable_memory_vcc(mem_arr[i]);	
-						
-					}
-			
-					if ((CHI_Memory_Status[i].no_LU) > 3 )	{
-						// exclude the memory from the test if LU > 3 TBD
-						CHI_Board_Status.mem_to_test&=~(1<<i);
-					}
-
-					else if ((CHI_Memory_Status[i].no_SEFI_seq)>10)	{
-						// exclude the memory from the test if SEFI > 10 TBD
-						CHI_Board_Status.mem_to_test&=~(1<<i);
+						CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reporgramming flag						
 					}
 				}
 			}
@@ -275,27 +282,33 @@ int main(void)
 			for(uint8_t i=0;i<12;i++) {
 				if (CHI_Board_Status.mem_to_test & (1<<i)) {
 				
-					CHI_Board_Status.current_memory=i;
+					CHI_Board_Status.current_memory=i; // not used at this moment
 					CHI_Board_Status.mem_tested++;
 				
 					// Test memory (test procedure defined by device_mode(read only, write read, etc.))
 					switch  (CHI_Board_Status.device_mode ) {
 						case 0x01: //readmode
 						
-							//ENABLE SPI lines
 							LDO_ON;
-							//enable_memory_vcc(mem_arr[i]);
-							
 							if (read_memory(i) == 0xAC) {
+								
+								TIMER3_Enable_1s();
+								while(CHI_Board_Status.SPI_timeout_detected==0);
+								TIMER3_Disable();
+																
 								CHI_Memory_Status[i].no_LU++;
-								CHI_Board_Status.latch_up_detected==0;								
+								CHI_Board_Status.latch_up_detected=0;								
 							}
 							else if (CHI_Board_Status.latch_up_detected==1) {
+								
+								TIMER3_Enable_1s();
+								while(CHI_Board_Status.SPI_timeout_detected==0);
+								TIMER3_Disable();
+								
 								CHI_Memory_Status[i].no_LU++;
-								CHI_Board_Status.latch_up_detected==0;
+								CHI_Board_Status.latch_up_detected=0;
 							}							
-							
-							//disable_memory_vcc(mem_arr[i]);
+
 							break;
 
 						case 0x02:

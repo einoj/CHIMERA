@@ -17,7 +17,6 @@ struct __attribute__((packed)) CHI_Memory_Status_Str {
     uint8_t no_SEFI_timeout;
     uint8_t no_SEFI_wr_error;
 	uint8_t current1;
-	uint8_t current2;
 };
 volatile struct CHI_Memory_Status_Str CHI_Memory_Status[NUM_MEMORIES];
 //---------------------------------------------
@@ -47,11 +46,7 @@ struct __attribute__((packed)) CHI_Board_Status_Str {
 	uint16_t mem_to_test; // memories to be tested - each bit corresponds to one memory	
 	uint8_t mem_tested;	// number of memories that were tested in one cycle
     uint16_t mem_reprog; // which memories to be reprogrammed
-	uint16_t working_memories; // summary of which memory is working
 	uint16_t no_cycles; // number of SCI cycles performed on memories
-	uint16_t no_LU_detected; //number of Latch-Ups
-	uint16_t no_SEU_detected; //number of SEUs
-	uint16_t no_SEFI_detected; //number of SEFIs
 	uint8_t COMM_flags;	// 	ACK/NACK flags ... unused now
 	uint16_t Event_cnt; // Number of EVENTs
 };
