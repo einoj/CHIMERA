@@ -18,7 +18,7 @@ ISR(ADC_vect)
 	ADC_data = ADCL;
 	ADC_data |= (ADCH<<8);
 	
-	ADC_data=ADC_data>>6;
+	ADC_data = ADC_data >> 6;
 	
 	ADC_Samples[ADC_Sample_Cnt]=ADC_data;
 
@@ -41,14 +41,8 @@ ISR(ADC_vect)
 	ADC_Sample_Cnt=ADC_Sample_Cnt+1;
 	if (ADC_Sample_Cnt>2) ADC_Sample_Cnt=0;
 	
-	if (ADC_Median>(signed short)0x01F0) {
+	if (ADC_Median>(int16_t)0x01F0) { // 50mA threshold
 		LDO_OFF;
 		CHI_Board_Status.latch_up_detected=1;	
-
-		// This might be verified as new board has no pull-ups, could be removed?
-		//PORTB &= ~0x80;
-		//PORTC &= ~0x1F;
-		//PORTD &= ~0xF0;
-		//PORTG &= ~0x03;
 	}
 }

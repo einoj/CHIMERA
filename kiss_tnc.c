@@ -309,37 +309,8 @@ void transmit_CHI_SCI_TM(void)
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
     
-    // Send No. of LU events 
-    data = (uint8_t) CHI_Board_Status.no_LU_detected;
-    checksum = _crc8_ccitt_update(checksum, data);
-    transmit_kiss(data);
-    
-    data = (uint8_t) (CHI_Board_Status.no_LU_detected>>8);
-    checksum = _crc8_ccitt_update(checksum, data);
-    transmit_kiss(data);
-    
-    // Send No. of SEU events 
-    data = (uint8_t) CHI_Board_Status.no_SEU_detected;
-    checksum = _crc8_ccitt_update(checksum, data);
-    transmit_kiss(data);
-    
-    data = (uint8_t) (CHI_Board_Status.no_SEU_detected>>8);
-    checksum = _crc8_ccitt_update(checksum, data);
-    transmit_kiss(data);
-    
-    // Send No. of SEFI events 
-    data = (uint8_t) CHI_Board_Status.no_SEFI_detected;
-    checksum = _crc8_ccitt_update(checksum, data);
-    transmit_kiss(data);
-    
-    data = (uint8_t) (CHI_Board_Status.no_SEFI_detected>>8);
-    checksum = _crc8_ccitt_update(checksum, data);
-    transmit_kiss(data);
-
     // Send memory status of the 12 memories
     for (i = 0; i < NUM_MEMORIES; i++) {
-        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEFI_seq);
-        transmit_kiss(CHI_Memory_Status[i].no_SEFI_seq);
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEU);
         transmit_kiss(CHI_Memory_Status[i].no_SEU);
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_LU);
@@ -350,8 +321,6 @@ void transmit_CHI_SCI_TM(void)
         transmit_kiss(CHI_Memory_Status[i].no_SEFI_wr_error);
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].current1);
         transmit_kiss(CHI_Memory_Status[i].current1);
-        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].current2);
-        transmit_kiss(CHI_Memory_Status[i].current2);
     }
 
     // Send detailed Upset information
