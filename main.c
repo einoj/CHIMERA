@@ -22,9 +22,8 @@
 
 uint8_t transmit_test(uint8_t* data, uint16_t num_bytes)
 {
-    uint16_t i;
 
-    for(i = 0; i < num_bytes; i++) {
+    for(uint16_t i = 0; i < num_bytes; i++) {
        USART0SendByte(data[i]);
     }
     return 0;
@@ -64,7 +63,6 @@ ISR(TIMER3_OVF_vect) {
 
 uint8_t read_memory(uint8_t mem_idx) {
     uint8_t buf[256]; // the buffer must fit a whole page of, some memories have different page sizes
-    uint16_t i, j;
     uint8_t pattern[2] = {0x55,0xAA};
     uint8_t ptr_idx = 0; // because the order of the pattern changes per page
     uint8_t page_errors; //SEU errors
@@ -78,7 +76,7 @@ uint8_t read_memory(uint8_t mem_idx) {
 
 	CHI_Memory_Status[mem_idx].current1=ADC_Median>>2; // Reading bias current measurement
 
-    for (i = 0; i < mem_arr[mem_idx].page_num; i++) {		
+    for (uint16_t i = 0; i < mem_arr[mem_idx].page_num; i++) {		
         //reset timer
 		// ENABLE TIMER
 		TIMER3_Enable_1s();
@@ -101,7 +99,7 @@ uint8_t read_memory(uint8_t mem_idx) {
     
         //check page
         page_errors = 0;
-        for (j = 0; j < mem_arr[mem_idx].page_size; j++) {
+        for (uint16_t j = 0; j < mem_arr[mem_idx].page_size; j++) {
 			
 		
             if (buf[j] != pattern[ptr_idx]) {

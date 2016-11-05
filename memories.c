@@ -13,7 +13,7 @@ const struct Memory mem_arr[12] = {
  {0b00000100, 0b00010000, 8, 4, &PORTG, &PORTD},
  {0b10000000, 0b10000000, 8, 4, &PORTC, &PORTD},
  {0b01000000, 0b00100000, 8, 4, &PORTC, &PORTD},
- {0b00100000, 0b10000000, 4, 4, &PORTC, &PORTB},
+ {0b00100000, 0b10000000, 2048, 256, &PORTC, &PORTB},
 };
 
 /* sets the direction of memory chip select and VCC pins
