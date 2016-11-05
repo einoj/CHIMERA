@@ -255,7 +255,7 @@ int main(void)
 						
 						addr = 0;
 						pattern = 0;
-						for (uint8_t j = 0; j < mem_arr[i].page_num; j++) {
+						for (uint16_t j = 0; j < mem_arr[i].page_num; j++) {
 							//START SPI TIMER should be less than 1 second
 							while (write_24bit_page(addr, pattern, i) == BUSY);
 							//RESET TIMER
