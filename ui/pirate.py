@@ -217,6 +217,7 @@ class KISS(object):
         if not self.frame_queue.empty():
             return b''.join(self.frame_queue.get())
 
+    # Takes a data frame as input adds kiss framing and checksum
     def write(self, frame):
         interface_handler = self.interface.write
 
@@ -226,6 +227,18 @@ class KISS(object):
                 encode_kiss_frame(frame),
                 FEND
                 ]))
+
+    def request_sci_tm(self):
+        frame = b'\x01\x07'
+        self.write(frame)
+
+    def request_status(self):
+        frame = b'\x02\x0E'
+        self.write(frame)
+
+    def send_nack(self):
+        frame = b'\x15\x6B'
+        self.write(frame)
 
 def main():
     ki = KISS(port='com7', speed='115200', pirate=True)

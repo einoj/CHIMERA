@@ -8,134 +8,207 @@ author: Eino Oltedal
 """
 
 import sys
+import threading
+from time import sleep
 from PyQt5.QtWidgets import (QWidget, QPushButton, 
-    QFrame, QApplication, QLabel, QTextBrowser, QGridLayout)
+    QFrame, QApplication, QLabel, QTextEdit, QGridLayout, QHBoxLayout, QVBoxLayout, QCheckBox, QComboBox)
 from PyQt5.QtGui import QColor
-
+from PyQt5 import uic
+from pirate import KISS, NACK, STATUS, SCI_TM
+from kiss_constants import *
+from kiss_tnc import *
 
 class GroundSoftware(QWidget):
     
-    def __init__(self):
+    def __init__(self, kiss_serial=None):
         super().__init__()
         
         self.initUI()
         
-        
-    def initUI(self):      
+    def initUI(self, kiss_serial=None):      
+        self.labels = [ ]
+        self.leds = [ ]
+        self.checkboxes = [ ]
 
+        #CHIMERA INFO
+        self.chi_status = CHI_STATUS()
+        self.chi_sci_tm = CHI_SCI_TM()
+        self.SOFTWARE_VERSION = QLabel("CHIMERA Software: V."+str(self.chi_status.SOFTWARE_VERSION))
+        self.reset_type =QLabel("Reset type: "+str(self.chi_status.reset_type))
+        self.device_mode = QLabel("Device Mode: " + str(self.chi_status.device_mode)) 
+        self.no_cycles =  QLabel("Number of Cycles: " + str(self.chi_status.no_cycles))
+        self.local_time = QLabel("CHIMERA time: " + str(self.chi_sci_tm.local_time))
+
+        self.ki = kiss_serial
         self.red = QColor(255, 0, 0)       
         self.green = QColor(0, 255, 0)
 
-        statusb = QPushButton('Get Status', self)
-        statusb.move(10, 10)
+        button_box = QVBoxLayout()
+        status_b = QPushButton('Get Status', self)
+        status_b.clicked[bool].connect(self.getStatus)
 
-        lastFrame = QTextBrowser()
+        prevpacket_b = QPushButton('Get Previous', self)
+        prevpacket_b.clicked[bool].connect(self.get_prev)
+        sci_tm_b = QPushButton('Get Telemetry', self)
+        sci_tm_b.clicked[bool].connect(self.get_sci_tcm)
 
-        mainLayout = QGridLayout()
+        mode_box = QHBoxLayout()
+        mode_label = QLabel("Select Mode")
+        mode_button = QPushButton("Set Mode")
+        mode_button.clicked[bool].connect(self.set_mode)
+        self.mode_selector = QComboBox()
+        self.mode_selector.addItem("Read Mode")
+        self.mode_selector.addItem("R/W/E Mode")
+        mode_box.addWidget(mode_label)
+        mode_box.addWidget(self.mode_selector)
 
-        statusb.clicked[bool].connect(self.getStatus)
+        button_box.addWidget(mode_button)
+        button_box.addWidget(status_b)
+        button_box.addWidget(prevpacket_b)
+        button_box.addWidget(sci_tm_b)
 
-        self.statusLayout()
-       # redb = QPushButton('Green', self)
-       # redb.setCheckable(True)
-       # redb.move(10, 60)
-
-       # redb.clicked[bool].connect(self.setColor)
-
-       # blueb = QPushButton('Blue', self)
-       # blueb.setCheckable(True)
-       # blueb.move(10, 110)
-
-       # blueb.clicked[bool].connect(self.setColor)
-
+        self.lastFrame = QTextEdit(self)
+        frame_box = QHBoxLayout()
+        frame_box.addWidget(self.lastFrame)
         
-        
-    def getStatus(self, pressed):
-        
-        self.led1.setStyleSheet("QFrame { background-color: %s }" %
-            self.red.name())  
+        led_grid = QGridLayout()
+        led_grid.columnStretch(1)
+        self.set_led_layout(led_grid)
 
-        self.led2.setStyleSheet("QFrame { background-color: %s }" %
-            self.green.name())  
-       
-    def statusLayout(self):
-        self.labels = []
-        for i in range(12):
-            label = QLabel(str(i+1),self)
-            self.labels.append(label)
-            #self.ledlabel1 = QLabel('1',self) 
-            #self.ledlabel1.move(150, 5)
-        xloc = 150
-        for label in self.labels:
-            label.move(xloc,5)
-            xloc += 20
+        middle_box = QVBoxLayout()
+        sub_middle_box = QVBoxLayout()
+        sub_middle_box.addWidget(self.SOFTWARE_VERSION)
+        sub_middle_box.addWidget(self.reset_type)
+        sub_middle_box.addWidget(self.device_mode)
+        sub_middle_box.addWidget(self.no_cycles)
+        sub_middle_box.addWidget(self.local_time)
+        middle_box.addLayout(mode_box)
+        middle_box.addLayout(sub_middle_box)
+        middle_box.addLayout(led_grid)
 
-        self.led1 = QFrame(self)
-        self.led1.setGeometry(150, 20, 10, 10)
-        self.led1.setStyleSheet("QWidget { background-color: %s }" %  
-            self.red.name())
+        mainLayout = QHBoxLayout(self)
 
-        self.led2 = QFrame(self)
-        self.led2.setGeometry(170, 20, 10, 10)
-        self.led2.setStyleSheet("QWidget { background-color: %s }" %  
-            self.red.name())
+        mainLayout.addLayout(button_box)
+        mainLayout.addLayout(middle_box)
+        mainLayout.addWidget(self.lastFrame)
 
-        self.led3 = QFrame(self)
-        self.led3.setGeometry(190, 20, 10, 10)
-        self.led3.setStyleSheet("QWidget { background-color: %s }" %  
-            self.red.name())
-
-        self.led4 = QFrame(self)
-        self.led4.setGeometry(210, 20, 10, 10)
-        self.led4.setStyleSheet("QWidget { background-color: %s }" %  
-            self.red.name())
-
-        self.led5 = QFrame(self)
-        self.led5.setGeometry(230, 20, 10, 10)
-        self.led5.setStyleSheet("QWidget { background-color: %s }" %  
-            self.red.name())
-
-        self.led6 = QFrame(self)
-        self.led6.setGeometry(250, 20, 10, 10)
-        self.led6.setStyleSheet("QWidget { background-color: %s }" %  
-            self.red.name())
-
-        self.led7 = QFrame(self)
-        self.led7.setGeometry(270, 20, 10, 10)
-        self.led7.setStyleSheet("QWidget { background-color: %s }" %  
-            self.red.name())
-
-        self.led8 = QFrame(self)
-        self.led8.setGeometry(290, 20, 10, 10)
-        self.led8.setStyleSheet("QWidget { background-color: %s }" %  
-            self.red.name())
-
-        self.led9 = QFrame(self)
-        self.led9.setGeometry(310, 20, 10, 10)
-        self.led9.setStyleSheet("QWidget { background-color: %s }" %  
-            self.red.name())
-
-        self.led10 = QFrame(self)
-        self.led10.setGeometry(330, 20, 10, 10)
-        self.led10.setStyleSheet("QWidget { background-color: %s }" %  
-            self.red.name())
-
-        self.led11 = QFrame(self)
-        self.led11.setGeometry(350, 20, 10, 10)
-        self.led11.setStyleSheet("QWidget { background-color: %s }" %  
-            self.red.name())
-
-        self.led12 = QFrame(self)
-        self.led12.setGeometry(370, 20, 10, 10)
-        self.led12.setStyleSheet("QWidget { background-color: %s }" %  
-            self.red.name())
-        
-        self.setGeometry(300, 300, 400, 170)
+        self.setGeometry(300, 300, 600, 200)
         self.setWindowTitle('Toggle button')
+        self.setLayout(mainLayout)
         self.show()
+
+    def update_frame_view(self):
+        while 1:
+            if not ki.frame_queue.empty():
+                frame = ki.get_frame()
+                self.lastFrame.insertPlainText(''.join(["0x%02x "% byte for byte in frame])+'\n\n')
+                if frame[0] == CHI_COMM_ID_SCI_TM:
+                    self.handle_SCI_TM_frame(frame[1:])
+                elif frame[0] == CHI_COMM_ID_STATUS:
+                    self.handle_status_frame(frame[1:])
+            sleep (0.01)
+
+    def handle_status_frame(self,frame):
+        self.chi_status.SOFTWARE_VERSION = frame[0]
+        self.chi_status.reset_type = frame[1]
+        self.chi_status.device_mode = frame[2]
+        self.chi_status.no_cycles = int.from_bytes(frame[3:5],byteorder='big')    
+
+        self.SOFTWARE_VERSION.setText("CHIMERA Software: V."+str(self.chi_status.SOFTWARE_VERSION))
+        self.reset_type.setText("Reset type: "+str(self.chi_status.reset_type))
+        self.device_mode.setText("Device Mode: " + str(self.chi_status.device_mode)) 
+        self.no_cycles.setText("Number of Cycles: " + str(self.chi_status.no_cycles))
+
+    def handle_SCI_TM_frame(self, frame):
+        self.chi_sci_tm.local_time = int.from_bytes(frame[:4],byteorder='little')    
+        self.chi_sci_tm.mem_to_test = int.from_bytes(frame[4:6],byteorder='little')    
+        #for i in range(1,13):
+        #    self.chi_sci_tm.no_SEU[i-1] = frame[5*i]
+
+        self.local_time.setText("CHIMERA time: " + str(self.chi_sci_tm.local_time)) 
+        ki._logger.debug(frame[4])
+        memories_lower = frame[4]
+        memories_upper = frame[5]
+        for i in range(0,6):
+            if (memories_lower>>i & 1):
+                self.leds[i].setStyleSheet("QWidget { background-color: %s }" %  
+                    self.green.name())
+            else:
+                self.leds[i].setStyleSheet("QWidget { background-color: %s }" %  
+                    self.red.name())
+        for i in range(6,12):
+            if (memories_upper>>(i-6) & 1):
+                self.leds[i].setStyleSheet("QWidget { background-color: %s }" %  
+                    self.green.name())
+            else:
+                self.leds[i].setStyleSheet("QWidget { background-color: %s }" %  
+                    self.red.name())
+
+    def set_mode(self):
+        frame = b'\x07'
+        if (self.mode_selector.currentIndex() == 0):
+            # read mode
+            frame += b'\x01'
+        elif (self.mode_selector.currentIndex() == 1):
+            # erase program read mode
+            frame += b'\x02'
+        else:
+            frame = b'\x00'
+        memories_lower = 0
+        memories_upper = 0
+        for i in range(0,6):
+            if (self.checkboxes[i].isChecked()):
+                memories_lower |= (1<<i)
+        for i in range(6,12):
+            if (self.checkboxes[i].isChecked()):
+                memories_upper |= (1<<(i-6))
+        frame += bytes([memories_lower, memories_upper])
+        ki.write(frame)
+
+    def get_sci_tcm(self):
+        ki.request_sci_tm()
+
+    def getStatus(self, pressed):
+        ki.request_status()
+
+    def get_prev(self):
+        ki.send_nack()
        
+    def set_led_layout(self, gridlayout):
+        for i in range(12):
+            if i < 9:
+                label = QLabel("0"+str(i+1),self)
+            else:
+                label = QLabel(str(i+1),self)
+            self.labels.append(label)
+            gridlayout.addWidget(self.labels[i],0,i,1,1)
+
+            led = QFrame(self)
+            led.setStyleSheet("QWidget { background-color: %s }" %  
+                self.red.name())
+            self.leds.append (led)
+            gridlayout.addWidget(self.leds[i],1,i,1,1)
+
+            checkbox = QCheckBox(self)
+            self.checkboxes.append(checkbox)
+            gridlayout.addWidget(self.checkboxes[i],2,i,1,1)
+
 if __name__ == '__main__':
     
+    ki = KISS(port='com7', speed='115200', pirate=True)
+    ki.start()
+    sr_read_thread = threading.Thread(target=ki.simpleread)
+    sr_read_thread.daemon = True # stop when main thread stops
+    sr_read_thread.start()
+
     app = QApplication(sys.argv)
-    ex = GroundSoftware()
+    ex = GroundSoftware(ki)
+
+    frame_thread = threading.Thread(target=ex.update_frame_view)
+    frame_thread.daemon = True # stop when main thread stops
+    frame_thread.start()
+
+    #read frames
+
+
     sys.exit(app.exec_())
