@@ -13,6 +13,7 @@ from time import sleep
 from PyQt5.QtWidgets import (QWidget, QPushButton, 
     QFrame, QApplication, QLabel, QTextEdit, QGridLayout, QHBoxLayout, QVBoxLayout, QCheckBox, QComboBox)
 from PyQt5.QtGui import QColor
+from PyQt5.QtCore import (QThread)
 from PyQt5 import uic
 from pirate import KISS, NACK, STATUS, SCI_TM
 from kiss_constants import *
@@ -68,6 +69,7 @@ class GroundSoftware(QWidget):
         button_box.addWidget(sci_tm_b)
 
         self.lastFrame = QTextEdit(self)
+        self.lastFrame.setReadOnly(True)
         frame_box = QHBoxLayout()
         frame_box.addWidget(self.lastFrame)
         
@@ -106,7 +108,7 @@ class GroundSoftware(QWidget):
                     self.handle_SCI_TM_frame(frame[1:])
                 elif frame[0] == CHI_COMM_ID_STATUS:
                     self.handle_status_frame(frame[1:])
-            sleep (0.01)
+            QThread.msleep (10)
 
     def handle_status_frame(self,frame):
         self.chi_status.SOFTWARE_VERSION = frame[0]
@@ -120,8 +122,8 @@ class GroundSoftware(QWidget):
         self.no_cycles.setText("Number of Cycles: " + str(self.chi_status.no_cycles))
 
     def handle_SCI_TM_frame(self, frame):
-        self.chi_sci_tm.local_time = int.from_bytes(frame[:4],byteorder='little')    
-        self.chi_sci_tm.mem_to_test = int.from_bytes(frame[4:6],byteorder='little')    
+        self.chi_sci_tm.local_time = int.from_bytes(frame[:4],byteorder='big')    
+        self.chi_sci_tm.mem_to_test = int.from_bytes(frame[4:6],byteorder='big')    
         #for i in range(1,13):
         #    self.chi_sci_tm.no_SEU[i-1] = frame[5*i]
 
@@ -129,15 +131,15 @@ class GroundSoftware(QWidget):
         ki._logger.debug(frame[4])
         memories_lower = frame[4]
         memories_upper = frame[5]
-        for i in range(0,6):
+        for i in range(0,8):
             if (memories_lower>>i & 1):
                 self.leds[i].setStyleSheet("QWidget { background-color: %s }" %  
                     self.green.name())
             else:
                 self.leds[i].setStyleSheet("QWidget { background-color: %s }" %  
                     self.red.name())
-        for i in range(6,12):
-            if (memories_upper>>(i-6) & 1):
+        for i in range(8,12):
+            if (memories_upper>>(i-8) & 1):
                 self.leds[i].setStyleSheet("QWidget { background-color: %s }" %  
                     self.green.name())
             else:
@@ -156,13 +158,14 @@ class GroundSoftware(QWidget):
             frame = b'\x00'
         memories_lower = 0
         memories_upper = 0
-        for i in range(0,6):
+        for i in range(0,8):
             if (self.checkboxes[i].isChecked()):
                 memories_lower |= (1<<i)
-        for i in range(6,12):
+        for i in range(8,12):
             if (self.checkboxes[i].isChecked()):
-                memories_upper |= (1<<(i-6))
+                memories_upper |= (1<<(i-8))
         frame += bytes([memories_lower, memories_upper])
+        ki._logger.debug(frame)
         ki.write(frame)
 
     def get_sci_tcm(self):
@@ -204,6 +207,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = GroundSoftware(ki)
 
+    ## Oops! should use signals and slots, not interact directly
     frame_thread = threading.Thread(target=ex.update_frame_view)
     frame_thread.daemon = True # stop when main thread stops
     frame_thread.start()
