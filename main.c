@@ -242,7 +242,7 @@ int main(void)
 			//			CHI_Board_Status.mem_to_test&=~(1<<i);
 			//		}
 
-					else if ((CHI_Memory_Status[i].no_SEFI_seq)>254)	{
+					if ((CHI_Memory_Status[i].no_SEFI_seq)>254)	{
 						// exclude the memory from the test if SEFI > 10 TBD
 						CHI_Board_Status.mem_to_test&=~(1<<i);
 					}					
