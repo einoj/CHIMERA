@@ -243,6 +243,7 @@ class KISS(object):
 def main():
     ki = KISS(port='com7', speed='115200', pirate=True)
     ki.start()
+
     sr_read_thread = threading.Thread(target=ki.simpleread)
     sr_read_thread.daemon = True # stop when main thread stops
     sr_read_thread.start()

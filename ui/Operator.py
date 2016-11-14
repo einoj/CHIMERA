@@ -13,11 +13,23 @@ from time import sleep
 from PyQt5.QtWidgets import (QWidget, QPushButton, 
     QFrame, QApplication, QLabel, QTextEdit, QGridLayout, QHBoxLayout, QVBoxLayout, QCheckBox, QComboBox)
 from PyQt5.QtGui import QColor
-from PyQt5.QtCore import (QThread)
+from PyQt5.QtCore import (QThread, pyqtSignal, QObject)
 from PyQt5 import uic
 from pirate import KISS, NACK, STATUS, SCI_TM
 from kiss_constants import *
 from kiss_tnc import *
+
+class Communicate(QObject):
+    gui_signal = pyqtSignal(bytes)
+
+def frame_thread(callbackFunc):
+    mySrc = Communicate()
+    mySrc.gui_signal.connect(callbackFunc)
+
+    while True:
+        if not ki.frame_queue.empty():
+            frame = ki.get_frame()
+            mySrc.gui_signal.emit(frame)
 
 class GroundSoftware(QWidget):
     
@@ -98,17 +110,22 @@ class GroundSoftware(QWidget):
         self.setWindowTitle('Toggle button')
         self.setLayout(mainLayout)
         self.show()
+        self.start_frame_thread()
 
-    def update_frame_view(self):
-        while 1:
-            if not ki.frame_queue.empty():
-                frame = ki.get_frame()
-                self.lastFrame.insertPlainText(''.join(["0x%02x "% byte for byte in frame])+'\n\n')
-                if frame[0] == CHI_COMM_ID_SCI_TM:
-                    self.handle_SCI_TM_frame(frame[1:])
-                elif frame[0] == CHI_COMM_ID_STATUS:
-                    self.handle_status_frame(frame[1:])
-            QThread.msleep (10)
+    def update_frame_view_callback(self, frame):
+        if len(frame) > 2:
+            self.lastFrame.insertPlainText(''.join(["0x%02x "% byte for byte in frame])+'\n\n')
+            ki._logger.debug(frame)
+            if frame[0] == CHI_COMM_ID_SCI_TM:
+                self.handle_SCI_TM_frame(frame[1:])
+            elif frame[0] == CHI_COMM_ID_STATUS:
+                self.handle_status_frame(frame[1:])
+
+    def start_frame_thread(self):
+        ## Oops! should use signals and slots, not interact directly
+        t = threading.Thread(name = 'frame_thread', target=frame_thread, args = (self.update_frame_view_callback,))
+        ##t.daemon = True # stop when main thread stops
+        t.start()
 
     def handle_status_frame(self,frame):
         self.chi_status.SOFTWARE_VERSION = frame[0]
@@ -128,7 +145,7 @@ class GroundSoftware(QWidget):
         #    self.chi_sci_tm.no_SEU[i-1] = frame[5*i]
 
         self.local_time.setText("CHIMERA time: " + str(self.chi_sci_tm.local_time)) 
-        ki._logger.debug(frame[4])
+        ki._logger.debug(len(frame))
         memories_lower = frame[4]
         memories_upper = frame[5]
         for i in range(0,8):
@@ -168,7 +185,7 @@ class GroundSoftware(QWidget):
         ki._logger.debug(frame)
         ki.write(frame)
 
-    def get_sci_tcm(self):
+    def get_sci_tcm(self, pressed):
         ki.request_sci_tm()
 
     def getStatus(self, pressed):
@@ -206,13 +223,5 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
     ex = GroundSoftware(ki)
-
-    ## Oops! should use signals and slots, not interact directly
-    frame_thread = threading.Thread(target=ex.update_frame_view)
-    frame_thread.daemon = True # stop when main thread stops
-    frame_thread.start()
-
-    #read frames
-
 
     sys.exit(app.exec_())
