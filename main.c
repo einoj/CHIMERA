@@ -157,7 +157,7 @@ uint8_t read_memory(uint8_t mem_idx) {
 void Power_On_Init() {
 	    CHI_Board_Status.device_mode = 0x01;
 	    CHI_Board_Status.latch_up_detected = 0;
-	    CHI_Board_Status.mem_to_test = 0x0032;
+	    CHI_Board_Status.mem_to_test = 0x0801;
 		CHI_Board_Status.mem_tested = 0;
         CHI_Board_Status.mem_reprog = 0;
 	    CHI_Board_Status.no_cycles = 0;
