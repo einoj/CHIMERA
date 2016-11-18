@@ -81,17 +81,32 @@ uint8_t read_memory(uint8_t mem_idx) {
 		// ENABLE TIMER
 		TIMER3_Enable_1s();
 
-        // read page
-        while (read_24bit_page(0, mem_idx, buf) == BUSY) {
+        // read page either with 24 bit address or 16 bit address
+        if(mem_arr[mem_idx].addr_space) {
+            while (read_24bit_page(0, mem_idx, buf) == BUSY) {
 
-			if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
-			
-            if (CHI_Board_Status.SPI_timeout_detected) {
-                // SEFI detected, SPI timeout
-                CHI_Memory_Status[mem_idx].no_SEFI_timeout++;
-				CHI_Memory_Status[mem_idx].no_SEFI_seq++;
-                // jump to next memory
-                return 0;
+                if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
+                
+                if (CHI_Board_Status.SPI_timeout_detected) {
+                    // SEFI detected, SPI timeout
+                    CHI_Memory_Status[mem_idx].no_SEFI_timeout++;
+                    CHI_Memory_Status[mem_idx].no_SEFI_seq++;
+                    // jump to next memory
+                    return 0;
+                }
+            }
+        } else {
+            while (read_16bit_page(0, mem_idx, buf) == BUSY) {
+
+                if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
+                
+                if (CHI_Board_Status.SPI_timeout_detected) {
+                    // SEFI detected, SPI timeout
+                    CHI_Memory_Status[mem_idx].no_SEFI_timeout++;
+                    CHI_Memory_Status[mem_idx].no_SEFI_seq++;
+                    // jump to next memory
+                    return 0;
+                }
             }
         }
 		

@@ -200,6 +200,33 @@ uint8_t read_24bit_page(uint32_t addr, uint8_t mem_idx, uint8_t *buffer)
     }
 }
 
+uint8_t read_16bit_page(uint32_t addr, uint8_t mem_idx, uint8_t *buffer) 
+{
+    uint16_t read_cnt=0;     // WARNING! Should be the same type as page size, to avoid integer overflow when reading
+    //uint8_t *buffer_ptr;    // temporary variable for incrementing buffer pointer
+    //buffer_ptr = buffer;
+    uint16_t page_size = mem_arr[mem_idx].page_size;
+    uint8_t status_reg;
+
+    read_status_reg(&status_reg, mem_idx);
+    if (!(status_reg & (1<<WIP))) { // Is internal write or erase is currently in progress?
+        CHIP_SELECT(mem_idx);
+        spi_tx_byte(READ);
+        spi_tx_byte((uint8_t)(addr>>8));  // Send the MSB byte. Casting to uint8_t will send onlyt the lower byte
+        spi_tx_byte((uint8_t)(addr));     // Send the LSB byte
+        while (read_cnt < page_size) {
+            //*buffer_ptr++ = spi_tx_byte(0xFF);
+            buffer[read_cnt] = spi_tx_byte(0xFF);
+            //USART0SendByte(buffer[read_cnt]);
+            read_cnt++;
+        }
+        CHIP_DESELECT(mem_idx);
+        return TRANSFER_COMPLETED;
+    } else {
+        return BUSY;
+    }
+}
+
 /**
  * Reads one or more bytes from the SPI Memory
  *

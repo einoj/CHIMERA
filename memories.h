@@ -33,6 +33,8 @@ struct Memory {
     volatile uint8_t *cs_port;
     // The port for controlling memory VCC
     volatile uint8_t *vcc_port;
+    // 0 is 16 bit address 1 is 24 bit address
+    const uint8_t addr_space;
 };
 
 const struct Memory mem_arr[12];
