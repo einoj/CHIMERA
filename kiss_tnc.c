@@ -311,6 +311,8 @@ void transmit_CHI_SCI_TM(void)
     
     // Send memory status of the 12 memories
     for (i = 0; i < NUM_MEMORIES; i++) {
+        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].cycles);
+        transmit_kiss(CHI_Memory_Status[i].cycles);		
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEU);
         transmit_kiss(CHI_Memory_Status[i].no_SEU);
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_LU);
@@ -320,7 +322,7 @@ void transmit_CHI_SCI_TM(void)
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEFI_wr_error);
         transmit_kiss(CHI_Memory_Status[i].no_SEFI_wr_error);
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].current1);
-        transmit_kiss(CHI_Memory_Status[i].current1);
+        transmit_kiss(CHI_Memory_Status[i].current1);		
     }
 
     // Send detailed Upset information
