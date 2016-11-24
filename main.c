@@ -185,6 +185,8 @@ void Power_On_Init() {
 			CHI_Memory_Status[i].no_LU=0;
 			CHI_Memory_Status[i].no_SEFI_timeout=0;
 			CHI_Memory_Status[i].no_SEFI_wr_error=0;
+			CHI_Memory_Status[i].no_SEFI_seq=0;
+			CHI_Memory_Status[i].cycles=0;
 		}
 }
 
@@ -237,10 +239,10 @@ int main(void)
 			for (int i=0;i<12;i++) {	
 				if (CHI_Board_Status.mem_to_test & (1<<i)) {
 					
-			//		if ((CHI_Memory_Status[i].no_LU) > 3 )	{
-			//			// exclude the memory from the test if LU > 3 TBD
-			//			CHI_Board_Status.mem_to_test&=~(1<<i);
-			//		}
+					if ((CHI_Memory_Status[i].no_LU) > 50 )	{
+						// exclude the memory from the test if LU > 50 TBD
+						CHI_Board_Status.mem_to_test&=~(1<<i);
+					}
 
 					if ((CHI_Memory_Status[i].no_SEFI_seq)>254)	{
 						// exclude the memory from the test if SEFI > 10 TBD
@@ -250,13 +252,22 @@ int main(void)
 					if (CHI_Board_Status.mem_reprog & (1<<i))	{
 					
 						LDO_ON;
-						erase_chip(i);
 						
-						// Wait for status register to go down
-						// It this does not happen in 8 seconds, -> SEFI
+						TIMER3_Enable_8s();
+						while (erase_chip(i) == BUSY) {
+							if (CHI_Board_Status.SPI_timeout_detected==1) {
+								CHI_Memory_Status[i].no_SEFI_timeout++;
+								CHI_Memory_Status[i].no_SEFI_seq++;
+								break;
+							}	
+						}
+						TIMER3_Disable();
+						if (CHI_Board_Status.SPI_timeout_detected==1) continue;
+
 						
 						if (CHI_Board_Status.latch_up_detected==1) {
 							
+							// Wait 1 second after the latch-up
 							TIMER3_Enable_1s();
 							while(CHI_Board_Status.SPI_timeout_detected==0);
 							TIMER3_Disable();
@@ -287,7 +298,8 @@ int main(void)
 							}
 						}					
 						
-						CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reporgramming flag						
+						CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reporgramming flag	
+						CHI_Memory_Status[i].no_SEFI_seq=0;					
 					}
 				}
 			}
@@ -297,7 +309,7 @@ int main(void)
 				
 					CHI_Board_Status.current_memory=i; // not used at this moment
 					CHI_Board_Status.mem_tested++;
-				
+					
 					// Test memory (test procedure defined by device_mode(read only, write read, etc.))
 					switch  (CHI_Board_Status.device_mode ) {
 						case 0x01: //readmode
@@ -332,6 +344,7 @@ int main(void)
 							read_memory(i);
 							break;
 					}
+					CHI_Memory_Status[i].cycles++;
 				}
 			}
 		}

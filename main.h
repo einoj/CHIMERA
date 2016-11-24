@@ -17,6 +17,7 @@ struct __attribute__((packed)) CHI_Memory_Status_Str {
     uint8_t no_SEFI_timeout;
     uint8_t no_SEFI_wr_error;
 	uint8_t current1;
+	uint8_t cycles;
 };
 volatile struct CHI_Memory_Status_Str CHI_Memory_Status[NUM_MEMORIES];
 //---------------------------------------------
