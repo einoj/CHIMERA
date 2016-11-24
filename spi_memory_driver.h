@@ -64,10 +64,10 @@
 #define MISO 3
 
 /* Global variables */
-static uint32_t address; // Used by SPI to address memory device
-static uint8_t *data_ptr; // Used by SPI interrupt, points to data that is to be written
-static uint8_t byte_cnt; // Used by SPI interrupt to know how many bytes have been written
-static uint8_t nb_byte; // Used by SPI interrupt to know how many bytes need to be written
+//static uint32_t address; // Used by SPI to address memory device
+//static uint8_t *data_ptr; // Used by SPI interrupt, points to data that is to be written
+//static uint8_t byte_cnt; // Used by SPI interrupt to know how many bytes have been written
+//static uint8_t nb_byte; // Used by SPI interrupt to know how many bytes need to be written
 static uint8_t state; // Used by SPI interrupt to indicate whether to write data or addr
 
 /* Function definitions */
@@ -78,7 +78,8 @@ void disable_memory_vcc(struct Memory mem);
 uint8_t read_status_reg(uint8_t *status, uint8_t mem_idx);
 void SPI_Init(void);
 uint8_t read_24bit_page(uint32_t addr, uint8_t mem_idx, uint8_t *buffer);
+uint8_t read_16bit_page(uint32_t addr, uint8_t mem_idx, uint8_t *buffer);
 uint8_t write_24bit_page(uint32_t addr, uint8_t pattern, uint8_t mem_idx);
+uint8_t write_16bit_page(uint32_t addr, uint8_t ptr_i, uint8_t mem_idx);
 uint8_t spi_command(uint8_t op_code, uint8_t mem_idx);
 uint8_t erase_chip(uint8_t mem_idx);
-

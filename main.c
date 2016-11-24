@@ -67,6 +67,8 @@ uint8_t read_memory(uint8_t mem_idx) {
     uint8_t ptr_idx = 0; // because the order of the pattern changes per page
     uint8_t page_errors; //SEU errors
     uint32_t addr;
+    uint32_t read_addr;
+	uint16_t i;
 
 		// slowing down the procedure!!!?!!?!
 		//TIMER3_Enable_8s();
@@ -76,14 +78,15 @@ uint8_t read_memory(uint8_t mem_idx) {
 
 	CHI_Memory_Status[mem_idx].current1=ADC_Median>>2; // Reading bias current measurement
 
-    for (uint16_t i = 0; i < mem_arr[mem_idx].page_num; i++) {		
+    for (i = 0; i < mem_arr[mem_idx].page_num; i++) {		
+      read_addr = i*mem_arr[mem_idx].page_size;
         //reset timer
 		// ENABLE TIMER
 		TIMER3_Enable_1s();
 
         // read page either with 24 bit address or 16 bit address
         if(mem_arr[mem_idx].addr_space) {
-            while (read_24bit_page(0, mem_idx, buf) == BUSY) {
+            while (read_24bit_page(read_addr, mem_idx, buf) == BUSY) {
 
                 if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
                 
@@ -96,7 +99,7 @@ uint8_t read_memory(uint8_t mem_idx) {
                 }
             }
         } else {
-            while (read_16bit_page(0, mem_idx, buf) == BUSY) {
+            while (read_16bit_page(read_addr, mem_idx, buf) == BUSY) {
 
                 if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
                 
@@ -170,7 +173,7 @@ uint8_t read_memory(uint8_t mem_idx) {
 void Power_On_Init() {
 	    CHI_Board_Status.device_mode = 0x01;
 	    CHI_Board_Status.latch_up_detected = 0;
-	    CHI_Board_Status.mem_to_test = 0x0001;
+	    CHI_Board_Status.mem_to_test = 0x0011;
         CHI_Board_Status.mem_reprog = 0;
 	    CHI_Board_Status.no_cycles = 0;
 		CHI_Board_Status.Event_cnt = 0; // EVENT counter
@@ -281,14 +284,25 @@ int main(void)
 						for (uint16_t j = 0; j < mem_arr[i].page_num; j++) {
 							
 							TIMER3_Enable_1s();							
-							while (write_24bit_page(addr, pattern, i) == BUSY) {
-								if (CHI_Board_Status.SPI_timeout_detected==1) {
-									CHI_Memory_Status[i].no_SEFI_timeout++;
-									CHI_Memory_Status[i].no_SEFI_seq++;
-									break;
-								}								
-							}
-							TIMER3_Disable();							
+              if(mem_arr[i].addr_space) {
+                while (write_24bit_page(addr, pattern, i) == BUSY) {
+                  if (CHI_Board_Status.SPI_timeout_detected==1) {
+                    CHI_Memory_Status[i].no_SEFI_timeout++;
+                    CHI_Memory_Status[i].no_SEFI_seq++;
+                    break;
+                  }								
+                }
+              } else {
+                while (write_16bit_page(addr, pattern, i) == BUSY) {
+                  if (CHI_Board_Status.SPI_timeout_detected==1) {
+                    CHI_Memory_Status[i].no_SEFI_timeout++;
+                    CHI_Memory_Status[i].no_SEFI_seq++;
+                    break;
+                  }								
+                }
+              }
+							TIMER3_Disable();
+														
 							if (CHI_Board_Status.SPI_timeout_detected==1) break;
 							
 							addr+=mem_arr[i].page_size;
