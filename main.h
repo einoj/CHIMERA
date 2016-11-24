@@ -45,7 +45,6 @@ struct __attribute__((packed)) CHI_Board_Status_Str {
 	uint8_t SPI_timeout_detected; // SPI time-out detected flag
 	uint8_t current_memory;	// id of currently processed memory
 	uint16_t mem_to_test; // memories to be tested - each bit corresponds to one memory	
-	uint8_t mem_tested;	// number of memories that were tested in one cycle
     uint16_t mem_reprog; // which memories to be reprogrammed
 	uint16_t no_cycles; // number of SCI cycles performed on memories
 	uint8_t COMM_flags;	// 	ACK/NACK flags ... unused now

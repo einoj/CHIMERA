@@ -171,7 +171,6 @@ void Power_On_Init() {
 	    CHI_Board_Status.device_mode = 0x01;
 	    CHI_Board_Status.latch_up_detected = 0;
 	    CHI_Board_Status.mem_to_test = 0x0010;
-		CHI_Board_Status.mem_tested = 0;
         CHI_Board_Status.mem_reprog = 0;
 	    CHI_Board_Status.no_cycles = 0;
 		CHI_Board_Status.Event_cnt = 0; // EVENT counter
@@ -180,7 +179,7 @@ void Power_On_Init() {
 		CHI_UART_RX_BUFFER_COUNTER=0;
 		
 		// clear all statistics, for loop
-		for (char i=0;i<12;i++) {
+		for (uint8_t i=0;i<12;i++) {
 			CHI_Memory_Status[i].no_SEU=0;
 			CHI_Memory_Status[i].no_LU=0;
 			CHI_Memory_Status[i].no_SEFI_timeout=0;
@@ -232,9 +231,9 @@ int main(void)
     {	
 		start_time=CHI_Board_Status.local_time;
 		
+		do {
+				
 		CHI_Board_Status.no_cycles++; // increase number of memory cycles
-		
-		while(CHI_Board_Status.mem_tested<6) {
 				
 			for (int i=0;i<12;i++) {	
 				if (CHI_Board_Status.mem_to_test & (1<<i)) {
@@ -280,14 +279,27 @@ int main(void)
 						addr = 0;
 						pattern = 0;
 						for (uint16_t j = 0; j < mem_arr[i].page_num; j++) {
-							//START SPI TIMER should be less than 1 second
-							while (write_24bit_page(addr, pattern, i) == BUSY);
-							//RESET TIMER
+							
+							TIMER3_Enable_1s();							
+							while (write_24bit_page(addr, pattern, i) == BUSY) {
+								if (CHI_Board_Status.SPI_timeout_detected==1) {
+									CHI_Memory_Status[i].no_SEFI_timeout++;
+									CHI_Memory_Status[i].no_SEFI_seq++;
+									break;
+								}								
+							}
+							TIMER3_Disable();							
+							if (CHI_Board_Status.SPI_timeout_detected==1) break;
+							
 							addr+=mem_arr[i].page_size;
 							pattern ^= 0x01;
 							
-							if (CHI_Board_Status.latch_up_detected==1) {
-								
+							if (CHI_Board_Status.latch_up_detected==1) break;
+						}
+						
+						if (CHI_Board_Status.SPI_timeout_detected==1) continue;
+											
+						if (CHI_Board_Status.latch_up_detected==1) {
 								TIMER3_Enable_1s();
 								while(CHI_Board_Status.SPI_timeout_detected==0);
 								TIMER3_Disable();
@@ -295,8 +307,7 @@ int main(void)
 								CHI_Memory_Status[i].no_LU++;
 								CHI_Board_Status.latch_up_detected=0;
 								continue;
-							}
-						}					
+						}						
 						
 						CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reporgramming flag	
 						CHI_Memory_Status[i].no_SEFI_seq=0;					
@@ -308,7 +319,6 @@ int main(void)
 				if (CHI_Board_Status.mem_to_test & (1<<i)) {
 				
 					CHI_Board_Status.current_memory=i; // not used at this moment
-					CHI_Board_Status.mem_tested++;
 					
 					// Test memory (test procedure defined by device_mode(read only, write read, etc.))
 					switch  (CHI_Board_Status.device_mode ) {
@@ -347,8 +357,10 @@ int main(void)
 					CHI_Memory_Status[i].cycles++;
 				}
 			}
+			
 		}
-		CHI_Board_Status.mem_tested=0;
+		while ((CHI_Board_Status.local_time-start_time)<60000);
+
 		transmit_CHI_SCI_TM();
     }
 }
