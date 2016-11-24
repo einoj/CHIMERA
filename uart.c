@@ -61,13 +61,6 @@ uint8_t USART0ReceiveByte() {
     return UDR0;
 }
 
-static void printuart(char *msg) {
-    while (*msg != '\0') {
-        USART0SendByte(*msg);
-        *msg++;
-    }
-}
-
 
 //ISR(PCINT14_vect) {
 //    SELECT_SERIAL_MEMORY;

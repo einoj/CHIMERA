@@ -11,3 +11,9 @@ void TIMER3_Init();
 void TIMER3_Enable_1s();
 void TIMER3_Enable_8s();
 void TIMER3_Disable();
+
+// wait functions
+void wait_2ms();
+void wait_1s();
+void wait_8s();
+

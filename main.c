@@ -67,8 +67,6 @@ uint8_t read_memory(uint8_t mem_idx) {
     uint8_t ptr_idx = 0; // because the order of the pattern changes per page
     uint8_t page_errors; //SEU errors
     uint32_t addr;
-    uint32_t read_addr;
-	uint16_t i;
 
 		// slowing down the procedure!!!?!!?!
 		//TIMER3_Enable_8s();
@@ -78,15 +76,14 @@ uint8_t read_memory(uint8_t mem_idx) {
 
 	CHI_Memory_Status[mem_idx].current1=ADC_Median>>2; // Reading bias current measurement
 
-    for (i = 0; i < mem_arr[mem_idx].page_num; i++) {		
-      read_addr = i*mem_arr[mem_idx].page_size;
+    for (uint16_t i = 0; i < mem_arr[mem_idx].page_num; i++) {		
         //reset timer
 		// ENABLE TIMER
 		TIMER3_Enable_1s();
 
         // read page either with 24 bit address or 16 bit address
-        if(mem_arr[mem_idx].addr_space) {
-            while (read_24bit_page(read_addr, mem_idx, buf) == BUSY) {
+        if(mem_arr[mem_idx].addr_space != 0) {
+            while (read_24bit_page((uint32_t) i*mem_arr[mem_idx].page_size, mem_idx, buf) == BUSY) {
 
                 if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
                 
@@ -99,7 +96,7 @@ uint8_t read_memory(uint8_t mem_idx) {
                 }
             }
         } else {
-            while (read_16bit_page(read_addr, mem_idx, buf) == BUSY) {
+            while (read_16bit_page((uint32_t) i*mem_arr[mem_idx].page_size, mem_idx, buf) == BUSY) {
 
                 if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
                 
@@ -171,11 +168,11 @@ uint8_t read_memory(uint8_t mem_idx) {
 }
 
 void Power_On_Init() {
-	    CHI_Board_Status.device_mode = 0x01;
-	    CHI_Board_Status.latch_up_detected = 0;
-	    CHI_Board_Status.mem_to_test = 0x0011;
-        CHI_Board_Status.mem_reprog = 0;
-	    CHI_Board_Status.no_cycles = 0;
+	  CHI_Board_Status.device_mode = 0x01;
+	  CHI_Board_Status.latch_up_detected = 0;
+	  CHI_Board_Status.mem_to_test = 0x0001;
+    CHI_Board_Status.mem_reprog = 0;
+	  CHI_Board_Status.no_cycles = 0;
 		CHI_Board_Status.Event_cnt = 0; // EVENT counter
 		
 		CHI_UART_RX_BUFFER_INDEX=0;
@@ -206,7 +203,7 @@ int main(void)
 	// Initialize the Board
 	PORT_Init();	//Initialize the ports
 	ADC_Init();		// Initialize the ADC for latch-up
-    SPI_Init();		// Initialize the SPI
+  SPI_Init();		// Initialize the SPI
 	TIMER0_Init();	// Parser/time-out Timer
 	TIMER1_Init();	// Instrument Time Counter
 	TIMER3_Init();	// SPI Time-Out Counter
@@ -219,6 +216,7 @@ int main(void)
 
 	// LDO for memories ON
 	LDO_ON;
+  wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
 	
 	// Disable all CS
     for (uint8_t i = 0; i < 12; i++)CHIP_DESELECT(i);
@@ -254,6 +252,7 @@ int main(void)
 					if (CHI_Board_Status.mem_reprog & (1<<i))	{
 					
 						LDO_ON;
+            wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
 						
 						TIMER3_Enable_8s();
 						while (erase_chip(i) == BUSY) {
@@ -270,9 +269,7 @@ int main(void)
 						if (CHI_Board_Status.latch_up_detected==1) {
 							
 							// Wait 1 second after the latch-up
-							TIMER3_Enable_1s();
-							while(CHI_Board_Status.SPI_timeout_detected==0);
-							TIMER3_Disable();
+              wait_1s();
 							
 							CHI_Memory_Status[i].no_LU++;
 							CHI_Board_Status.latch_up_detected=0;
@@ -314,9 +311,7 @@ int main(void)
 						if (CHI_Board_Status.SPI_timeout_detected==1) continue;
 											
 						if (CHI_Board_Status.latch_up_detected==1) {
-								TIMER3_Enable_1s();
-								while(CHI_Board_Status.SPI_timeout_detected==0);
-								TIMER3_Disable();
+                wait_1s(); 
 								
 								CHI_Memory_Status[i].no_LU++;
 								CHI_Board_Status.latch_up_detected=0;
@@ -339,20 +334,17 @@ int main(void)
 						case 0x01: //readmode
 						
 							LDO_ON;
+              wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
 							if (read_memory(i) == 0xAC) {
 								
-								TIMER3_Enable_1s();
-								while(CHI_Board_Status.SPI_timeout_detected==0);
-								TIMER3_Disable();
+                wait_1s();
 																
 								CHI_Memory_Status[i].no_LU++;
 								CHI_Board_Status.latch_up_detected=0;								
 							}
 							else if (CHI_Board_Status.latch_up_detected==1) {
 								
-								TIMER3_Enable_1s();
-								while(CHI_Board_Status.SPI_timeout_detected==0);
-								TIMER3_Disable();
+                wait_1s();
 								
 								CHI_Memory_Status[i].no_LU++;
 								CHI_Board_Status.latch_up_detected=0;

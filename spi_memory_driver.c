@@ -443,7 +443,7 @@ uint8_t get_jedec_id(uint8_t mem_idx, uint8_t* memID)
         //DESELECT_SERIAL_MEMORY;
         // ENABLE_SPI_INTERRUPT;
         CHIP_DESELECT(mem_idx);
-        //
+        return TRANSFER_COMPLETED;
     } else {
         return BUSY;
     }
