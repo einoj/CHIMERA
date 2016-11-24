@@ -170,7 +170,7 @@ uint8_t read_memory(uint8_t mem_idx) {
 void Power_On_Init() {
 	    CHI_Board_Status.device_mode = 0x01;
 	    CHI_Board_Status.latch_up_detected = 0;
-	    CHI_Board_Status.mem_to_test = 0x0801;
+	    CHI_Board_Status.mem_to_test = 0x0010;
 		CHI_Board_Status.mem_tested = 0;
         CHI_Board_Status.mem_reprog = 0;
 	    CHI_Board_Status.no_cycles = 0;
@@ -237,12 +237,12 @@ int main(void)
 			for (int i=0;i<12;i++) {	
 				if (CHI_Board_Status.mem_to_test & (1<<i)) {
 					
-					if ((CHI_Memory_Status[i].no_LU) > 3 )	{
-						// exclude the memory from the test if LU > 3 TBD
-						CHI_Board_Status.mem_to_test&=~(1<<i);
-					}
+			//		if ((CHI_Memory_Status[i].no_LU) > 3 )	{
+			//			// exclude the memory from the test if LU > 3 TBD
+			//			CHI_Board_Status.mem_to_test&=~(1<<i);
+			//		}
 
-					else if ((CHI_Memory_Status[i].no_SEFI_seq)>10)	{
+					if ((CHI_Memory_Status[i].no_SEFI_seq)>254)	{
 						// exclude the memory from the test if SEFI > 10 TBD
 						CHI_Board_Status.mem_to_test&=~(1<<i);
 					}					
