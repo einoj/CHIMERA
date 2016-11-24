@@ -22,9 +22,8 @@
 
 uint8_t transmit_test(uint8_t* data, uint16_t num_bytes)
 {
-    uint16_t i;
 
-    for(i = 0; i < num_bytes; i++) {
+    for(uint16_t i = 0; i < num_bytes; i++) {
        USART0SendByte(data[i]);
     }
     return 0;
@@ -64,7 +63,6 @@ ISR(TIMER3_OVF_vect) {
 
 uint8_t read_memory(uint8_t mem_idx) {
     uint8_t buf[256]; // the buffer must fit a whole page of, some memories have different page sizes
-    uint16_t i, j;
     uint8_t pattern[2] = {0x55,0xAA};
     uint8_t ptr_idx = 0; // because the order of the pattern changes per page
     uint8_t page_errors; //SEU errors
@@ -78,22 +76,37 @@ uint8_t read_memory(uint8_t mem_idx) {
 
 	CHI_Memory_Status[mem_idx].current1=ADC_Median>>2; // Reading bias current measurement
 
-    for (i = 0; i < mem_arr[mem_idx].page_num; i++) {		
+    for (uint16_t i = 0; i < mem_arr[mem_idx].page_num; i++) {		
         //reset timer
 		// ENABLE TIMER
 		TIMER3_Enable_1s();
 
-        // read page
-        while (read_24bit_page(0, mem_idx, buf) == BUSY) {
+        // read page either with 24 bit address or 16 bit address
+        if(mem_arr[mem_idx].addr_space) {
+            while (read_24bit_page(0, mem_idx, buf) == BUSY) {
 
-			if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
-			
-            if (CHI_Board_Status.SPI_timeout_detected) {
-                // SEFI detected, SPI timeout
-                CHI_Memory_Status[mem_idx].no_SEFI_timeout++;
-				CHI_Memory_Status[mem_idx].no_SEFI_seq++;
-                // jump to next memory
-                return 0;
+                if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
+                
+                if (CHI_Board_Status.SPI_timeout_detected) {
+                    // SEFI detected, SPI timeout
+                    CHI_Memory_Status[mem_idx].no_SEFI_timeout++;
+                    CHI_Memory_Status[mem_idx].no_SEFI_seq++;
+                    // jump to next memory
+                    return 0;
+                }
+            }
+        } else {
+            while (read_16bit_page(0, mem_idx, buf) == BUSY) {
+
+                if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
+                
+                if (CHI_Board_Status.SPI_timeout_detected) {
+                    // SEFI detected, SPI timeout
+                    CHI_Memory_Status[mem_idx].no_SEFI_timeout++;
+                    CHI_Memory_Status[mem_idx].no_SEFI_seq++;
+                    // jump to next memory
+                    return 0;
+                }
             }
         }
 		
@@ -101,7 +114,7 @@ uint8_t read_memory(uint8_t mem_idx) {
     
         //check page
         page_errors = 0;
-        for (j = 0; j < mem_arr[mem_idx].page_size; j++) {
+        for (uint16_t j = 0; j < mem_arr[mem_idx].page_size; j++) {
 			
 		
             if (buf[j] != pattern[ptr_idx]) {
@@ -157,7 +170,7 @@ uint8_t read_memory(uint8_t mem_idx) {
 void Power_On_Init() {
 	    CHI_Board_Status.device_mode = 0x01;
 	    CHI_Board_Status.latch_up_detected = 0;
-	    CHI_Board_Status.mem_to_test = 0x0032;
+	    CHI_Board_Status.mem_to_test = 0x0010;
 		CHI_Board_Status.mem_tested = 0;
         CHI_Board_Status.mem_reprog = 0;
 	    CHI_Board_Status.no_cycles = 0;
@@ -224,12 +237,12 @@ int main(void)
 			for (int i=0;i<12;i++) {	
 				if (CHI_Board_Status.mem_to_test & (1<<i)) {
 					
-					if ((CHI_Memory_Status[i].no_LU) > 3 )	{
-						// exclude the memory from the test if LU > 3 TBD
-						CHI_Board_Status.mem_to_test&=~(1<<i);
-					}
+			//		if ((CHI_Memory_Status[i].no_LU) > 3 )	{
+			//			// exclude the memory from the test if LU > 3 TBD
+			//			CHI_Board_Status.mem_to_test&=~(1<<i);
+			//		}
 
-					else if ((CHI_Memory_Status[i].no_SEFI_seq)>10)	{
+					if ((CHI_Memory_Status[i].no_SEFI_seq)>254)	{
 						// exclude the memory from the test if SEFI > 10 TBD
 						CHI_Board_Status.mem_to_test&=~(1<<i);
 					}					
@@ -255,7 +268,7 @@ int main(void)
 						
 						addr = 0;
 						pattern = 0;
-						for (uint8_t j = 0; j < mem_arr[i].page_num; j++) {
+						for (uint16_t j = 0; j < mem_arr[i].page_num; j++) {
 							//START SPI TIMER should be less than 1 second
 							while (write_24bit_page(addr, pattern, i) == BUSY);
 							//RESET TIMER

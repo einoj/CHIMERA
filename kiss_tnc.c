@@ -133,7 +133,7 @@ ISR(TIMER0_OVF_vect) {
 			case (CHI_COMM_ID_MODE):
 			if (RX_i==5) { // 1st byte: device mode, 2nd 3rd: mem to be tested 
 				CHI_Board_Status.device_mode=RX_BUFFER[1];
-				CHI_Board_Status.mem_to_test=(uint16_t)RX_BUFFER[2]<<8 | (uint16_t)RX_BUFFER[3];
+				CHI_Board_Status.mem_to_test=(uint16_t) (RX_BUFFER[2]<<8) | (uint16_t) (RX_BUFFER[3]);
 				Send_ACK();
 			}
 			else {
@@ -284,11 +284,7 @@ void transmit_CHI_SCI_TM(void)
     transmit_kiss(data);
 
     // Send On Board TIME stamp
-    data = (uint8_t) CHI_Board_Status.local_time;
-    checksum = _crc8_ccitt_update(checksum, data);
-    transmit_kiss(data);
-
-    data = (uint8_t) (CHI_Board_Status.local_time>>8);
+    data = (uint8_t) CHI_Board_Status.local_time>>24;
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 
@@ -296,16 +292,20 @@ void transmit_CHI_SCI_TM(void)
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 
-    data = (uint8_t) (CHI_Board_Status.local_time>>24);
+    data = (uint8_t) (CHI_Board_Status.local_time>>8);
+    checksum = _crc8_ccitt_update(checksum, data);
+    transmit_kiss(data);
+
+    data = (uint8_t) (CHI_Board_Status.local_time);
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 	
     // Send Instrument status
-    data = (uint8_t) CHI_Board_Status.mem_to_test;
+    data = (uint8_t) (CHI_Board_Status.mem_to_test>>8);
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 	
-    data = (uint8_t) (CHI_Board_Status.mem_to_test>>8);
+    data = (uint8_t) (CHI_Board_Status.mem_to_test);
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
     
