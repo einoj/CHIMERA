@@ -364,8 +364,12 @@ int main(void)
 				}
 			}
 			
-		}
-		while ((CHI_Board_Status.local_time-start_time)<60000);
+		} while ((CHI_Board_Status.local_time-start_time)<60000);
+
+    if (CHI_Board_Status.Event_cnt > 0) {
+      transmit_CHI_EVENTS();
+      // TODO wait for ACK or resend if NACK?
+    }
 
 		transmit_CHI_SCI_TM();
     }
