@@ -128,30 +128,35 @@ uint8_t read_memory(uint8_t mem_idx) {
                 // page_number*pagesize + address in page
                 addr = (uint32_t) i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
 
+                // WARNING THERE IS PROBABLY A WAY THAT THIS CAN CAUSE OUTOF BOUNDS WRITES
                 if (page_errors == mem_arr[mem_idx].page_size-1) {
-                    // remove the last page_size errors and store a SEFI
-					CHI_Memory_Status[mem_idx].no_SEU -= page_errors;
-					CHI_Memory_Status[mem_idx].no_SEFI_wr_error++;
-					CHI_Memory_Status[mem_idx].no_SEFI_seq++;
-					CHI_Board_Status.Event_cnt -= (page_errors-1);
-					Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
-                    Memory_Events[CHI_Board_Status.Event_cnt].memory_id = 0x80 | mem_idx; //1 in upper memory bit signifies a SEFI
-                    Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
-                    Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
-                    Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
-                    Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
-					CHI_Board_Status.Event_cnt++;
-                    return 1;
+                  // remove the last page_size errors and store a SEFI
+                  CHI_Memory_Status[mem_idx].no_SEU -= page_errors;
+                  CHI_Memory_Status[mem_idx].no_SEFI_wr_error++;
+                  CHI_Memory_Status[mem_idx].no_SEFI_seq++;
+                  CHI_Board_Status.Event_cnt -= (page_errors-1);
+                  if (CHI_Board_Status.Event_cnt > CHI_NUM_EVENT-1) { //OVERFLOW 
+                   CHI_Board_Status.Event_cnt = 0;  // All stored data now delted
+                  }
+
+                  Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
+                  Memory_Events[CHI_Board_Status.Event_cnt].memory_id = 0x80 | mem_idx; //1 in upper memory bit signifies a SEFI
+                  Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
+                  Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
+                  Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
+                  Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
+                  CHI_Board_Status.Event_cnt++;
+                  return 1;
                 }
 
-               else if (CHI_Board_Status.Event_cnt < CHI_NUM_EVENT) {
-                    Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
-					Memory_Events[CHI_Board_Status.Event_cnt].memory_id = mem_idx;
-                    Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
-                    Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
-                    Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
-                    Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
-                    CHI_Board_Status.Event_cnt++;
+                else if (CHI_Board_Status.Event_cnt < CHI_NUM_EVENT) {
+                  Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
+                  Memory_Events[CHI_Board_Status.Event_cnt].memory_id = mem_idx;
+                  Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
+                  Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
+                  Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
+                  Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
+                  CHI_Board_Status.Event_cnt++;
                 }
 				
 				else {

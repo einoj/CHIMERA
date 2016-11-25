@@ -37,18 +37,18 @@ volatile struct CHI_Memory_Event_Str Memory_Events[CHI_NUM_EVENT];
 
 // CHIMERA Board Status Structure
 struct __attribute__((packed)) CHI_Board_Status_Str {
-	uint32_t local_time; // Instrument local time
-	uint8_t reset_type; // reason for last reset
-	uint8_t device_mode; // mode of the instrument
-	uint8_t last_cmd; // last cmd send (in case NACK arrives)
-	uint8_t latch_up_detected; // latch up detected flag
-	uint8_t SPI_timeout_detected; // SPI time-out detected flag
-	uint8_t current_memory;	// id of currently processed memory
-	uint16_t mem_to_test; // memories to be tested - each bit corresponds to one memory	
-    uint16_t mem_reprog; // which memories to be reprogrammed
-	uint16_t no_cycles; // number of SCI cycles performed on memories
-	uint8_t COMM_flags;	// 	ACK/NACK flags ... unused now
-	uint16_t Event_cnt; // Number of EVENTs
+  uint32_t local_time; // Instrument local time
+  uint8_t reset_type; // reason for last reset
+  uint8_t device_mode; // mode of the instrument
+  uint8_t last_cmd; // last cmd send (in case NACK arrives)
+  uint8_t latch_up_detected; // latch up detected flag
+  uint8_t SPI_timeout_detected; // SPI time-out detected flag
+  uint8_t current_memory;	// id of currently processed memory
+  uint16_t mem_to_test; // memories to be tested - each bit corresponds to one memory	
+  uint16_t mem_reprog; // which memories to be reprogrammed
+  uint16_t no_cycles; // number of SCI cycles performed on memories
+  uint8_t COMM_flags;	// 	ACK/NACK flags ... unused now
+  uint16_t Event_cnt; // Number of EVENTs
 };
 volatile struct CHI_Board_Status_Str CHI_Board_Status;
 //---------------------------------------------
