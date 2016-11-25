@@ -128,12 +128,12 @@ uint8_t read_memory(uint8_t mem_idx) {
                 // page_number*pagesize + address in page
                 addr = (uint32_t) i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
 
-                if (page_errors > 10) {
-                    // remove the last ten errors and store a SEFI
-					CHI_Memory_Status[mem_idx].no_SEU -= 11;
+                if (page_errors == mem_arr[mem_idx].page_size-1) {
+                    // remove the last page_size errors and store a SEFI
+					CHI_Memory_Status[mem_idx].no_SEU -= page_errors;
 					CHI_Memory_Status[mem_idx].no_SEFI_wr_error++;
 					CHI_Memory_Status[mem_idx].no_SEFI_seq++;
-					CHI_Board_Status.Event_cnt -= 10;
+					CHI_Board_Status.Event_cnt -= (page_errors-1);
 					Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
                     Memory_Events[CHI_Board_Status.Event_cnt].memory_id = 0x80 | mem_idx; //1 in upper memory bit signifies a SEFI
                     Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
@@ -170,7 +170,7 @@ uint8_t read_memory(uint8_t mem_idx) {
 void Power_On_Init() {
 	  CHI_Board_Status.device_mode = 0x01;
 	  CHI_Board_Status.latch_up_detected = 0;
-	  CHI_Board_Status.mem_to_test = 0x0001;
+	  CHI_Board_Status.mem_to_test = 0x0800;
     CHI_Board_Status.mem_reprog = 0;
 	  CHI_Board_Status.no_cycles = 0;
 		CHI_Board_Status.Event_cnt = 0; // EVENT counter
