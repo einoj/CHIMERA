@@ -290,7 +290,7 @@ void transmit_CHI_SCI_TM(void)
     transmit_kiss(data);
 
     // Send On Board TIME stamp
-    data = (uint8_t) CHI_Board_Status.local_time>>24;
+    data = (uint8_t) (CHI_Board_Status.local_time>>24);
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 
