@@ -244,15 +244,15 @@ int main(void)
 			for (int i=0;i<12;i++) {	
 				if (CHI_Board_Status.mem_to_test & (1<<i)) {
 					
-					if ((CHI_Memory_Status[i].no_LU) > 50 )	{
-						// exclude the memory from the test if LU > 50 TBD
-						CHI_Board_Status.mem_to_test&=~(1<<i);
-					}
+					//if ((CHI_Memory_Status[i].no_LU) > 50 )	{
+					//	// exclude the memory from the test if LU > 50 TBD
+					//	CHI_Board_Status.mem_to_test&=~(1<<i);
+					//}
 
-					if ((CHI_Memory_Status[i].no_SEFI_seq)>254)	{
-						// exclude the memory from the test if SEFI > 10 TBD
-						CHI_Board_Status.mem_to_test&=~(1<<i);
-					}					
+					//if ((CHI_Memory_Status[i].no_SEFI_seq)>254)	{
+					//	// exclude the memory from the test if SEFI > 10 TBD
+					//	CHI_Board_Status.mem_to_test&=~(1<<i);
+					//}					
 					
 					if (CHI_Board_Status.mem_reprog & (1<<i))	{
 					
