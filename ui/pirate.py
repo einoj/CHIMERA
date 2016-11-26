@@ -18,54 +18,18 @@ from time import sleep
 from queue import Queue
 from time import sleep
 from crc8 import calculateCRC8
+from kiss import encode_kiss_frame, decode_kiss_frame
+from kiss_constants import *
 
 # logger constants
 LOG_LEVEL = logging.DEBUG
 LOG_FORMAT = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-
-#KISS constants
-FEND = b'\xC0'
-FESC =  b'\xDB'
-TFEND = b'\xDC'
-TFESC = b'\xDD'
-
-ACK = b'\x1A'
-NACK = b'\x15'
-SCI_TM = b'\x01'
-STATUS = b'\x02'
-EVENT = b'\x04'
-MODE = b'\x07'
-TIMESTAMP = b'\x08'
 
 # "FEND is sent as FESC, TFEND"
 FESC_TFEND = b''.join([FESC, TFEND])
 
 # "FESC is sent as FESC, TFESC"
 FESC_TFESC = b''.join([FESC, TFESC])
-
-
-def encode_kiss_frame(frame):
-    """
-    Append CRC8 to frame, then preform KISS encoding
-
-    """
-    checksum = 0
-
-    for byte in frame:
-        checksum = calculateCRC8(checksum,byte)
-    frame = b''.join([frame, bytes([checksum])])
-    return frame.replace(FESC, FESC_TFESC).replace(FEND, FESC_TFEND)
-
-def decode_kiss_frame(frame):
-    """
-    Recover special codes, per KISS spec.
-    "If the FESC_TFESC or FESC_TFEND escaped codes appear in the data received, they
-    need to be recovered to the original codes. The FESC_TFESC code is replaced by
-    FESC code and FESC_TFEND is replaced by FEND code."
-    - http://en.wikipedia.org/wiki/KISS_(TNC)#Description
-    """ 
-    frame = b''.join(frame)
-    return frame.replace( FESC_TFESC, FESC).replace( FESC_TFEND, FEND)
 
 #buspirate commands
 commands = {
