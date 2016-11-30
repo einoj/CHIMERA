@@ -319,8 +319,12 @@ void transmit_CHI_SCI_TM(void)
     for (i = 0; i < NUM_MEMORIES; i++) {
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].cycles);
         transmit_kiss(CHI_Memory_Status[i].cycles);		
-        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEU);
-        transmit_kiss(CHI_Memory_Status[i].no_SEU);
+        data  = (uint8_t) (CHI_Memory_Status[i].no_SEU>>8);
+        checksum = _crc8_ccitt_update(checksum, data);
+        transmit_kiss(data);
+        data  = (uint8_t) (CHI_Memory_Status[i].no_SEU);
+        checksum = _crc8_ccitt_update(checksum, data);
+        transmit_kiss(data);
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_LU);
         transmit_kiss(CHI_Memory_Status[i].no_LU);
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEFI_timeout);
