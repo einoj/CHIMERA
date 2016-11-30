@@ -129,12 +129,12 @@ uint8_t read_memory(uint8_t mem_idx) {
                 addr = (uint32_t) i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
 
                 // WARNING THERE IS PROBABLY A WAY THAT THIS CAN CAUSE OUTOF BOUNDS WRITES
-                if (page_errors == mem_arr[mem_idx].page_size-1) {
+                if (page_errors > 127) {
                   // remove the last page_size errors and store a SEFI
-                  CHI_Memory_Status[mem_idx].no_SEU -= page_errors;
+                  CHI_Memory_Status[mem_idx].no_SEU -= 128;
                   CHI_Memory_Status[mem_idx].no_SEFI_wr_error++;
                   CHI_Memory_Status[mem_idx].no_SEFI_seq++;
-                  CHI_Board_Status.Event_cnt -= (page_errors-1);
+                  CHI_Board_Status.Event_cnt -= 127;
                   if (CHI_Board_Status.Event_cnt > CHI_NUM_EVENT-1) { //OVERFLOW 
                    CHI_Board_Status.Event_cnt = 0;  // All stored data now delted
                   }
@@ -372,7 +372,7 @@ int main(void)
 		} while ((CHI_Board_Status.local_time-start_time)<60000);
 
     if (CHI_Board_Status.Event_cnt > 0) {
-      transmit_CHI_EVENTS();
+     // transmit_CHI_EVENTS();
       // TODO wait for ACK or resend if NACK?
     }
 
