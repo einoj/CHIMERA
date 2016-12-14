@@ -31,7 +31,7 @@ struct __attribute__((packed)) CHI_Memory_Event_Str {
 	uint8_t addr3;
 	uint8_t value;
 };
-volatile struct CHI_Memory_Event_Str Memory_Events[CHI_NUM_EVENT];
+//volatile struct CHI_Memory_Event_Str Memory_Events[CHI_NUM_EVENT];
 
 //---------------------------------------------
 
