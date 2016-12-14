@@ -198,6 +198,7 @@ void transmit_CHI_EVENTS() {
     data = (uint8_t) CHI_COMM_ID_EVENT;
     checksum = _crc8_ccitt_update(checksum,data);
     transmit_kiss(data);
+    /*
     for (i = 0; i < CHI_Board_Status.Event_cnt; i++) {
         // send timestamp 
 			  data =  Memory_Events[i].timestamp;
@@ -222,6 +223,7 @@ void transmit_CHI_EVENTS() {
         checksum = _crc8_ccitt_update(checksum, data);
         transmit_kiss(data);
     }
+    */
     //Send checksum
     transmit_kiss(checksum);
     
