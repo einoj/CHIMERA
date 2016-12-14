@@ -82,8 +82,8 @@ uint8_t read_memory(uint8_t mem_idx) {
 		TIMER3_Enable_1s();
 
         // read page either with 24 bit address or 16 bit address
-        if(mem_arr[mem_idx].addr_space) {
-            while (read_24bit_page(0, mem_idx, buf) == BUSY) {
+        if(mem_arr[mem_idx].addr_space != 0) {
+            while (read_24bit_page((uint32_t) i*mem_arr[mem_idx].page_size, mem_idx, buf) == BUSY) {
 
                 if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
                 
@@ -96,7 +96,7 @@ uint8_t read_memory(uint8_t mem_idx) {
                 }
             }
         } else {
-            while (read_16bit_page(0, mem_idx, buf) == BUSY) {
+            while (read_16bit_page((uint32_t) i*mem_arr[mem_idx].page_size, mem_idx, buf) == BUSY) {
 
                 if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
                 
@@ -128,30 +128,35 @@ uint8_t read_memory(uint8_t mem_idx) {
                 // page_number*pagesize + address in page
                 addr = (uint32_t) i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
 
-                if (page_errors > 10) {
-                    // remove the last ten errors and store a SEFI
-					CHI_Memory_Status[mem_idx].no_SEU -= 11;
-					CHI_Memory_Status[mem_idx].no_SEFI_wr_error++;
-					CHI_Memory_Status[mem_idx].no_SEFI_seq++;
-					CHI_Board_Status.Event_cnt -= 10;
-					Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
-                    Memory_Events[CHI_Board_Status.Event_cnt].memory_id = 0x80 | mem_idx; //1 in upper memory bit signifies a SEFI
-                    Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
-                    Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
-                    Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
-                    Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
-					CHI_Board_Status.Event_cnt++;
-                    return 1;
+                // WARNING THERE IS PROBABLY A WAY THAT THIS CAN CAUSE OUTOF BOUNDS WRITES
+                if (page_errors > 127) {
+                  // remove the last page_size errors and store a SEFI
+                  CHI_Memory_Status[mem_idx].no_SEU -= 128;
+                  CHI_Memory_Status[mem_idx].no_SEFI_wr_error++;
+                  CHI_Memory_Status[mem_idx].no_SEFI_seq++;
+                  CHI_Board_Status.Event_cnt -= 127;
+                  if (CHI_Board_Status.Event_cnt > CHI_NUM_EVENT-1) { //OVERFLOW 
+                   CHI_Board_Status.Event_cnt = 0;  // All stored data now delted
+                  }
+
+                  Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
+                  Memory_Events[CHI_Board_Status.Event_cnt].memory_id = 0x80 | mem_idx; //1 in upper memory bit signifies a SEFI
+                  Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
+                  Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
+                  Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
+                  Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
+                  CHI_Board_Status.Event_cnt++;
+                  return 1;
                 }
 
-               else if (CHI_Board_Status.Event_cnt < CHI_NUM_EVENT) {
-                    Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
-					Memory_Events[CHI_Board_Status.Event_cnt].memory_id = mem_idx;
-                    Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
-                    Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
-                    Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
-                    Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
-                    CHI_Board_Status.Event_cnt++;
+                else if (CHI_Board_Status.Event_cnt < CHI_NUM_EVENT) {
+                  Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
+                  Memory_Events[CHI_Board_Status.Event_cnt].memory_id = mem_idx;
+                  Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
+                  Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
+                  Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
+                  Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
+                  CHI_Board_Status.Event_cnt++;
                 }
 				
 				else {
@@ -168,11 +173,11 @@ uint8_t read_memory(uint8_t mem_idx) {
 }
 
 void Power_On_Init() {
-	    CHI_Board_Status.device_mode = 0x01;
-	    CHI_Board_Status.latch_up_detected = 0;
-	    CHI_Board_Status.mem_to_test = 0x0010;
-        CHI_Board_Status.mem_reprog = 0;
-	    CHI_Board_Status.no_cycles = 0;
+	  CHI_Board_Status.device_mode = 0x01;
+	  CHI_Board_Status.latch_up_detected = 0;
+	  CHI_Board_Status.mem_to_test = 0x0800;
+    CHI_Board_Status.mem_reprog = 0;
+	  CHI_Board_Status.no_cycles = 0;
 		CHI_Board_Status.Event_cnt = 0; // EVENT counter
 		
 		CHI_UART_RX_BUFFER_INDEX=0;
@@ -203,7 +208,7 @@ int main(void)
 	// Initialize the Board
 	PORT_Init();	//Initialize the ports
 	ADC_Init();		// Initialize the ADC for latch-up
-    SPI_Init();		// Initialize the SPI
+  SPI_Init();		// Initialize the SPI
 	TIMER0_Init();	// Parser/time-out Timer
 	TIMER1_Init();	// Instrument Time Counter
 	TIMER3_Init();	// SPI Time-Out Counter
@@ -216,6 +221,7 @@ int main(void)
 
 	// LDO for memories ON
 	LDO_ON;
+  wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
 	
 	// Disable all CS
     for (uint8_t i = 0; i < 12; i++)CHIP_DESELECT(i);
@@ -238,19 +244,20 @@ int main(void)
 			for (int i=0;i<12;i++) {	
 				if (CHI_Board_Status.mem_to_test & (1<<i)) {
 					
-					if ((CHI_Memory_Status[i].no_LU) > 50 )	{
-						// exclude the memory from the test if LU > 50 TBD
-						CHI_Board_Status.mem_to_test&=~(1<<i);
-					}
+					//if ((CHI_Memory_Status[i].no_LU) > 50 )	{
+					//	// exclude the memory from the test if LU > 50 TBD
+					//	CHI_Board_Status.mem_to_test&=~(1<<i);
+					//}
 
-					if ((CHI_Memory_Status[i].no_SEFI_seq)>254)	{
-						// exclude the memory from the test if SEFI > 10 TBD
-						CHI_Board_Status.mem_to_test&=~(1<<i);
-					}					
+					//if ((CHI_Memory_Status[i].no_SEFI_seq)>254)	{
+					//	// exclude the memory from the test if SEFI > 10 TBD
+					//	CHI_Board_Status.mem_to_test&=~(1<<i);
+					//}					
 					
 					if (CHI_Board_Status.mem_reprog & (1<<i))	{
 					
 						LDO_ON;
+            wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
 						
 						TIMER3_Enable_8s();
 						while (erase_chip(i) == BUSY) {
@@ -267,9 +274,7 @@ int main(void)
 						if (CHI_Board_Status.latch_up_detected==1) {
 							
 							// Wait 1 second after the latch-up
-							TIMER3_Enable_1s();
-							while(CHI_Board_Status.SPI_timeout_detected==0);
-							TIMER3_Disable();
+              wait_1s();
 							
 							CHI_Memory_Status[i].no_LU++;
 							CHI_Board_Status.latch_up_detected=0;
@@ -281,14 +286,25 @@ int main(void)
 						for (uint16_t j = 0; j < mem_arr[i].page_num; j++) {
 							
 							TIMER3_Enable_1s();							
-							while (write_24bit_page(addr, pattern, i) == BUSY) {
-								if (CHI_Board_Status.SPI_timeout_detected==1) {
-									CHI_Memory_Status[i].no_SEFI_timeout++;
-									CHI_Memory_Status[i].no_SEFI_seq++;
-									break;
-								}								
-							}
-							TIMER3_Disable();							
+              if(mem_arr[i].addr_space) {
+                while (write_24bit_page(addr, pattern, i) == BUSY) {
+                  if (CHI_Board_Status.SPI_timeout_detected==1) {
+                    CHI_Memory_Status[i].no_SEFI_timeout++;
+                    CHI_Memory_Status[i].no_SEFI_seq++;
+                    break;
+                  }								
+                }
+              } else {
+                while (write_16bit_page(addr, pattern, i) == BUSY) {
+                  if (CHI_Board_Status.SPI_timeout_detected==1) {
+                    CHI_Memory_Status[i].no_SEFI_timeout++;
+                    CHI_Memory_Status[i].no_SEFI_seq++;
+                    break;
+                  }								
+                }
+              }
+							TIMER3_Disable();
+														
 							if (CHI_Board_Status.SPI_timeout_detected==1) break;
 							
 							addr+=mem_arr[i].page_size;
@@ -300,9 +316,7 @@ int main(void)
 						if (CHI_Board_Status.SPI_timeout_detected==1) continue;
 											
 						if (CHI_Board_Status.latch_up_detected==1) {
-								TIMER3_Enable_1s();
-								while(CHI_Board_Status.SPI_timeout_detected==0);
-								TIMER3_Disable();
+                wait_1s(); 
 								
 								CHI_Memory_Status[i].no_LU++;
 								CHI_Board_Status.latch_up_detected=0;
@@ -325,20 +339,17 @@ int main(void)
 						case 0x01: //readmode
 						
 							LDO_ON;
+              wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
 							if (read_memory(i) == 0xAC) {
 								
-								TIMER3_Enable_1s();
-								while(CHI_Board_Status.SPI_timeout_detected==0);
-								TIMER3_Disable();
+                wait_1s();
 																
 								CHI_Memory_Status[i].no_LU++;
 								CHI_Board_Status.latch_up_detected=0;								
 							}
 							else if (CHI_Board_Status.latch_up_detected==1) {
 								
-								TIMER3_Enable_1s();
-								while(CHI_Board_Status.SPI_timeout_detected==0);
-								TIMER3_Disable();
+                wait_1s();
 								
 								CHI_Memory_Status[i].no_LU++;
 								CHI_Board_Status.latch_up_detected=0;
@@ -358,8 +369,12 @@ int main(void)
 				}
 			}
 			
-		}
-		while ((CHI_Board_Status.local_time-start_time)<60000);
+		} while ((CHI_Board_Status.local_time-start_time)<60000);
+
+    if (CHI_Board_Status.Event_cnt > 0) {
+     // transmit_CHI_EVENTS();
+      // TODO wait for ACK or resend if NACK?
+    }
 
 		transmit_CHI_SCI_TM();
     }

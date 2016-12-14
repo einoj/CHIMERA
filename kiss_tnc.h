@@ -24,7 +24,7 @@ uint8_t decode_dataframe(uint8_t* dataframe);
 
 void transmit_CHI_SCI_TM(void);
 
-void transmit_CHI_EVENTS(uint16_t num_events);
+void transmit_CHI_EVENTS(void);
 
 void transmit_CHI_STATUS(void);
 

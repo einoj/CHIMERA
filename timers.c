@@ -35,17 +35,41 @@ void TIMER3_Init() {
 }
 
 void TIMER3_Enable_1s() {
-    CHI_Board_Status.SPI_timeout_detected=0;
+  CHI_Board_Status.SPI_timeout_detected=0;
 	TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt
-	ETIMSK|=0x04; // Don't enable on startup
+	ETIMSK|=0x04; // enable timer
 }
 
 void TIMER3_Enable_8s() {
-    CHI_Board_Status.SPI_timeout_detected=0;
+  CHI_Board_Status.SPI_timeout_detected=0;
 	TCNT3=0xFFFF-62500; // We need 62500 ticks to get 8s interrupt
-	ETIMSK|=0x04; // Don't enable on startup
+	ETIMSK|=0x04; // enable timer
 }
 
 void TIMER3_Disable() {
-	ETIMSK &= ~ 0x04; // Don't enable on startup
+	ETIMSK &= ~ 0x04; // disable timer
+}
+
+void wait_2ms() {
+  CHI_Board_Status.SPI_timeout_detected=0;
+	TCNT3=0xFFFF-16; // We need 16 ticks to get 2ms interrupt
+	ETIMSK|=0x04; // enable timer
+	while(CHI_Board_Status.SPI_timeout_detected==0); // wait 2ms
+	ETIMSK &= ~ 0x04; // disable timer
+}
+
+void wait_1s() {
+  CHI_Board_Status.SPI_timeout_detected=0;
+	TCNT3=0xFFFF-7812; // We need 7812 ticks to get 1s interrupt
+	ETIMSK|=0x04; // enable timer
+	while(CHI_Board_Status.SPI_timeout_detected==0); // wait 1s
+	ETIMSK &= ~ 0x04; // disable timer
+}
+
+void wait_8s() {
+  CHI_Board_Status.SPI_timeout_detected=0;
+	TCNT3=0xFFFF-62500; // We need 62500 ticks to get 8s interrupt
+	ETIMSK|=0x04; // enable timer
+	while(CHI_Board_Status.SPI_timeout_detected==0); // wait 8s
+	ETIMSK &= ~ 0x04; // disable timer
 }

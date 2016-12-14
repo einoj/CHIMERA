@@ -99,7 +99,7 @@ ISR(TIMER0_OVF_vect) {
 					break;
 					
 					case (CHI_COMM_ID_EVENT):
-					transmit_CHI_EVENTS(0);
+					transmit_CHI_EVENTS();
 					break;
 
 					case (CHI_COMM_ID_SCI_TM):
@@ -123,7 +123,7 @@ ISR(TIMER0_OVF_vect) {
 			break;
 			
 			case (CHI_COMM_ID_EVENT):
-			transmit_CHI_EVENTS(0);
+			transmit_CHI_EVENTS();
 			break;
 
 			case (CHI_COMM_ID_SCI_TM):
@@ -189,7 +189,7 @@ uint8_t decode_dataframe(uint8_t* dataframe)
 }
 
 
-void transmit_CHI_EVENTS(uint16_t num_events) {
+void transmit_CHI_EVENTS() {
     uint16_t i;
     uint8_t checksum = 0; // Used to store the crc8 checksum
     uint8_t data; // Used to temporarily hold bytes of multibyte variables
@@ -198,7 +198,11 @@ void transmit_CHI_EVENTS(uint16_t num_events) {
     data = (uint8_t) CHI_COMM_ID_EVENT;
     checksum = _crc8_ccitt_update(checksum,data);
     transmit_kiss(data);
-    for (i = 0; i < num_events; i++) {
+    for (i = 0; i < CHI_Board_Status.Event_cnt; i++) {
+        // send timestamp 
+			  data =  Memory_Events[i].timestamp;
+        checksum = _crc8_ccitt_update(checksum, data);
+        transmit_kiss(data);
         // Send Memory_id
         data =  Memory_Events[i].memory_id;
         checksum = _crc8_ccitt_update(checksum, data);
@@ -218,7 +222,6 @@ void transmit_CHI_EVENTS(uint16_t num_events) {
         checksum = _crc8_ccitt_update(checksum, data);
         transmit_kiss(data);
     }
-    //TODO wait for ack before setting num_events to 0
     //Send checksum
     transmit_kiss(checksum);
     
@@ -226,6 +229,9 @@ void transmit_CHI_EVENTS(uint16_t num_events) {
     USART0SendByte(FEND);
 
 	CHI_Board_Status.last_cmd=CHI_COMM_ID_EVENT;
+  
+  //TODO wait for ack before setting num_events to 0
+  CHI_Board_Status.Event_cnt = 0;
 }
 
 void transmit_CHI_STATUS() {
@@ -284,7 +290,7 @@ void transmit_CHI_SCI_TM(void)
     transmit_kiss(data);
 
     // Send On Board TIME stamp
-    data = (uint8_t) CHI_Board_Status.local_time>>24;
+    data = (uint8_t) (CHI_Board_Status.local_time>>24);
     checksum = _crc8_ccitt_update(checksum, data);
     transmit_kiss(data);
 
@@ -313,15 +319,25 @@ void transmit_CHI_SCI_TM(void)
     for (i = 0; i < NUM_MEMORIES; i++) {
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].cycles);
         transmit_kiss(CHI_Memory_Status[i].cycles);		
-        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEU);
-        transmit_kiss(CHI_Memory_Status[i].no_SEU);
+		
+        data  = (uint8_t) (CHI_Memory_Status[i].no_SEU>>8);
+        checksum = _crc8_ccitt_update(checksum, data);
+        transmit_kiss(data);
+		
+        data  = (uint8_t) (CHI_Memory_Status[i].no_SEU);
+        checksum = _crc8_ccitt_update(checksum, data);
+        transmit_kiss(data);
+		
         checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_LU);
         transmit_kiss(CHI_Memory_Status[i].no_LU);
-        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEFI_timeout);
+        
+		checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEFI_timeout);
         transmit_kiss(CHI_Memory_Status[i].no_SEFI_timeout);
-        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEFI_wr_error);
+        
+		checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].no_SEFI_wr_error);
         transmit_kiss(CHI_Memory_Status[i].no_SEFI_wr_error);
-        checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].current1);
+        
+		checksum = _crc8_ccitt_update(checksum, CHI_Memory_Status[i].current1);
         transmit_kiss(CHI_Memory_Status[i].current1);		
     }
 

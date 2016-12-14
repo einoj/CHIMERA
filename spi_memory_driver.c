@@ -336,6 +336,36 @@ uint8_t write_24bit_page(uint32_t addr, uint8_t ptr_i, uint8_t mem_idx)
         return BUSY;
     }
 }
+
+uint8_t write_16bit_page(uint32_t addr, uint8_t ptr_i, uint8_t mem_idx)
+{
+    uint16_t write_cnt = 0;
+    uint16_t page_size = mem_arr[mem_idx].page_size;
+    uint8_t pattern[2] = {0x55,0xAA};
+    uint8_t i = 0;
+    uint8_t status_reg;
+
+    //if (start_addr <= TOP_ADDR) {
+    read_status_reg(&status_reg, mem_idx);
+    if (!(status_reg & (1<<WIP))) { // Is internal write or erase is currently in progress?
+        // TODO should test for write protectioin
+
+        spi_command(WREN, mem_idx); // Write enable always has to be sent before a write operation.
+        CHIP_SELECT(mem_idx);
+        spi_tx_byte(PRG);
+        spi_tx_byte((uint8_t)(addr>>8));  // Send the middle byte
+        spi_tx_byte((uint8_t)(addr));     // Send the LSB byte
+        while (write_cnt < page_size) {
+            spi_tx_byte(pattern[i]);
+            i ^= 0x01;
+            write_cnt++;
+        }
+        CHIP_DESELECT(mem_idx);
+        return TRANSFER_COMPLETED;
+    } else {
+        return BUSY;
+    }
+}
 /**
  * Writes a 4 byte pattern to the memory 
  * This function is for Microchip memories SST
@@ -413,7 +443,7 @@ uint8_t get_jedec_id(uint8_t mem_idx, uint8_t* memID)
         //DESELECT_SERIAL_MEMORY;
         // ENABLE_SPI_INTERRUPT;
         CHIP_DESELECT(mem_idx);
-        //
+        return TRANSFER_COMPLETED;
     } else {
         return BUSY;
     }
