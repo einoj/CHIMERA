@@ -2,19 +2,8 @@
 #include "spi_memory_driver.h"
 
 void SPI_Init(void) {
-    //SPCR = (0<<SPE);  // Disable the SPI to be able to configure the #SS line as an input even if the SPI is configured as a slave
-    // Set MOSI, SCK , and SS as Output
-    //DDRB=(1<<MOSI)|(1<<SCK)|(1<<SS1); DDRB set as output in HAL.c
-    //DESELECT_SERIAL_MEMORY;
-    //DISABLE_MISO_INTERRUPT; // To avoid triggering a write stop interrupt when reading
-
-    // Enable SPI, Set as Master
-    // Prescaler: Fosc/16, Enable Interrupts
-    //The MOSI, SCK pins are as per ATMega8
-    //DDRB |= (1<<MOSI);
-    //DDRB |= (1<<SCK);
-    //DDRB &= ~(1<<MISO);
-    DDRB = (1<<DDB0)|(1<<DDB1)|(1<<DDB2)|(1<<DDB4)|(1<<DDB5)|(1<<DDB6)|(1<<DDB7);//0xF7;//(1<<MOSI)|(1<<SCK);
+    DDRB = 0;
+	DDRB = (1<<DDB0)|(1<<DDB1)|(1<<DDB2)|(1<<DDB4)|(1<<DDB5)|(1<<DDB6)|(1<<DDB7);//0xF7;//(1<<MOSI)|(1<<SCK);
     SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR0);//|(1<<SPIE);
 
     // Clear the SPIF flag by reading SPSR and SPDR

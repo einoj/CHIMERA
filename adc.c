@@ -43,6 +43,7 @@ ISR(ADC_vect)
 	
 	if (ADC_Median>(int16_t)0x01F0) { // 50mA threshold
 		LDO_OFF;
+		
 		CHI_Board_Status.latch_up_detected=1;	
 	}
 }

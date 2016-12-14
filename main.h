@@ -5,7 +5,7 @@
 #define CHI_UART_RX_BUFFER_SIZE 20
 #define CHI_PARSER_TIMEOUT 157
 
-#define CHI_NUM_EVENT 300
+#define CHI_NUM_EVENT 200
 
 volatile uint8_t CHI_UART_RX_BUFFER[CHI_UART_RX_BUFFER_SIZE];
 
@@ -52,3 +52,4 @@ struct __attribute__((packed)) CHI_Board_Status_Str {
 };
 volatile struct CHI_Board_Status_Str CHI_Board_Status;
 //---------------------------------------------
+

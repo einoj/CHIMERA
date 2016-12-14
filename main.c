@@ -169,7 +169,7 @@ uint8_t read_memory(uint8_t mem_idx) {
 void Power_On_Init() {
 	  CHI_Board_Status.device_mode = 0x01;
 	  CHI_Board_Status.latch_up_detected = 0;
-	  CHI_Board_Status.mem_to_test = 0x0007; // 0x0FA7 9 memories
+	  CHI_Board_Status.mem_to_test = 0x01C0; // 0x0FA7 9 memories
     CHI_Board_Status.mem_reprog = 0;
     CHI_Board_Status.no_cycles = 0;
     //		CHI_Board_Status.Event_cnt = 0; // EVENT counter
@@ -188,6 +188,22 @@ void Power_On_Init() {
     }
 }
 
+void SPI_CYCLE() {
+		// Pull CS pins down
+		for (uint8_t i = 0; i < 12; i++)CHIP_SELECT(i);		
+		
+		// Pull SPI down
+		SPCR &= ~(1<<SPE);
+		PORTB &= 0b11110001; // clear SCK/MOSI
+		
+		wait_1s();
+		wait_1s();
+		
+		// Pull CS pins up
+		for (uint8_t i = 0; i < 12; i++)CHIP_DESELECT(i);
+		SPCR |= (1<<SPE);	
+}
+
 int main(void)
 {
     // Variables for memory access
@@ -202,7 +218,7 @@ int main(void)
 	// Initialize the Board
 	PORT_Init();	//Initialize the ports
 	ADC_Init();		// Initialize the ADC for latch-up
-  SPI_Init();		// Initialize the SPI
+    SPI_Init();		// Initialize the SPI
 	TIMER0_Init();	// Parser/time-out Timer
 	TIMER1_Init();	// Instrument Time Counter
 	TIMER3_Init();	// SPI Time-Out Counter
@@ -215,7 +231,7 @@ int main(void)
 
 	// LDO for memories ON
 	LDO_ON;
-  wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
+	wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
 	
 	// Disable all CS
     for (uint8_t i = 0; i < 12; i++)CHIP_DESELECT(i);
@@ -251,7 +267,7 @@ int main(void)
 					if (CHI_Board_Status.mem_reprog & (1<<i))	{
 					
 						LDO_ON;
-            wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
+						wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
 						
 						TIMER3_Enable_8s();
 						while (erase_chip(i) == BUSY) {
@@ -268,8 +284,7 @@ int main(void)
 						if (CHI_Board_Status.latch_up_detected==1) {
 							
 							// Wait 1 second after the latch-up
-              wait_1s();
-							
+							SPI_CYCLE();
 							CHI_Memory_Status[i].no_LU++;
 							CHI_Board_Status.latch_up_detected=0;
 							continue;
@@ -309,9 +324,8 @@ int main(void)
 						
 						if (CHI_Board_Status.SPI_timeout_detected==1) continue;
 											
-						if (CHI_Board_Status.latch_up_detected==1) {
-                wait_1s(); 
-								
+						if (CHI_Board_Status.latch_up_detected==1) { 
+								SPI_CYCLE();
 								CHI_Memory_Status[i].no_LU++;
 								CHI_Board_Status.latch_up_detected=0;
 								continue;
@@ -333,18 +347,14 @@ int main(void)
 						case 0x01: //readmode
 						
 							LDO_ON;
-              wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
+							wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
 							if (read_memory(i) == 0xAC) {
-								
-                wait_1s();
-																
+								SPI_CYCLE();								
 								CHI_Memory_Status[i].no_LU++;
 								CHI_Board_Status.latch_up_detected=0;								
 							}
-							else if (CHI_Board_Status.latch_up_detected==1) {
-								
-                wait_1s();
-								
+							else if (CHI_Board_Status.latch_up_detected==1) {			
+								SPI_CYCLE();				
 								CHI_Memory_Status[i].no_LU++;
 								CHI_Board_Status.latch_up_detected=0;
 							}							
