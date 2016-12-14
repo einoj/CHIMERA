@@ -68,12 +68,6 @@ uint8_t read_memory(uint8_t mem_idx) {
     uint8_t page_errors; //SEU errors
     uint32_t addr;
 
-		// slowing down the procedure!!!?!!?!
-		//TIMER3_Enable_8s();
-		//while(CHI_Board_Status.SPI_timeout_detected==0);
-		//TIMER3_Disable();
-		//---------------------------------------
-
 	CHI_Memory_Status[mem_idx].current1=ADC_Median>>2; // Reading bias current measurement
 
     for (uint16_t i = 0; i < mem_arr[mem_idx].page_num; i++) {		
@@ -135,29 +129,29 @@ uint8_t read_memory(uint8_t mem_idx) {
                   CHI_Memory_Status[mem_idx].no_SEFI_wr_error++;
                   CHI_Memory_Status[mem_idx].no_SEFI_seq++;
                   CHI_Board_Status.Event_cnt -= 127;
-                  if (CHI_Board_Status.Event_cnt > CHI_NUM_EVENT-1) { //OVERFLOW 
-                   CHI_Board_Status.Event_cnt = 0;  // All stored data now delted
-                  }
+                 // if (CHI_Board_Status.Event_cnt > CHI_NUM_EVENT-1) { //OVERFLOW 
+                 //  CHI_Board_Status.Event_cnt = 0;  // All stored data now delted
+                 // }
 
-                  Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
-                  Memory_Events[CHI_Board_Status.Event_cnt].memory_id = 0x80 | mem_idx; //1 in upper memory bit signifies a SEFI
-                  Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
-                  Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
-                  Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
-                  Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
-                  CHI_Board_Status.Event_cnt++;
+                 // Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
+                 // Memory_Events[CHI_Board_Status.Event_cnt].memory_id = 0x80 | mem_idx; //1 in upper memory bit signifies a SEFI
+                 // Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
+                 // Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
+                 // Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
+                 // Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
+                 // CHI_Board_Status.Event_cnt++;
                   return 1;
                 }
 
-                else if (CHI_Board_Status.Event_cnt < CHI_NUM_EVENT) {
-                  Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
-                  Memory_Events[CHI_Board_Status.Event_cnt].memory_id = mem_idx;
-                  Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
-                  Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
-                  Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
-                  Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
-                  CHI_Board_Status.Event_cnt++;
-                }
+               // else if (CHI_Board_Status.Event_cnt < CHI_NUM_EVENT) {
+               //   Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
+               //   Memory_Events[CHI_Board_Status.Event_cnt].memory_id = mem_idx;
+               //   Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
+               //   Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
+               //   Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
+               //   Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
+               //   CHI_Board_Status.Event_cnt++;
+               // }
 				
 				else {
                     //TODO transmit data when EVENT table if full
@@ -173,25 +167,25 @@ uint8_t read_memory(uint8_t mem_idx) {
 }
 
 void Power_On_Init() {
-	  CHI_Board_Status.device_mode = 0x01;
-	  CHI_Board_Status.latch_up_detected = 0;
-	  CHI_Board_Status.mem_to_test = 0x0800;
+    CHI_Board_Status.device_mode = 0x01;
+    CHI_Board_Status.latch_up_detected = 0;
+    CHI_Board_Status.mem_to_test = 0x0800;
     CHI_Board_Status.mem_reprog = 0;
-	  CHI_Board_Status.no_cycles = 0;
-		CHI_Board_Status.Event_cnt = 0; // EVENT counter
-		
-		CHI_UART_RX_BUFFER_INDEX=0;
-		CHI_UART_RX_BUFFER_COUNTER=0;
-		
-		// clear all statistics, for loop
-		for (uint8_t i=0;i<12;i++) {
-			CHI_Memory_Status[i].no_SEU=0;
-			CHI_Memory_Status[i].no_LU=0;
-			CHI_Memory_Status[i].no_SEFI_timeout=0;
-			CHI_Memory_Status[i].no_SEFI_wr_error=0;
-			CHI_Memory_Status[i].no_SEFI_seq=0;
-			CHI_Memory_Status[i].cycles=0;
-		}
+    CHI_Board_Status.no_cycles = 0;
+    //		CHI_Board_Status.Event_cnt = 0; // EVENT counter
+
+    CHI_UART_RX_BUFFER_INDEX=0;
+    CHI_UART_RX_BUFFER_COUNTER=0;
+
+    // clear all statistics, for loop
+    for (uint8_t i=0;i<12;i++) {
+        CHI_Memory_Status[i].no_SEU=0;
+        CHI_Memory_Status[i].no_LU=0;
+        CHI_Memory_Status[i].no_SEFI_timeout=0;
+        CHI_Memory_Status[i].no_SEFI_wr_error=0;
+        CHI_Memory_Status[i].no_SEFI_seq=0;
+        CHI_Memory_Status[i].cycles=0;
+    }
 }
 
 int main(void)
