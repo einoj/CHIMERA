@@ -82,3 +82,4 @@ uint8_t write_24bit_page(uint32_t addr, uint8_t pattern, uint8_t mem_idx);
 uint8_t write_16bit_page(uint32_t addr, uint8_t ptr_i, uint8_t mem_idx);
 uint8_t spi_command(uint8_t op_code, uint8_t mem_idx);
 uint8_t erase_chip(uint8_t mem_idx);
+uint8_t spi_tx_byte(volatile uint8_t byte);

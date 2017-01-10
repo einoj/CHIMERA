@@ -443,6 +443,15 @@ uint8_t erase_chip(uint8_t mem_idx)
     uint8_t status_reg;                                          
     read_status_reg(&status_reg, mem_idx);
     if (!(status_reg & (1<<WIP))) {
+		
+		// TO BI FIXED
+		if (mem_arr[mem_idx].page_num==128)
+		{	// change mode to sequential for small sram
+			CHIP_SELECT(mem_idx);
+			spi_tx_byte(0x01);
+			spi_tx_byte(0x40);
+			CHIP_DESELECT(mem_idx);			
+		}
             spi_command(WREN, mem_idx);    
     //        DISABLE_SPI_INTERRUPT;  
             CHIP_SELECT(mem_idx);
