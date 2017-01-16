@@ -25,12 +25,6 @@ from kiss_constants import *
 LOG_LEVEL = logging.DEBUG
 LOG_FORMAT = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 
-# "FEND is sent as FESC, TFEND"
-FESC_TFEND = b''.join([FESC, TFEND])
-
-# "FESC is sent as FESC, TFESC"
-FESC_TFESC = b''.join([FESC, TFESC])
-
 #buspirate commands
 commands = {
         'BBIO1': b'\x00',    # Enter reset binary mode

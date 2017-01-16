@@ -1,3 +1,9 @@
+from kiss_constants import *
+# "FEND is sent as FESC, TFEND"
+FESC_TFEND = b''.join([FESC, TFEND])
+
+# "FESC is sent as FESC, TFESC"
+FESC_TFESC = b''.join([FESC, TFESC])
 
 def encode_kiss_frame(frame):
     """
@@ -12,11 +18,6 @@ def encode_kiss_frame(frame):
     return frame.replace(FESC, FESC_TFESC).replace(FEND, FESC_TFEND)
 
 def decode_kiss_frame(frame):
-    # "FEND is sent as FESC, TFEND"
-    FESC_TFEND = b''.join([FESC, TFEND])
-
-    # "FESC is sent as FESC, TFESC"
-    FESC_TFESC = b''.join([FESC, TFESC])
     """
     Recover special codes, per KISS spec.
     "If the FESC_TFESC or FESC_TFEND escaped codes appear in the data received, they
