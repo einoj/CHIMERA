@@ -233,18 +233,21 @@ int main(void)
 	// LDO for memories ON
 	LDO_ON;
 	wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
-    while (1) {
-        test_CHIMERA_v2(void);
-    }
-	
-	// Disable all CS
+    
+    // Disable all CS
     for (uint8_t i = 0; i < 12; i++)CHIP_DESELECT(i);
-	
+
     // VCC enable all memories
     for (uint8_t i = 0; i < 12; i++) {
         //enable_pin_macro(*mem_arr[i].cs_port, mem_arr[i].PIN_CS);
-        enable_memory_vcc(mem_arr[i]);
+        //enable_memory_vcc(mem_arr[i]);
+        disable_memory_vcc(mem_arr[i]);
     }
+
+    test_CHIMERA_v2_memory0();
+	while (1) {
+    }
+	
 		
 	/* Main Loop */
     while (1) 

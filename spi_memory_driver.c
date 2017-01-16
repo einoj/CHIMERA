@@ -307,8 +307,8 @@ uint8_t write_24bit_page(uint32_t addr, uint8_t ptr_i, uint8_t mem_idx)
     read_status_reg(&status_reg, mem_idx);
     if (!(status_reg & (1<<WIP))) { // Is internal write or erase is currently in progress?
         // TODO should test for write protectioin
-
         spi_command(WREN, mem_idx); // Write enable always has to be sent before a write operation.
+		for (long int i=0;i<1000;i++)__asm("nop");
         CHIP_SELECT(mem_idx);
         spi_tx_byte(PRG);
         spi_tx_byte((uint8_t)(addr>>16)); // Send the MSB byte. Casting to uint8_t will send onlyt the lower byte

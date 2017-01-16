@@ -1,1 +1,1 @@
-uint8_t test_CHIMERA_v2(void);
+uint8_t test_CHIMERA_v2_memory0(void);

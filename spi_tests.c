@@ -1,32 +1,30 @@
+#include <stdint.h>
 #include "kiss_tnc.h"
+#include "memories.h"
+#include "spi_memory_driver.h"
+
+
 // That is the new code i was using to test the new boards
 
-uint8_t test_CHIMERA_v2(void) {
-    // Disable all CS
-    for (uint8_t i = 0; i < 12; i++)CHIP_DESELECT(i);
+uint8_t test_CHIMERA_v2_memory0(void) {
 
-    // VCC enable all memories
-    for (uint8_t i = 0; i < 12; i++) {
-        //enable_pin_macro(*mem_arr[i].cs_port, mem_arr[i].PIN_CS);
-        //enable_memory_vcc(mem_arr[i]);
-        disable_memory_vcc(mem_arr[i]);
-    }
-
-    enable_memory_vcc(mem_arr[0]);
 
     uint8_t buf[256];
     uint8_t pattern[2] = {0x55,0xAA};
+
+    enable_memory_vcc(mem_arr[0]);
 
     //erase chip
     while (erase_chip(0) == BUSY);
 
     // read page	
-    while (read_24bit_page(256, 0, buf) == BUSY);
+    while (read_24bit_page(0, 0, buf) == BUSY);
 
     // check that buffer is 0;
     for (uint16_t i; i < 256; i++) {
-        if (buf[i] != 0) {
+        if (buf[i] != 0xff) {
             Send_NACK();
+            disable_memory_vcc(mem_arr[0]);
             return -1;
         }
     }
@@ -36,17 +34,21 @@ uint8_t test_CHIMERA_v2(void) {
     while (write_24bit_page(0, 0, 0) == BUSY);
 
     // read page	
-    while (read_24bit_page(256, 0, buf) == BUSY);
+    while (read_24bit_page(0, 0, buf) == BUSY);
 
     // check that buffer contains the correct pattern;
     uint8_t pattern_idx = 0;
     for (uint16_t i; i < 256; i++) {
         if (buf[i] != pattern[pattern_idx]) {
             Send_NACK();
+            disable_memory_vcc(mem_arr[0]);
             return -1;
         }
         pattern_idx ^= 1;
     }
+
     Send_ACK();
+    disable_memory_vcc(mem_arr[0]);
+
     return 0;
 }
