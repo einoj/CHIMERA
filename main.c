@@ -9,6 +9,7 @@
 #include "memories.h"
 #include "spi_memory_driver.h"
 #include "CHIMERA_Board_Defs.h"
+#include "spi_tests.h"
 
 // The number of bytes in the CHI_Board_Status struct.
 // Needed to send the data over UART
@@ -232,6 +233,9 @@ int main(void)
 	// LDO for memories ON
 	LDO_ON;
 	wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
+    while (1) {
+        test_CHIMERA_v2(void);
+    }
 	
 	// Disable all CS
     for (uint8_t i = 0; i < 12; i++)CHIP_DESELECT(i);
