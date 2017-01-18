@@ -31,24 +31,27 @@ uint8_t test_CHIMERA_v2_memory0(void) {
     Send_ACK();
 
     // Page program first page of memory 0
-    while (write_24bit_page(0, 0, 0) == BUSY);
+    for (uint16_t i = 0; i < mem_arr[0].page_num; i++) {	
+        while (write_24bit_page(i*mem_arr[0].page_size, 0, 0) == BUSY);
+    }
 
     // read page	
-    while (read_24bit_page(0, 0, buf) == BUSY);
+    for (uint16_t k = 0; k < mem_arr[0].page_num; k++) {	
+        while (read_24bit_page(k*mem_arr[0].page_size, 0, buf) == BUSY);
 
-    // check that buffer contains the correct pattern;
-    uint8_t pattern_idx = 0;
-    for (uint16_t i; i < 256; i++) {
-        if (buf[i] != pattern[pattern_idx]) {
-            Send_NACK();
-            disable_memory_vcc(mem_arr[0]);
-            return -1;
+        // check that buffer contains the correct pattern;
+        uint8_t pattern_idx = 0;
+        for (uint16_t i; i < 256; i++) {
+            if (buf[i] != pattern[pattern_idx]) {
+                Send_NACK();
+                disable_memory_vcc(mem_arr[0]);
+                return -1;
+            }
+            pattern_idx ^= 1;
         }
-        pattern_idx ^= 1;
     }
 
     Send_ACK();
     disable_memory_vcc(mem_arr[0]);
-
-    return 0;
+return 0;
 }

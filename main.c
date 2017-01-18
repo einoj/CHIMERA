@@ -244,6 +244,8 @@ int main(void)
         disable_memory_vcc(mem_arr[i]);
     }
 
+    test_CHIMERA_v2_memory0();
+    while(1);
 		
 	/* Main Loop */
     while (1) 
