@@ -21,7 +21,7 @@ uint8_t test_CHIMERA_v2_memory0(void) {
     while (read_24bit_page(0, 0, buf) == BUSY);
 
     // check that buffer is 0;
-    for (uint16_t i; i < 256; i++) {
+    for (uint16_t i = 0; i < 256; i++) {
         if (buf[i] != 0xff) {
             Send_NACK();
             disable_memory_vcc(mem_arr[0]);
@@ -41,7 +41,7 @@ uint8_t test_CHIMERA_v2_memory0(void) {
 
         // check that buffer contains the correct pattern;
         uint8_t pattern_idx = 0;
-        for (uint16_t i; i < 256; i++) {
+        for (uint16_t i = 0; i < 256; i++) {
             if (buf[i] != pattern[pattern_idx]) {
                 Send_NACK();
                 disable_memory_vcc(mem_arr[0]);

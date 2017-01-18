@@ -68,7 +68,6 @@
 //static uint8_t *data_ptr; // Used by SPI interrupt, points to data that is to be written
 //static uint8_t byte_cnt; // Used by SPI interrupt to know how many bytes have been written
 //static uint8_t nb_byte; // Used by SPI interrupt to know how many bytes need to be written
-static uint8_t state; // Used by SPI interrupt to indicate whether to write data or addr
 
 /* Function definitions */
 void USART0SendByte(uint8_t u8Data);
