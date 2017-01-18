@@ -294,7 +294,7 @@ int main(void)
 
                         TIMER3_Enable_1s();							
                         if(mem_arr[i].addr_space) {
-                            while (write_24bit_page(j*mem_arr[i].page_size, 0, i) == BUSY) {
+                            while (write_24bit_page(j*mem_arr[i].page_size, i) == BUSY) {
                                 if (CHI_Board_Status.SPI_timeout_detected==1) {
                                     CHI_Memory_Status[i].no_SEFI_timeout++;
                                     CHI_Memory_Status[i].no_SEFI_seq++;
@@ -302,7 +302,7 @@ int main(void)
                                 }								
                             }
                         } else {
-                            while (write_16bit_page(j*mem_arr[i].page_size, 0, i) == BUSY) {
+                            while (write_16bit_page(j*mem_arr[i].page_size, i) == BUSY) {
                                 if (CHI_Board_Status.SPI_timeout_detected==1) {
                                     CHI_Memory_Status[i].no_SEFI_timeout++;
                                     CHI_Memory_Status[i].no_SEFI_seq++;

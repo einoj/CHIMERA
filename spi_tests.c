@@ -32,7 +32,7 @@ uint8_t test_CHIMERA_v2_memory0(void) {
 
     // Page program first page of memory 0
     for (uint16_t i = 0; i < mem_arr[0].page_num; i++) {	
-        while (write_24bit_page(i*mem_arr[0].page_size, 0, 0) == BUSY);
+        while (write_24bit_page(i*mem_arr[0].page_size, 0) == BUSY);
     }
 
     // read page	
