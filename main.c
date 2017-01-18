@@ -207,10 +207,6 @@ void SPI_CYCLE() {
 
 int main(void)
 {
-    // Variables for memory access
-    uint32_t addr; // current address
-    uint8_t pattern; // pattern of current page
-    
 	Power_On_Check();	// check what was the cause of reset
 	
 	OSCCAL=0xB3; // clock calibration
@@ -244,9 +240,6 @@ int main(void)
         disable_memory_vcc(mem_arr[i]);
     }
 
-    test_CHIMERA_v2_memory0();
-    while(1);
-		
 	/* Main Loop */
     while (1) 
     {	
@@ -275,7 +268,7 @@ int main(void)
 
                     LDO_ON;
                     wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
-
+					
                     TIMER3_Enable_8s();
                     while (erase_chip(i) == BUSY) {
                         if (CHI_Board_Status.SPI_timeout_detected==1) {
@@ -297,13 +290,11 @@ int main(void)
                         continue;
                     }
 
-                    addr = 0;
-                    pattern = 0;
                     for (uint16_t j = 0; j < mem_arr[i].page_num; j++) {
 
                         TIMER3_Enable_1s();							
                         if(mem_arr[i].addr_space) {
-                            while (write_24bit_page(addr, pattern, i) == BUSY) {
+                            while (write_24bit_page(j*mem_arr[i].page_size, 0, i) == BUSY) {
                                 if (CHI_Board_Status.SPI_timeout_detected==1) {
                                     CHI_Memory_Status[i].no_SEFI_timeout++;
                                     CHI_Memory_Status[i].no_SEFI_seq++;
@@ -311,7 +302,7 @@ int main(void)
                                 }								
                             }
                         } else {
-                            while (write_16bit_page(addr, pattern, i) == BUSY) {
+                            while (write_16bit_page(j*mem_arr[i].page_size, 0, i) == BUSY) {
                                 if (CHI_Board_Status.SPI_timeout_detected==1) {
                                     CHI_Memory_Status[i].no_SEFI_timeout++;
                                     CHI_Memory_Status[i].no_SEFI_seq++;
@@ -323,12 +314,9 @@ int main(void)
 
                         if (CHI_Board_Status.SPI_timeout_detected==1) break;
 
-                        addr+=mem_arr[i].page_size;
-                        pattern ^= 0x01;
-
                         if (CHI_Board_Status.latch_up_detected==1) break;
                     }
-
+                    
                     if (CHI_Board_Status.SPI_timeout_detected==1) continue;
 
                     if (CHI_Board_Status.latch_up_detected==1) { 
