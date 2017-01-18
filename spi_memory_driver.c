@@ -98,7 +98,7 @@ uint8_t read_16bit_page(uint32_t addr, uint8_t mem_idx, uint8_t *buffer)
  * be detected. 0 for 0x55 0xAA, 1 for 0xAA 0x55.
  * @mem_idx which of the 12 memories to write to, indexed 0 through 11
  */
-uint8_t write_24bit_page(uint32_t addr, uint8_t ptr_i, uint8_t mem_idx)
+uint8_t write_24bit_page(uint32_t addr, uint8_t mem_idx)
 {
     uint16_t write_cnt = 0;
     uint16_t page_size = mem_arr[mem_idx].page_size;
@@ -129,7 +129,7 @@ uint8_t write_24bit_page(uint32_t addr, uint8_t ptr_i, uint8_t mem_idx)
     }
 }
 
-uint8_t write_16bit_page(uint32_t addr, uint8_t ptr_i, uint8_t mem_idx)
+uint8_t write_16bit_page(uint32_t addr, uint8_t mem_idx)
 {
     uint16_t write_cnt = 0;
     uint16_t page_size = mem_arr[mem_idx].page_size;
