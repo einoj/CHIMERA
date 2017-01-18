@@ -244,10 +244,6 @@ int main(void)
         disable_memory_vcc(mem_arr[i]);
     }
 
-    test_CHIMERA_v2_memory0();
-	while (1) {
-    }
-	
 		
 	/* Main Loop */
     while (1) 
@@ -258,126 +254,136 @@ int main(void)
 				
 		CHI_Board_Status.no_cycles++; // increase number of memory cycles
 				
-			for (int i=0;i<12;i++) {	
-				if (CHI_Board_Status.mem_to_test & (1<<i)) {
-					
-					//if ((CHI_Memory_Status[i].no_LU) > 50 )	{
-					//	// exclude the memory from the test if LU > 50 TBD
-					//	CHI_Board_Status.mem_to_test&=~(1<<i);
-					//}
+        for (int i=0;i<12;i++) {	
+            if (CHI_Board_Status.mem_to_test & (1<<i)) {
+                // Enable the memory to Reprogram
+                enable_memory_vcc(mem_arr[i]);
 
-					//if ((CHI_Memory_Status[i].no_SEFI_seq)>254)	{
-					//	// exclude the memory from the test if SEFI > 10 TBD
-					//	CHI_Board_Status.mem_to_test&=~(1<<i);
-					//}					
-					
-					if (CHI_Board_Status.mem_reprog & (1<<i))	{
-					
-						LDO_ON;
-						wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
-						
-						TIMER3_Enable_8s();
-						while (erase_chip(i) == BUSY) {
-							if (CHI_Board_Status.SPI_timeout_detected==1) {
-								CHI_Memory_Status[i].no_SEFI_timeout++;
-								CHI_Memory_Status[i].no_SEFI_seq++;
-								break;
-							}	
-						}
-						TIMER3_Disable();
-						if (CHI_Board_Status.SPI_timeout_detected==1) continue;
+                //if ((CHI_Memory_Status[i].no_LU) > 50 )	{
+                //	// exclude the memory from the test if LU > 50 TBD
+                //	CHI_Board_Status.mem_to_test&=~(1<<i);
+                //}
 
-						
-						if (CHI_Board_Status.latch_up_detected==1) {
-							
-							// Wait 1 second after the latch-up
-							SPI_CYCLE();
-							CHI_Memory_Status[i].no_LU++;
-							CHI_Board_Status.latch_up_detected=0;
-							continue;
-						}
-						
-						addr = 0;
-						pattern = 0;
-						for (uint16_t j = 0; j < mem_arr[i].page_num; j++) {
-							
-							TIMER3_Enable_1s();							
-              if(mem_arr[i].addr_space) {
-                while (write_24bit_page(addr, pattern, i) == BUSY) {
-                  if (CHI_Board_Status.SPI_timeout_detected==1) {
-                    CHI_Memory_Status[i].no_SEFI_timeout++;
-                    CHI_Memory_Status[i].no_SEFI_seq++;
-                    break;
-                  }								
+                //if ((CHI_Memory_Status[i].no_SEFI_seq)>254)	{
+                //	// exclude the memory from the test if SEFI > 10 TBD
+                //	CHI_Board_Status.mem_to_test&=~(1<<i);
+                //}					
+
+                if (CHI_Board_Status.mem_reprog & (1<<i))	{
+
+                    LDO_ON;
+                    wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
+
+                    TIMER3_Enable_8s();
+                    while (erase_chip(i) == BUSY) {
+                        if (CHI_Board_Status.SPI_timeout_detected==1) {
+                            CHI_Memory_Status[i].no_SEFI_timeout++;
+                            CHI_Memory_Status[i].no_SEFI_seq++;
+                            break;
+                        }	
+                    }
+                    TIMER3_Disable();
+                    if (CHI_Board_Status.SPI_timeout_detected==1) continue;
+
+
+                    if (CHI_Board_Status.latch_up_detected==1) {
+
+                        // Wait 1 second after the latch-up
+                        SPI_CYCLE();
+                        CHI_Memory_Status[i].no_LU++;
+                        CHI_Board_Status.latch_up_detected=0;
+                        continue;
+                    }
+
+                    addr = 0;
+                    pattern = 0;
+                    for (uint16_t j = 0; j < mem_arr[i].page_num; j++) {
+
+                        TIMER3_Enable_1s();							
+                        if(mem_arr[i].addr_space) {
+                            while (write_24bit_page(addr, pattern, i) == BUSY) {
+                                if (CHI_Board_Status.SPI_timeout_detected==1) {
+                                    CHI_Memory_Status[i].no_SEFI_timeout++;
+                                    CHI_Memory_Status[i].no_SEFI_seq++;
+                                    break;
+                                }								
+                            }
+                        } else {
+                            while (write_16bit_page(addr, pattern, i) == BUSY) {
+                                if (CHI_Board_Status.SPI_timeout_detected==1) {
+                                    CHI_Memory_Status[i].no_SEFI_timeout++;
+                                    CHI_Memory_Status[i].no_SEFI_seq++;
+                                    break;
+                                }								
+                            }
+                        }
+                        TIMER3_Disable();
+
+                        if (CHI_Board_Status.SPI_timeout_detected==1) break;
+
+                        addr+=mem_arr[i].page_size;
+                        pattern ^= 0x01;
+
+                        if (CHI_Board_Status.latch_up_detected==1) break;
+                    }
+
+                    if (CHI_Board_Status.SPI_timeout_detected==1) continue;
+
+                    if (CHI_Board_Status.latch_up_detected==1) { 
+                        SPI_CYCLE();
+                        CHI_Memory_Status[i].no_LU++;
+                        CHI_Board_Status.latch_up_detected=0;
+                        continue;
+                    }						
+
+                    CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reporgramming flag	
+                    CHI_Memory_Status[i].no_SEFI_seq=0;					
                 }
-              } else {
-                while (write_16bit_page(addr, pattern, i) == BUSY) {
-                  if (CHI_Board_Status.SPI_timeout_detected==1) {
-                    CHI_Memory_Status[i].no_SEFI_timeout++;
-                    CHI_Memory_Status[i].no_SEFI_seq++;
-                    break;
-                  }								
-                }
-              }
-							TIMER3_Disable();
-														
-							if (CHI_Board_Status.SPI_timeout_detected==1) break;
-							
-							addr+=mem_arr[i].page_size;
-							pattern ^= 0x01;
-							
-							if (CHI_Board_Status.latch_up_detected==1) break;
-						}
-						
-						if (CHI_Board_Status.SPI_timeout_detected==1) continue;
-											
-						if (CHI_Board_Status.latch_up_detected==1) { 
-								SPI_CYCLE();
-								CHI_Memory_Status[i].no_LU++;
-								CHI_Board_Status.latch_up_detected=0;
-								continue;
-						}						
-						
-						CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reporgramming flag	
-						CHI_Memory_Status[i].no_SEFI_seq=0;					
-					}
-				}
-			}
+
+                // Disable Memory to Reprogram
+                disable_memory_vcc(mem_arr[i]);
+            }
+        }
 
 			for(uint8_t i=0;i<12;i++) {
-				if (CHI_Board_Status.mem_to_test & (1<<i)) {
-				
-					CHI_Board_Status.current_memory=i; // not used at this moment
-					
-					// Test memory (test procedure defined by device_mode(read only, write read, etc.))
-					switch  (CHI_Board_Status.device_mode ) {
-						case 0x01: //readmode
-						
-							LDO_ON;
-							wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
-							if (read_memory(i) == 0xAC) {
-								SPI_CYCLE();								
-								CHI_Memory_Status[i].no_LU++;
-								CHI_Board_Status.latch_up_detected=0;								
-							}
-							else if (CHI_Board_Status.latch_up_detected==1) {			
-								SPI_CYCLE();				
-								CHI_Memory_Status[i].no_LU++;
-								CHI_Board_Status.latch_up_detected=0;
-							}							
+                if (CHI_Board_Status.mem_to_test & (1<<i)) {
+                    // Enable the memory to Test 
+                    enable_memory_vcc(mem_arr[i]);
 
-							break;
+                    CHI_Board_Status.current_memory=i; // not used at this moment
 
-						case 0x02:
-							//erase_read_write(mem_arr[i]);
-							break;
+                    // Test memory (test procedure defined by device_mode(read only, write read, etc.))
+                    switch  (CHI_Board_Status.device_mode ) {
+                        case 0x01: //readmode
 
-						default:
-							read_memory(i);
-							break;
-					}
-					CHI_Memory_Status[i].cycles++;
-				}
+                            LDO_ON;
+                            wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
+                            if (read_memory(i) == 0xAC) {
+                                SPI_CYCLE();								
+                                CHI_Memory_Status[i].no_LU++;
+                                CHI_Board_Status.latch_up_detected=0;								
+                            }
+                            else if (CHI_Board_Status.latch_up_detected==1) {			
+                                SPI_CYCLE();				
+                                CHI_Memory_Status[i].no_LU++;
+                                CHI_Board_Status.latch_up_detected=0;
+                            }							
+
+                            break;
+
+                        case 0x02:
+                            //erase_read_write(mem_arr[i]);
+                            break;
+
+                        default:
+                            read_memory(i);
+                            break;
+                    }
+                    CHI_Memory_Status[i].cycles++;
+
+                    // Disable Memory to Reprogram
+                    disable_memory_vcc(mem_arr[i]);
+                }
 			}
 			
 		} while ((CHI_Board_Status.local_time-start_time)<60000);
