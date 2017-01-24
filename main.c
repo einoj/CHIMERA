@@ -173,6 +173,7 @@ void Power_On_Init() {
 	  CHI_Board_Status.mem_to_test = 0x0001;//0x0FC7;// 0b0000000001000000;// 0x01C0; // 0x0FA7 9 memories
       CHI_Board_Status.mem_reprog = 0x0000;
       CHI_Board_Status.no_cycles = 0;
+      CHI_Board_Status.program_sram = 1;	// The SRAMs need to be reprogrammed when set to mode 2, this variable will be set to 1 when the mode changes
 	  //CHI_Board_Status.Event_cnt = 0; // EVENT counter
 
     CHI_UART_RX_BUFFER_INDEX=0;
@@ -203,6 +204,72 @@ void SPI_CYCLE() {
 		// Pull CS pins up
 		for (uint8_t i = 0; i < 12; i++)CHIP_DESELECT(i);
 		SPCR |= (1<<SPE);	
+}
+
+// returns -1 means continue repogram for loop continue 
+int8_t reprogram_memory(uint8_t i) {
+    LDO_ON;
+    wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
+
+    TIMER3_Enable_8s();
+    while (erase_chip(i) == BUSY) {
+        if (CHI_Board_Status.SPI_timeout_detected==1) {
+            CHI_Memory_Status[i].no_SEFI_timeout++;
+            CHI_Memory_Status[i].no_SEFI_seq++;
+            break;
+        }	
+    }
+    TIMER3_Disable();
+    if (CHI_Board_Status.SPI_timeout_detected==1) return -1;
+
+
+    if (CHI_Board_Status.latch_up_detected==1) {
+
+        // Wait 1 second after the latch-up
+        SPI_CYCLE();
+        CHI_Memory_Status[i].no_LU++;
+        CHI_Board_Status.latch_up_detected=0;
+        return -1;
+    }
+
+    for (uint16_t j = 0; j < mem_arr[i].page_num; j++) {
+
+        TIMER3_Enable_1s();							
+        if(mem_arr[i].addr_space) {
+            while (write_24bit_page(j*mem_arr[i].page_size, i) == BUSY) {
+                if (CHI_Board_Status.SPI_timeout_detected==1) {
+                    CHI_Memory_Status[i].no_SEFI_timeout++;
+                    CHI_Memory_Status[i].no_SEFI_seq++;
+                    break;
+                }								
+            }
+        } else {
+            while (write_16bit_page(j*mem_arr[i].page_size, i) == BUSY) {
+                if (CHI_Board_Status.SPI_timeout_detected==1) {
+                    CHI_Memory_Status[i].no_SEFI_timeout++;
+                    CHI_Memory_Status[i].no_SEFI_seq++;
+                    break;
+                }								
+            }
+        }
+        TIMER3_Disable();
+
+        if (CHI_Board_Status.SPI_timeout_detected==1) break;
+
+        if (CHI_Board_Status.latch_up_detected==1) break;
+    }
+
+    if (CHI_Board_Status.SPI_timeout_detected==1) return -1;
+
+    if (CHI_Board_Status.latch_up_detected==1) { 
+        SPI_CYCLE();
+        CHI_Memory_Status[i].no_LU++;
+        CHI_Board_Status.latch_up_detected=0;
+        return -1;
+    }						
+
+    CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reporgramming flag	
+    CHI_Memory_Status[i].no_SEFI_seq=0;					
 }
 
 int main(void)
@@ -268,6 +335,7 @@ int main(void)
 		CHI_Board_Status.no_cycles++; // increase number of memory cycles
 				
         for (uint8_t i=0;i<12;i++) {	
+            // IF memory is SRAM REPROGRAM && mode == 0x01 don't reprogram//
             if (CHI_Board_Status.mem_to_test & (1<<i)) {
                 // Power on the memory to Reprogram, just leaving this for mode 2 as it changes nothing
                 enable_memory_vcc(mem_arr[i]);
@@ -283,69 +351,7 @@ int main(void)
                 //}					
 
                 if (CHI_Board_Status.mem_reprog & (1<<i))	{
-
-                    LDO_ON;
-                    wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
-					
-                    TIMER3_Enable_8s();
-                    while (erase_chip(i) == BUSY) {
-                        if (CHI_Board_Status.SPI_timeout_detected==1) {
-                            CHI_Memory_Status[i].no_SEFI_timeout++;
-                            CHI_Memory_Status[i].no_SEFI_seq++;
-                            break;
-                        }	
-                    }
-                    TIMER3_Disable();
-                    if (CHI_Board_Status.SPI_timeout_detected==1) continue;
-
-
-                    if (CHI_Board_Status.latch_up_detected==1) {
-
-                        // Wait 1 second after the latch-up
-                        SPI_CYCLE();
-                        CHI_Memory_Status[i].no_LU++;
-                        CHI_Board_Status.latch_up_detected=0;
-                        continue;
-                    }
-
-                    for (uint16_t j = 0; j < mem_arr[i].page_num; j++) {
-
-                        TIMER3_Enable_1s();							
-                        if(mem_arr[i].addr_space) {
-                            while (write_24bit_page(j*mem_arr[i].page_size, i) == BUSY) {
-                                if (CHI_Board_Status.SPI_timeout_detected==1) {
-                                    CHI_Memory_Status[i].no_SEFI_timeout++;
-                                    CHI_Memory_Status[i].no_SEFI_seq++;
-                                    break;
-                                }								
-                            }
-                        } else {
-                            while (write_16bit_page(j*mem_arr[i].page_size, i) == BUSY) {
-                                if (CHI_Board_Status.SPI_timeout_detected==1) {
-                                    CHI_Memory_Status[i].no_SEFI_timeout++;
-                                    CHI_Memory_Status[i].no_SEFI_seq++;
-                                    break;
-                                }								
-                            }
-                        }
-                        TIMER3_Disable();
-
-                        if (CHI_Board_Status.SPI_timeout_detected==1) break;
-
-                        if (CHI_Board_Status.latch_up_detected==1) break;
-                    }
-                    
-                    if (CHI_Board_Status.SPI_timeout_detected==1) continue;
-
-                    if (CHI_Board_Status.latch_up_detected==1) { 
-                        SPI_CYCLE();
-                        CHI_Memory_Status[i].no_LU++;
-                        CHI_Board_Status.latch_up_detected=0;
-                        continue;
-                    }						
-
-                    CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reporgramming flag	
-                    CHI_Memory_Status[i].no_SEFI_seq=0;					
+                    if (!reprogram_memory(i)) continue;
                 }
 
                 // Disable Memory to Reprogram if in mode 0x01
@@ -363,11 +369,14 @@ int main(void)
                     CHI_Board_Status.current_memory=i; // not used at this moment
 
                     // Test memory (test procedure defined by device_mode(read only, write read, etc.))
+                    LDO_ON;
+                    wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
                     switch  (CHI_Board_Status.device_mode ) {
                         case 0x01: //readmode
-
-                            LDO_ON;
-                            wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
+                            // IF memory is SRAM REPROGRAM //
+                            if (mem_arr[i].sram) {
+                                reprogram_memory(i); // if reprogramming fails it will be detected as a sefi later when reading
+                            }
                             if (read_memory(i) == 0xAC) {
                                 SPI_CYCLE();								
                                 CHI_Memory_Status[i].no_LU++;
@@ -382,7 +391,27 @@ int main(void)
                             break;
 
                         case 0x02:
-                            //erase_read_write(mem_arr[i]);
+                            if (CHI_Board_Status.program_sram) {	// The SRAMs need to be reprogrammed when set to mode 2, this variable will be set to 1 when the mode changes
+                                //reprogram all SRAMS to be tested
+                                for(uint8_t i=0;i<12;i++) {
+                                    if (CHI_Board_Status.mem_to_test & (1<<i) && mem_arr[i].sram) {
+                                        reprogram_memory(i); // if reprogramming fails it will be detected as a sefi later when reading
+                                    }
+                                }
+                                CHI_Board_Status.program_sram = 0;
+                            }
+                            // test multiple memories without powering them off
+                            // read memories like above
+                            if (read_memory(i) == 0xAC) {
+                                SPI_CYCLE();								
+                                CHI_Memory_Status[i].no_LU++;
+                                CHI_Board_Status.latch_up_detected=0;								
+                            }
+                            else if (CHI_Board_Status.latch_up_detected==1) {			
+                                SPI_CYCLE();				
+                                CHI_Memory_Status[i].no_LU++;
+                                CHI_Board_Status.latch_up_detected=0;
+                            }							
                             break;
 
                         default:
