@@ -244,14 +244,32 @@ int main(void)
     while (1) 
     {	
 		start_time=CHI_Board_Status.local_time;
-		
+
+        switch  (CHI_Board_Status.device_mode ) {
+            case 0x01: //readmode
+                // Power off all memories, as they will be turned on induvidually
+                for (uint8_t i=0;i<12;i++) {	
+                    disable_memory_vcc(mem_arr[i]);
+                }
+                break;
+
+            case 0x02: // read several memories without powering them down
+                // Power on the memories to be tested
+                for (uint8_t i=0;i<12;i++) {	
+                    if (CHI_Board_Status.mem_to_test & (1<<i)) {
+                        enable_memory_vcc(mem_arr[i]);
+                    }
+                }
+                //erase_read_write(mem_arr[i]);
+                break;
+        }
 		//do {
 				
 		CHI_Board_Status.no_cycles++; // increase number of memory cycles
 				
-        for (int i=0;i<12;i++) {	
+        for (uint8_t i=0;i<12;i++) {	
             if (CHI_Board_Status.mem_to_test & (1<<i)) {
-                // Enable the memory to Reprogram
+                // Power on the memory to Reprogram, just leaving this for mode 2 as it changes nothing
                 enable_memory_vcc(mem_arr[i]);
 
                 //if ((CHI_Memory_Status[i].no_LU) > 50 )	{
@@ -330,8 +348,10 @@ int main(void)
                     CHI_Memory_Status[i].no_SEFI_seq=0;					
                 }
 
-                // Disable Memory to Reprogram
-                disable_memory_vcc(mem_arr[i]);
+                // Disable Memory to Reprogram if in mode 0x01
+                if(CHI_Board_Status.device_mode == 0x01) {
+                    disable_memory_vcc(mem_arr[i]);
+                }
             }
         }
 
@@ -371,8 +391,10 @@ int main(void)
                     }
                     CHI_Memory_Status[i].cycles++;
 
-                    // Disable Memory to Reprogram
-                    disable_memory_vcc(mem_arr[i]);
+                    // Disable Memory to Reprogram if in mode 0x01
+                    if(CHI_Board_Status.device_mode == 0x01) {
+                        disable_memory_vcc(mem_arr[i]);
+                    }
                 }
 			}
 			
