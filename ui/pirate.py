@@ -94,6 +94,7 @@ class KISS(object):
         self.decoded_frames = Queue()
 
         if pirate == True and self.port is not None and self.speed is not None:
+            self.speed = 115200
             self.interface_mode = 'buspirate'
         elif self.port is not None and self.speed is not None:
             self.interface_mode = 'serial'
@@ -108,6 +109,9 @@ class KISS(object):
         if 'buspirate' in self.interface_mode:
             # Setup bus pirate to serial bridge mode
             self.enter_buspirate_binarymode()
+        elif 'serial' in self.interface_mode:
+            self._logger.debug('Connection OPEN! Speed='+str(self.speed)+' Port='+str(self.port)+' \n')
+
             
     def enter_buspirate_binarymode(self):
         self._logger.debug('Entering binary mode...\n')
@@ -199,7 +203,7 @@ class KISS(object):
         self.write(frame)
 
 def main():
-    ki = KISS(port='com7', speed='115200', pirate=True)
+    ki = KISS(port='com8', speed='38400', pirate=False)
     ki.start()
 
     sr_read_thread = threading.Thread(target=ki.simpleread)
