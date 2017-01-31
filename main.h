@@ -5,14 +5,15 @@
 #define CHI_UART_RX_BUFFER_SIZE 20
 #define CHI_PARSER_TIMEOUT 157
 
-#define CHI_NUM_EVENT 200
+#define CHI_NUM_EVENT 64
 
 volatile uint8_t CHI_UART_RX_BUFFER[CHI_UART_RX_BUFFER_SIZE];
 
 // CHIMERA Memory Status Structure
 struct __attribute__((packed)) CHI_Memory_Status_Str {
 	uint8_t no_SEFI_seq; // number of SEFIs in a row
-	uint16_t no_SEU;
+	uint8_t no_SEU;
+	uint8_t no_MBU;
 	uint8_t no_LU;
     uint8_t no_SEFI_timeout;
     uint8_t no_SEFI_wr_error;

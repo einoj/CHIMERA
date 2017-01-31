@@ -66,7 +66,8 @@ uint8_t read_memory(uint8_t mem_idx) {
     uint8_t buf[256]; // the buffer must fit a whole page of, some memories have different page sizes
     uint8_t pattern[2] = {0x55,0xAA};
     uint8_t ptr_idx = 0; // because the order of the pattern changes per page
-    uint8_t page_errors; //SEU errors
+    uint8_t page_SEUs; //SEU errors
+    uint8_t page_MBUs; //SEU errors
     uint32_t addr;
 
 	CHI_Memory_Status[mem_idx].current1=ADC_Median>>2; // Reading bias current measurement
@@ -108,28 +109,36 @@ uint8_t read_memory(uint8_t mem_idx) {
 		TIMER3_Disable();
     
         //check page
-        page_errors = 0;
+        page_MBUs = 0;
+        page_SEUs = 0;
         for (uint16_t j = 0; j < mem_arr[mem_idx].page_size; j++) {
 			
 		
-            if (buf[j] != pattern[ptr_idx]) {
+            if (buf[j] ^ pattern[ptr_idx] != 0) {
+                if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
 
-				if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
+                if (buf[j] == 0x80 || buf[j] == 0x40 || buf[j] == 0x20 || buf[j] == 0x10 || buf[j] == 0x08 || buf[j] == 0x04 || buf[j] == 0x02 || buf[j] == 0x01) {
+                    page_MBUs++;
+                    CHI_Board_Status.mem_reprog |= (1<<mem_idx);
+                    CHI_Memory_Status[mem_idx].no_MBU++;
+                    
+                } else {
 
-                page_errors++;
-                CHI_Board_Status.mem_reprog |= (1<<mem_idx);
-                CHI_Memory_Status[mem_idx].no_SEU++;
-				
-                // page_number*pagesize + address in page
-                addr = (uint32_t) i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
+                    page_SEUs++;
+                    CHI_Board_Status.mem_reprog |= (1<<mem_idx);
+                    CHI_Memory_Status[mem_idx].no_SEU++;
+                    
+                    // page_number*pagesize + address in page
+                    addr = (uint32_t) i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
 
-                // WARNING THERE IS PROBABLY A WAY THAT THIS CAN CAUSE OUTOF BOUNDS WRITES
-                if (page_errors > 127) {
+                    // WARNING THERE IS PROBABLY A WAY THAT THIS CAN CAUSE OUTOF BOUNDS WRITES
+                }
+                if (page_SEUs+page_MBU > CHI_NUM_EVENT-1) {
                   // remove the last page_size errors and store a SEFI
-                  CHI_Memory_Status[mem_idx].no_SEU -= 128;
+                  CHI_Memory_Status[mem_idx].no_SEU -= CHI_NUM_EVENT;
                   CHI_Memory_Status[mem_idx].no_SEFI_wr_error++;
                   CHI_Memory_Status[mem_idx].no_SEFI_seq++;
-                  CHI_Board_Status.Event_cnt -= 127;
+                  CHI_Board_Status.Event_cnt -= CHI_NUM_EVENT-1;
                  // if (CHI_Board_Status.Event_cnt > CHI_NUM_EVENT-1) { //OVERFLOW 
                  //  CHI_Board_Status.Event_cnt = 0;  // All stored data now delted
                  // }
@@ -153,10 +162,10 @@ uint8_t read_memory(uint8_t mem_idx) {
                //   Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
                //   CHI_Board_Status.Event_cnt++;
                // }
-				
-				else {
+                
+                else {
                     //TODO transmit data when EVENT table if full
-                }
+                    }
             }
             ptr_idx ^= 0x01;
         }
