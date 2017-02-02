@@ -72,14 +72,14 @@ uint8_t read_memory(uint8_t mem_idx) {
 
 	CHI_Memory_Status[mem_idx].current1=ADC_Median>>2; // Reading bias current measurement
 
-    for (uint16_t i = 0; i < mem_arr[mem_idx].page_num; i++) {		
+    for (uint32_t i = 0; i < mem_arr[mem_idx].page_num; i++) {		
         //reset timer
 		// ENABLE TIMER
 		TIMER3_Enable_1s();
 
         // read page either with 24 bit address or 16 bit address
         if(mem_arr[mem_idx].addr_space != 0) {
-            while (read_24bit_page((uint32_t) i*mem_arr[mem_idx].page_size, mem_idx, buf) == BUSY) {
+            while (read_24bit_page(i*mem_arr[mem_idx].page_size, mem_idx, buf) == BUSY) {
 
                 if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
                 
@@ -92,7 +92,7 @@ uint8_t read_memory(uint8_t mem_idx) {
                 }
             }
         } else {
-            while (read_16bit_page((uint32_t) i*mem_arr[mem_idx].page_size, mem_idx, buf) == BUSY) {
+            while (read_16bit_page(i*mem_arr[mem_idx].page_size, mem_idx, buf) == BUSY) {
 
                 if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
                 
@@ -111,10 +111,10 @@ uint8_t read_memory(uint8_t mem_idx) {
         //check page
         page_MBUs = 0;
         page_SEUs = 0;
-        for (uint16_t j = 0; j < mem_arr[mem_idx].page_size; j++) {
-			
-		
-            if (buf[j] ^ pattern[ptr_idx] != 0) {
+		ptr_idx = 0;
+        for (uint32_t j = 0; j < mem_arr[mem_idx].page_size; j++) {
+	
+            if ((buf[j] ^ pattern[ptr_idx]) != 0) {
                 if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
 
                 if (buf[j] == 0x80 || buf[j] == 0x40 || buf[j] == 0x20 || buf[j] == 0x10 || buf[j] == 0x08 || buf[j] == 0x04 || buf[j] == 0x02 || buf[j] == 0x01) {
@@ -169,7 +169,6 @@ uint8_t read_memory(uint8_t mem_idx) {
             }
             ptr_idx ^= 0x01;
         }
-        ptr_idx = 0;
     }
 					
 	CHI_Memory_Status[mem_idx].no_SEFI_seq=0;
@@ -241,7 +240,7 @@ int8_t reprogram_memory(uint8_t i) {
         return -1;
     }
 
-    for (uint16_t j = 0; j < mem_arr[i].page_num; j++) {
+    for (uint32_t j = 0; j < mem_arr[i].page_num; j++) {
 
         TIMER3_Enable_1s();							
         if(mem_arr[i].addr_space) {
@@ -347,7 +346,7 @@ int main(void)
             // IF memory is SRAM REPROGRAM && mode == 0x01 don't reprogram//
             if (CHI_Board_Status.mem_to_test & (1<<i)) {
                 // Power on the memory to Reprogram, just leaving this for mode 2 as it changes nothing
-                enable_memory_vcc(mem_arr[i]);
+               
 
                 //if ((CHI_Memory_Status[i].no_LU) > 50 )	{
                 //	// exclude the memory from the test if LU > 50 TBD
@@ -360,11 +359,23 @@ int main(void)
                 //}					
 
                 if (CHI_Board_Status.mem_reprog & (1<<i))	{
-                    if (!reprogram_memory(i)) continue;
+                     enable_memory_vcc(mem_arr[i]);
+					if (!reprogram_memory(i)) continue;
                 }
 
                 // Disable Memory to Reprogram if in mode 0x01
                 if(CHI_Board_Status.device_mode == 0x01) {
+                    // We need to wait for the last page to finish writing
+                    // before disabling the memory
+                    TIMER3_Enable_1s();
+                    while (check_busy(i) == BUSY) {
+                        if (CHI_Board_Status.SPI_timeout_detected==1) {
+                            CHI_Memory_Status[i].no_SEFI_timeout++;
+                            CHI_Memory_Status[i].no_SEFI_seq++;
+                            break;
+                        }								
+                    }
+                    TIMER3_Disable();
                     disable_memory_vcc(mem_arr[i]);
                 }
             }

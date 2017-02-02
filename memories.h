@@ -26,9 +26,9 @@ struct Memory {
     // chip VCC enable pin
     uint8_t PIN_VCC;
     // number of pages in device
-    const uint16_t page_num;
+    const uint32_t page_num;
     // size of one page in bytes
-    const uint16_t page_size;
+    const uint32_t page_size;
     // The port that the memory chip select is connected to
     volatile uint8_t *cs_port;
     // The port for controlling memory VCC

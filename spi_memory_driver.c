@@ -62,6 +62,17 @@ uint8_t read_24bit_page(uint32_t addr, uint8_t mem_idx, uint8_t *buffer)
     }
 }
 
+uint8_t check_busy(uint8_t mem_idx) {
+uint8_t status_reg;
+
+    read_status_reg(&status_reg, mem_idx);
+    if (!(status_reg & (1<<WIP))) { 
+	      return TRANSFER_COMPLETED;
+    } else {
+        return BUSY;
+    }
+}
+
 uint8_t read_16bit_page(uint32_t addr, uint8_t mem_idx, uint8_t *buffer) 
 {
     uint16_t read_cnt=0;     // WARNING! Should be the same type as page size, to avoid integer overflow when reading
