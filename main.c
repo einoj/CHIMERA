@@ -278,6 +278,7 @@ int8_t reprogram_memory(uint8_t i) {
 
     CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reprogramming flag	
     CHI_Memory_Status[i].no_SEFI_seq=0;					
+	return 0;
 }
 
 int main(void)
@@ -285,7 +286,6 @@ int main(void)
 	Power_On_Check();	// check what was the cause of reset
 	
 	OSCCAL=0xB3; // clock calibration
-	volatile uint32_t start_time;	
 	
 	// Initialize the Board
 	PORT_Init();	//Initialize the ports
@@ -318,8 +318,6 @@ int main(void)
 	/* Main Loop */
     while (1) 
     {	
-		start_time=CHI_Board_Status.local_time;
-
         switch  (CHI_Board_Status.device_mode ) {
             case 0x01: //read mode
                 // Power off all memories, as they will be turned on individually
@@ -360,7 +358,11 @@ int main(void)
 
                 if (CHI_Board_Status.mem_reprog & (1<<i))	{
                      enable_memory_vcc(mem_arr[i]);
-					if (reprogram_memory(i)) continue;
+					if (reprogram_memory(i)){
+						//Encountered a SEFI while writing
+						disable_memory_vcc(mem_arr[i]);
+						continue;
+					 }
                 }
 
                 // Disable Memory to Reprogram if in mode 0x01

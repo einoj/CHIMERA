@@ -199,7 +199,6 @@ uint8_t decode_dataframe(uint8_t* dataframe)
 
 
 void transmit_CHI_EVENTS() {
-    uint16_t i;
     uint8_t checksum = 0; // Used to store the crc8 checksum
     uint8_t data; // Used to temporarily hold bytes of multibyte variables
     USART0SendByte(FEND);
@@ -208,7 +207,7 @@ void transmit_CHI_EVENTS() {
     checksum = _crc8_ccitt_update(checksum,data);
     transmit_kiss(data);
     /*
-    for (i = 0; i < CHI_Board_Status.Event_cnt; i++) {
+    for (uint16_t i = 0; i < CHI_Board_Status.Event_cnt; i++) {
         // send timestamp 
 			  data =  Memory_Events[i].timestamp;
         checksum = _crc8_ccitt_update(checksum, data);
@@ -246,7 +245,6 @@ void transmit_CHI_EVENTS() {
 }
 
 void transmit_CHI_STATUS() {
-	uint16_t i;
 	uint8_t checksum = 0; // Used to store the crc8 checksum
 	uint8_t data; // Used to temporarily hold bytes of multibyte variables
 	
