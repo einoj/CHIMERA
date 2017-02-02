@@ -321,8 +321,8 @@ int main(void)
 		start_time=CHI_Board_Status.local_time;
 
         switch  (CHI_Board_Status.device_mode ) {
-            case 0x01: //readmode
-                // Power off all memories, as they will be turned on induvidually
+            case 0x01: //read mode
+                // Power off all memories, as they will be turned on individually
                 for (uint8_t i=0;i<12;i++) {	
                     disable_memory_vcc(mem_arr[i]);
                 }
@@ -348,15 +348,15 @@ int main(void)
                 // Power on the memory to Reprogram, just leaving this for mode 2 as it changes nothing
                
 
-                //if ((CHI_Memory_Status[i].no_LU) > 50 )	{
-                //	// exclude the memory from the test if LU > 50 TBD
-                //	CHI_Board_Status.mem_to_test&=~(1<<i);
-                //}
+                if ((CHI_Memory_Status[i].no_LU) > 50 )	{
+                	// exclude the memory from the test if LU > 50 TBD
+                	CHI_Board_Status.mem_to_test&=~(1<<i);
+                }
 
-                //if ((CHI_Memory_Status[i].no_SEFI_seq)>254)	{
-                //	// exclude the memory from the test if SEFI > 10 TBD
-                //	CHI_Board_Status.mem_to_test&=~(1<<i);
-                //}					
+                if ((CHI_Memory_Status[i].no_SEFI_seq)>254)	{
+                	// exclude the memory from the test if SEFI > 10 TBD
+                	CHI_Board_Status.mem_to_test&=~(1<<i);
+                }					
 
                 if (CHI_Board_Status.mem_reprog & (1<<i))	{
                      enable_memory_vcc(mem_arr[i]);
