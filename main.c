@@ -129,7 +129,7 @@ uint8_t read_memory(uint8_t mem_idx) {
                     CHI_Memory_Status[mem_idx].no_SEU++;
                     
                     // page_number*pagesize + address in page
-                    addr = (uint32_t) i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
+                    addr = i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
 
                     // WARNING THERE IS PROBABLY A WAY THAT THIS CAN CAUSE OUTOF BOUNDS WRITES
                 }
@@ -276,7 +276,7 @@ int8_t reprogram_memory(uint8_t i) {
         return -1;
     }						
 
-    CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reporgramming flag	
+    CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reprogramming flag	
     CHI_Memory_Status[i].no_SEFI_seq=0;					
 }
 
@@ -360,7 +360,7 @@ int main(void)
 
                 if (CHI_Board_Status.mem_reprog & (1<<i))	{
                      enable_memory_vcc(mem_arr[i]);
-					if (!reprogram_memory(i)) continue;
+					if (reprogram_memory(i)) continue;
                 }
 
                 // Disable Memory to Reprogram if in mode 0x01
