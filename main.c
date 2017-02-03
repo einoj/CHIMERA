@@ -178,7 +178,7 @@ uint8_t read_memory(uint8_t mem_idx) {
 void Power_On_Init() {
 	  CHI_Board_Status.device_mode = 0x01;
 	  CHI_Board_Status.latch_up_detected = 0;
-	  CHI_Board_Status.mem_to_test = 0x0001;//0x0FC7;// 0b0000000001000000;// 0x01C0; // 0x0FA7 9 memories
+	  CHI_Board_Status.mem_to_test = 0x0FFF;//0x0FC7;// 0b0000000001000000;// 0x01C0; // 0x0FA7 9 memories
       CHI_Board_Status.mem_reprog = 0x0000;
       CHI_Board_Status.no_cycles = 0;
       CHI_Board_Status.program_sram = 1;	// The SRAMs need to be reprogrammed when set to mode 2, this variable will be set to 1 when the mode changes
@@ -286,6 +286,7 @@ int main(void)
 	Power_On_Check();	// check what was the cause of reset
 	
 	OSCCAL=0xB3; // clock calibration
+	volatile uint32_t start_time;	
 	
 	// Initialize the Board
 	PORT_Init();	//Initialize the ports
@@ -318,6 +319,7 @@ int main(void)
 	/* Main Loop */
     while (1) 
     {	
+		start_time=CHI_Board_Status.local_time;
         switch  (CHI_Board_Status.device_mode ) {
             case 0x01: //read mode
                 // Power off all memories, as they will be turned on individually
@@ -336,7 +338,7 @@ int main(void)
                 //erase_read_write(mem_arr[i]);
                 break;
         }
-		//do {
+		do {
 				
 		CHI_Board_Status.no_cycles++; // increase number of memory cycles
 				
@@ -449,7 +451,7 @@ int main(void)
                 }
 			}
 			
-		//} while ((CHI_Board_Status.local_time-start_time)<60000);
+		} while ((CHI_Board_Status.local_time-start_time)<60000);
 
     if (CHI_Board_Status.Event_cnt > 0) {
      // transmit_CHI_EVENTS();
