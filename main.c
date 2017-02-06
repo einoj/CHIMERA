@@ -452,7 +452,7 @@ int main(void)
                 }
 			}
 			
-        } while ((CHI_Board_Status.local_time-start_time)<60000);
+        } while ((CHI_Board_Status.local_time-start_time)< 900000);
 
         // UPDATE LOCAL TIMER 
         CHI_Board_Status.local_time += CHI_Board_Status.delta_time;
