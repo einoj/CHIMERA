@@ -176,13 +176,14 @@ uint8_t read_memory(uint8_t mem_idx) {
 }
 
 void Power_On_Init() {
-	  CHI_Board_Status.device_mode = 0x01;
-	  CHI_Board_Status.latch_up_detected = 0;
-	  CHI_Board_Status.mem_to_test = 0x0FFF;//0x0FC7;// 0b0000000001000000;// 0x01C0; // 0x0FA7 9 memories
-      CHI_Board_Status.mem_reprog = 0x0000;
-      CHI_Board_Status.no_cycles = 0;
-      CHI_Board_Status.program_sram = 1;	// The SRAMs need to be reprogrammed when set to mode 2, this variable will be set to 1 when the mode changes
-	  //CHI_Board_Status.Event_cnt = 0; // EVENT counter
+    CHI_Board_Status.device_mode = 0x01;
+    CHI_Board_Status.latch_up_detected = 0;
+    CHI_Board_Status.mem_to_test = 0x0FFF;//0x0FC7;// 0b0000000001000000;// 0x01C0; // 0x0FA7 9 memories
+    CHI_Board_Status.mem_reprog = 0x0000;
+    CHI_Board_Status.no_cycles = 0;
+    CHI_Board_Status.program_sram = 1;	// The SRAMs need to be reprogrammed when set to mode 2, this variable will be set to 1 when the mode changes
+    CHI_Board_Status.delta_time = 0;
+    //CHI_Board_Status.Event_cnt = 0; // EVENT counter
 
     CHI_UART_RX_BUFFER_INDEX=0;
     CHI_UART_RX_BUFFER_COUNTER=0;
@@ -199,19 +200,19 @@ void Power_On_Init() {
 }
 
 void SPI_CYCLE() {
-		// Pull CS pins down
-		for (uint8_t i = 0; i < 12; i++)CHIP_SELECT(i);		
-		
-		// Pull SPI down
-		SPCR &= ~(1<<SPE);
-		PORTB &= 0b11110001; // clear SCK/MOSI
-		
-		wait_1s();
-		wait_1s();
-		
-		// Pull CS pins up
-		for (uint8_t i = 0; i < 12; i++)CHIP_DESELECT(i);
-		SPCR |= (1<<SPE);	
+    // Pull CS pins down
+    for (uint8_t i = 0; i < 12; i++)CHIP_SELECT(i);		
+
+    // Pull SPI down
+    SPCR &= ~(1<<SPE);
+    PORTB &= 0b11110001; // clear SCK/MOSI
+
+    wait_1s();
+    wait_1s();
+
+    // Pull CS pins up
+    for (uint8_t i = 0; i < 12; i++)CHIP_DESELECT(i);
+    SPCR |= (1<<SPE);	
 }
 
 // returns -1 means continue repogram for loop continue 
@@ -451,13 +452,17 @@ int main(void)
                 }
 			}
 			
-		} while ((CHI_Board_Status.local_time-start_time)<60000);
+        } while ((CHI_Board_Status.local_time-start_time)<60000);
 
-    if (CHI_Board_Status.Event_cnt > 0) {
-     // transmit_CHI_EVENTS();
-      // TODO wait for ACK or resend if NACK?
-    }
+        // UPDATE LOCAL TIMER 
+        CHI_Board_Status.local_time += CHI_Board_Status.delta_time;
+        CHI_Board_Status.delta_time = 0;
 
-		transmit_CHI_SCI_TM();
+        if (CHI_Board_Status.Event_cnt > 0) {
+            // transmit_CHI_EVENTS();
+            // TODO wait for ACK or resend if NACK?
+        }
+
+        transmit_CHI_SCI_TM();
     }
 }

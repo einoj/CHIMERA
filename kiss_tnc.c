@@ -24,6 +24,7 @@ ISR(TIMER0_OVF_vect) {
 	uint8_t RX_i=0;
 	uint8_t checksum = 0;
 	uint8_t FENDi = 0; //counter of 0xC0 bytes
+    uint32_t tmp_time;
 	
 	TCCR0=0x00; // turn clock off to wait for another UART RX interrupt
 	TCNT0=0xFF-CHI_PARSER_TIMEOUT; // We need 50 ticks to get 10ms interrupt
@@ -110,7 +111,8 @@ ISR(TIMER0_OVF_vect) {
 			
 			case (CHI_COMM_ID_TIMESTAMP): // TIMESTAMP, 20ms delay parsing, include that?
 			if (RX_i==6) { // Note:AFTER UPDATE OF TIMER MAIN LOOP MIGHT BE AFFECTED !!!!!!!!
-				CHI_Board_Status.local_time=(uint32_t)RX_BUFFER[1]<<24 | (uint32_t)RX_BUFFER[2]<<16 | (uint32_t)RX_BUFFER[3]<<8 | (uint32_t)RX_BUFFER[4];
+				tmp_time=(uint32_t)RX_BUFFER[1]<<24 | (uint32_t)RX_BUFFER[2]<<16 | (uint32_t)RX_BUFFER[3]<<8 | (uint32_t)RX_BUFFER[4];
+                CHI_Board_Status.delta_time = CHI_Board_Status.local_time - tmp_time;
 				Send_ACK();
 			}
 			else {
