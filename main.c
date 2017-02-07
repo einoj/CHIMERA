@@ -31,7 +31,7 @@ uint8_t transmit_test(uint8_t* data, uint16_t num_bytes)
 } 
 
 // Power On Check to see what was the cause of reset
-void static Power_On_Check() {
+static void Power_On_Check() {
 
 	CHI_Board_Status.reset_type = MCUCSR; // Read MCUCSR register to
 

@@ -1,7 +1,7 @@
 // Interrupt: ADC Latch-Up monitoring
-volatile uint8_t static ADC_Sample_Cnt;
-volatile int16_t static ADC_data;
-volatile int16_t static ADC_Samples[3];
+static volatile uint8_t ADC_Sample_Cnt;
+static volatile int16_t ADC_data;
+static volatile int16_t ADC_Samples[3];
 volatile int16_t ADC_Median;
 
 void ADC_Init();
