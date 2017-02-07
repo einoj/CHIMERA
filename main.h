@@ -39,7 +39,7 @@ struct __attribute__((packed)) CHI_Memory_Event_Str {
 // CHIMERA Board Status Structure
 struct __attribute__((packed)) CHI_Board_Status_Str {
   uint32_t local_time; // Instrument local time
-  uint32_t delta_time;
+  int32_t delta_time;
   uint8_t reset_type; // reason for last reset
   uint8_t device_mode; // mode of the instrument
   uint8_t last_cmd; // last cmd send (in case NACK arrives)
