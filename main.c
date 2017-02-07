@@ -133,7 +133,7 @@ uint8_t read_memory(uint8_t mem_idx) {
 
                     // WARNING THERE IS PROBABLY A WAY THAT THIS CAN CAUSE OUTOF BOUNDS WRITES
                 }
-                if (page_SEUs+page_MBUs > 31) {
+                if (page_SEUs+page_MBUs > 15) {
                   // remove the last page_size errors and store a SEFI
                   CHI_Memory_Status[mem_idx].no_SEU -= page_SEUs;
                   CHI_Memory_Status[mem_idx].no_MBU -= page_MBUs;
