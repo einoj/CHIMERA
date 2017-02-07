@@ -6,7 +6,7 @@
 #define CHI_COMM_ID_EVENT 0x04
 #define CHI_COMM_ID_MODE 0x07
 #define CHI_COMM_ID_TIMESTAMP 0x08
-#define CHI_COMM_ID_RESET 0x11
+#define CHI_COMM_ID_RESET 0xE0
 
 // KISS TNC Frame format characters
 #define FEND 0xC0
