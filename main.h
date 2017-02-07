@@ -51,7 +51,7 @@ struct __attribute__((packed)) CHI_Board_Status_Str {
   uint16_t mem_reprog; // which memories to be reprogrammed
   uint16_t no_cycles; // number of SCI cycles performed on memories
   uint8_t COMM_flags;	// 	ACK/NACK flags ... unused now
-  uint16_t Event_cnt; // Number of EVENTs
+  //uint16_t Event_cnt; // Number of EVENTs
 };
 volatile struct CHI_Board_Status_Str CHI_Board_Status;
 //---------------------------------------------

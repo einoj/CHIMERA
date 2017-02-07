@@ -68,7 +68,7 @@ uint8_t read_memory(uint8_t mem_idx) {
     uint8_t ptr_idx = 0; // because the order of the pattern changes per page
     uint8_t page_SEUs; //SEU errors
     uint8_t page_MBUs; //SEU errors
-    uint32_t addr;
+    //uint32_t addr;
 
 	CHI_Memory_Status[mem_idx].current1=ADC_Median>>2; // Reading bias current measurement
 
@@ -129,7 +129,7 @@ uint8_t read_memory(uint8_t mem_idx) {
                     CHI_Memory_Status[mem_idx].no_SEU++;
                     
                     // page_number*pagesize + address in page
-                    addr = i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
+                    //addr = i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
 
                     // WARNING THERE IS PROBABLY A WAY THAT THIS CAN CAUSE OUTOF BOUNDS WRITES
                 }
@@ -139,7 +139,7 @@ uint8_t read_memory(uint8_t mem_idx) {
                   CHI_Memory_Status[mem_idx].no_MBU -= page_MBUs;
                   CHI_Memory_Status[mem_idx].no_SEFI_wr_error++;
                   CHI_Memory_Status[mem_idx].no_SEFI_seq++;
-                  CHI_Board_Status.Event_cnt -= CHI_NUM_EVENT-1;
+                  //CHI_Board_Status.Event_cnt -= CHI_NUM_EVENT-1;
                  // if (CHI_Board_Status.Event_cnt > CHI_NUM_EVENT-1) { //OVERFLOW 
                  //  CHI_Board_Status.Event_cnt = 0;  // All stored data now delted
                  // }
@@ -154,6 +154,7 @@ uint8_t read_memory(uint8_t mem_idx) {
                   return 1;
                 }
 
+                /*
                // else if (CHI_Board_Status.Event_cnt < CHI_NUM_EVENT) {
                //   Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
                //   Memory_Events[CHI_Board_Status.Event_cnt].memory_id = mem_idx;
@@ -167,6 +168,7 @@ uint8_t read_memory(uint8_t mem_idx) {
                 else {
                     //TODO transmit data when EVENT table if full
                     }
+                    */
             }
             ptr_idx ^= 0x01;
         }
@@ -459,10 +461,12 @@ int main(void)
         CHI_Board_Status.local_time += CHI_Board_Status.delta_time;
         CHI_Board_Status.delta_time = 0;
 
+        /*
         if (CHI_Board_Status.Event_cnt > 0) {
             // transmit_CHI_EVENTS();
             // TODO wait for ACK or resend if NACK?
         }
+        */
 
         transmit_CHI_SCI_TM();
     }

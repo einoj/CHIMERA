@@ -99,9 +99,11 @@ ISR(TIMER0_OVF_vect) {
 					transmit_CHI_STATUS();
 					break;
 					
+                    /*
 					case (CHI_COMM_ID_EVENT):
 					transmit_CHI_EVENTS();
 					break;
+                    */
 
 					case (CHI_COMM_ID_SCI_TM):
 					transmit_CHI_SCI_TM();
@@ -124,9 +126,11 @@ ISR(TIMER0_OVF_vect) {
 			transmit_CHI_STATUS();
 			break;
 			
+            /*
 			case (CHI_COMM_ID_EVENT):
 			transmit_CHI_EVENTS();
 			break;
+            */
 
 			case (CHI_COMM_ID_SCI_TM):
 			transmit_CHI_SCI_TM();
@@ -151,6 +155,11 @@ ISR(TIMER0_OVF_vect) {
 				Send_NACK();
 			}			
 			break;
+
+            case (CHI_COMM_ID_RESET):
+				Send_ACK();
+                WDTCR = (1<<WDE); //Enable watchdog, by default shortest prescaler is set, 14.7ms time-out
+                while (1);
 
 			default:
 			Send_NACK();
@@ -200,6 +209,7 @@ uint8_t decode_dataframe(uint8_t* dataframe)
 }
 
 
+/*
 void transmit_CHI_EVENTS() {
     uint8_t checksum = 0; // Used to store the crc8 checksum
     uint8_t data; // Used to temporarily hold bytes of multibyte variables
@@ -208,7 +218,6 @@ void transmit_CHI_EVENTS() {
     data = (uint8_t) CHI_COMM_ID_EVENT;
     checksum = _crc8_ccitt_update(checksum,data);
     transmit_kiss(data);
-    /*
     for (uint16_t i = 0; i < CHI_Board_Status.Event_cnt; i++) {
         // send timestamp 
 			  data =  Memory_Events[i].timestamp;
@@ -233,7 +242,6 @@ void transmit_CHI_EVENTS() {
         checksum = _crc8_ccitt_update(checksum, data);
         transmit_kiss(data);
     }
-    */
     //Send checksum
     transmit_kiss(checksum);
     
@@ -245,6 +253,7 @@ void transmit_CHI_EVENTS() {
   //TODO wait for ack before setting num_events to 0
   CHI_Board_Status.Event_cnt = 0;
 }
+*/
 
 void transmit_CHI_STATUS() {
 	uint8_t checksum = 0; // Used to store the crc8 checksum
