@@ -457,9 +457,6 @@ int main(void)
 			
         } while ((CHI_Board_Status.local_time-start_time)<60000);
 
-        // UPDATE LOCAL TIMER 
-        CHI_Board_Status.local_time += CHI_Board_Status.delta_time;
-        CHI_Board_Status.delta_time = 0;
 
         /*
         if (CHI_Board_Status.Event_cnt > 0) {
@@ -469,5 +466,9 @@ int main(void)
         */
 
         transmit_CHI_SCI_TM();
+        
+        // UPDATE LOCAL TIMER 
+        CHI_Board_Status.local_time += CHI_Board_Status.delta_time;
+        CHI_Board_Status.delta_time = 0;
     }
 }

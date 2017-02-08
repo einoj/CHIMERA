@@ -114,7 +114,7 @@ ISR(TIMER0_OVF_vect) {
 			case (CHI_COMM_ID_TIMESTAMP): // TIMESTAMP, 20ms delay parsing, include that?
 			if (RX_i==6) { // Note:AFTER UPDATE OF TIMER MAIN LOOP MIGHT BE AFFECTED !!!!!!!!
 				tmp_time=(uint32_t)RX_BUFFER[1]<<24 | (uint32_t)RX_BUFFER[2]<<16 | (uint32_t)RX_BUFFER[3]<<8 | (uint32_t)RX_BUFFER[4];
-                CHI_Board_Status.delta_time = CHI_Board_Status.local_time - tmp_time;
+                CHI_Board_Status.delta_time = tmp_time - CHI_Board_Status.local_time;
 				Send_ACK();
 			}
 			else {
