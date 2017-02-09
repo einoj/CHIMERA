@@ -117,16 +117,17 @@ uint8_t read_memory(uint8_t mem_idx) {
             if ((buf[j] ^ pattern[ptr_idx]) != 0) {
                 if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
 
+                buf[j] ^= pattern[ptr_idx];
                 if (buf[j] == 0x80 || buf[j] == 0x40 || buf[j] == 0x20 || buf[j] == 0x10 || buf[j] == 0x08 || buf[j] == 0x04 || buf[j] == 0x02 || buf[j] == 0x01) {
-                    page_MBUs++;
-                    CHI_Board_Status.mem_reprog |= (1<<mem_idx);
-                    CHI_Memory_Status[mem_idx].no_MBU++;
-                    
-                } else {
-
                     page_SEUs++;
                     CHI_Board_Status.mem_reprog |= (1<<mem_idx);
                     CHI_Memory_Status[mem_idx].no_SEU++;
+                    
+                } else {
+
+                    page_MBUs++;
+                    CHI_Board_Status.mem_reprog |= (1<<mem_idx);
+                    CHI_Memory_Status[mem_idx].no_MBU++;
                     
                     // page_number*pagesize + address in page
                     //addr = i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
@@ -289,7 +290,7 @@ int main(void)
 {
 	Power_On_Check();	// check what was the cause of reset
 	
-	OSCCAL=0xB3; // clock calibration
+	OSCCAL=0xA1; // clock calibration
 	volatile uint32_t start_time;	
 	
 	// Initialize the Board
@@ -455,7 +456,7 @@ int main(void)
                 }
 			}
 			
-        } while ((CHI_Board_Status.local_time-start_time)<60000);
+        } while ((CHI_Board_Status.local_time-start_time)<900000);
 
 
         /*
