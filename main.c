@@ -187,6 +187,8 @@ void Power_On_Init() {
     CHI_Board_Status.no_cycles = 0;
     CHI_Board_Status.program_sram = 1;	// The SRAMs need to be reprogrammed when set to mode 2, this variable will be set to 1 when the mode changes
     CHI_Board_Status.delta_time = 0;
+    CHI_Board_Status.delta_mode=0;
+    CHI_Board_Status.delta_mem_to_test=0;
     //CHI_Board_Status.Event_cnt = 0; // EVENT counter
 
     CHI_UART_RX_BUFFER_INDEX=0;
@@ -338,6 +340,8 @@ int main(void)
                 for (uint8_t i=0;i<12;i++) {	
                     if (CHI_Board_Status.mem_to_test & (1<<i)) {
                         enable_memory_vcc(mem_arr[i]);
+                    } else {
+                        disable_memory_vcc(mem_arr[i]);
                     }
                 }
                 //erase_read_write(mem_arr[i]);
@@ -392,8 +396,6 @@ int main(void)
 
 			for(uint8_t i=0;i<12;i++) {
                 if (CHI_Board_Status.mem_to_test & (1<<i)) {
-                    // Enable the memory to Test 
-                    enable_memory_vcc(mem_arr[i]);
 
                     CHI_Board_Status.current_memory=i; // not used at this moment
 
@@ -402,7 +404,8 @@ int main(void)
                     wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
                     switch  (CHI_Board_Status.device_mode ) {
                         case 0x01: //readmode
-                            // IF memory is SRAM REPROGRAM //
+                            // Enable the memory to Test 
+                            enable_memory_vcc(mem_arr[i]);
                             if (mem_arr[i].sram) {
                                 reprogram_memory(i); // if reprogramming fails it will be detected as a sefi later when reading
                             }
@@ -416,15 +419,14 @@ int main(void)
                                 CHI_Memory_Status[i].no_LU++;
                                 CHI_Board_Status.latch_up_detected=0;
                             }							
-
                             break;
 
                         case 0x02:
                             if (CHI_Board_Status.program_sram) {	// The SRAMs need to be reprogrammed when set to mode 2, this variable will be set to 1 when the mode changes
                                 //reprogram all SRAMS to be tested
-                                for(uint8_t i=0;i<12;i++) {
-                                    if (CHI_Board_Status.mem_to_test & (1<<i) && mem_arr[i].sram) {
-                                        reprogram_memory(i); // if reprogramming fails it will be detected as a sefi later when reading
+                                for(uint8_t j=0;j<12;j++) {
+                                    if (CHI_Board_Status.mem_to_test & (1<<j) && mem_arr[j].sram) {
+                                        reprogram_memory(j); // if reprogramming fails it will be detected as a sefi later when reading
                                     }
                                 }
                                 CHI_Board_Status.program_sram = 0;
@@ -444,7 +446,20 @@ int main(void)
                             break;
 
                         default:
-                            read_memory(i);
+                            // IF memory is SRAM REPROGRAM //
+                            if (mem_arr[i].sram) {
+                                reprogram_memory(i); // if reprogramming fails it will be detected as a sefi later when reading
+                            }
+                            if (read_memory(i) == 0xAC) {
+                                SPI_CYCLE();								
+                                CHI_Memory_Status[i].no_LU++;
+                                CHI_Board_Status.latch_up_detected=0;								
+                            }
+                            else if (CHI_Board_Status.latch_up_detected==1) {
+	                            SPI_CYCLE();
+	                            CHI_Memory_Status[i].no_LU++;
+	                            CHI_Board_Status.latch_up_detected=0;
+                            }
                             break;
                     }
                     CHI_Memory_Status[i].cycles++;
@@ -459,6 +474,14 @@ int main(void)
         } while ((CHI_Board_Status.local_time-start_time)<900000);
 
 
+        transmit_CHI_SCI_TM();
+
+        // Change the mode only outside of a do-while test loop. This ensures that only the memories that are being tested will be powered on
+        if (CHI_Board_Status.delta_mode) {
+            CHI_Board_Status.device_mode = CHI_Board_Status.delta_mode;
+            CHI_Board_Status.mem_to_test = CHI_Board_Status.delta_mem_to_test;
+        }
+
         /*
         if (CHI_Board_Status.Event_cnt > 0) {
             // transmit_CHI_EVENTS();
@@ -466,7 +489,6 @@ int main(void)
         }
         */
 
-        transmit_CHI_SCI_TM();
         
         // UPDATE LOCAL TIMER 
         CHI_Board_Status.local_time += CHI_Board_Status.delta_time;

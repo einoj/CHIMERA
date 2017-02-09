@@ -47,6 +47,8 @@ struct __attribute__((packed)) CHI_Board_Status_Str {
   uint8_t SPI_timeout_detected; // SPI time-out detected flag
   uint8_t current_memory;	// id of currently processed memory
   uint8_t program_sram;	// The SRAMs need to be reprogrammed ONCE when set to mode 2, this variable will be set to 0 when the mode changes
+  uint8_t delta_mode;	// The SRAMs need to be reprogrammed ONCE when set to mode 2, this variable will be set to 0 when the mode changes
+  uint16_t delta_mem_to_test;	// The SRAMs need to be reprogrammed ONCE when set to mode 2, this variable will be set to 0 when the mode changes
   uint16_t mem_to_test; // memories to be tested - each bit corresponds to one memory	
   uint16_t mem_reprog; // which memories to be reprogrammed
   uint16_t no_cycles; // number of SCI cycles performed on memories

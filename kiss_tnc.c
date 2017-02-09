@@ -138,8 +138,8 @@ ISR(TIMER0_OVF_vect) {
 
             case (CHI_COMM_ID_MODE):
             if (RX_i==5) { // 1st byte: device mode, 2nd 3rd: mem to be tested 
-                CHI_Board_Status.device_mode=RX_BUFFER[1];
-                CHI_Board_Status.mem_to_test=(uint16_t) (RX_BUFFER[2]<<8) | (uint16_t) (RX_BUFFER[3]);
+                CHI_Board_Status.delta_mode=RX_BUFFER[1];
+                CHI_Board_Status.delta_mem_to_test=(uint16_t) (RX_BUFFER[2]<<8) | (uint16_t) (RX_BUFFER[3]);
                 CHI_Board_Status.program_sram = 1;	// The SRAMs need to be reprogrammed when set to mode 2, this variable will be set to 0 when the mode changes
                 Send_ACK();
             }

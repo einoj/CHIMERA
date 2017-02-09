@@ -37,3 +37,9 @@ CRC8Table = [
 
 def calculateCRC8(INCRC, INBYTE):
     return CRC8Table[INCRC ^ INBYTE]
+
+def genCRC8(array):
+    crc = 0x00
+    for i in array:
+        crc = calculateCRC8(crc,i)
+    return crc
