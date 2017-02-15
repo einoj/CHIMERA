@@ -5,6 +5,8 @@
 #include "main.h"
 #include "adc.h"
 #include "CHIMERA_Board_Defs.h"
+#include "memories.h"
+#include "spi_memory_driver.h"
 
 void ADC_Init() {
 	
