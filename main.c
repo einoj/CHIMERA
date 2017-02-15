@@ -344,6 +344,7 @@ int main(void)
                         disable_memory_vcc(mem_arr[i]);
                     }
                 }
+                wait_2ms();// FM25W256 has a  minimum powerup time of 1ms
                 //erase_read_write(mem_arr[i]);
                 break;
         }
@@ -368,12 +369,13 @@ int main(void)
                 }					
 
                 if (CHI_Board_Status.mem_reprog & (1<<i))	{
-                     enable_memory_vcc(mem_arr[i]);
-					if (reprogram_memory(i)){
-						//Encountered a SEFI while writing
-						disable_memory_vcc(mem_arr[i]);
-						continue;
-					 }
+                    enable_memory_vcc(mem_arr[i]);
+                    wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
+                    if (reprogram_memory(i)){
+                      //Encountered a SEFI while writing
+                      disable_memory_vcc(mem_arr[i]);
+                      continue;
+                     }
                 }
 
                 // Disable Memory to Reprogram if in mode 0x01
@@ -401,11 +403,11 @@ int main(void)
 
                     // Test memory (test procedure defined by device_mode(read only, write read, etc.))
                     LDO_ON;
-                    wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
                     switch  (CHI_Board_Status.device_mode ) {
                         case 0x01: //readmode
                             // Enable the memory to Test 
                             enable_memory_vcc(mem_arr[i]);
+                            wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
                             if (mem_arr[i].sram) {
                                 reprogram_memory(i); // if reprogramming fails it will be detected as a sefi later when reading
                             }
