@@ -295,7 +295,7 @@ void transmit_CHI_SCI_TM(void)
     USART0SendByte(FEND);
 
     // SEND DATA TYPE
-    data = (uint8_t) CHI_COMM_ID_SCI_TM;
+    data = (uint8_t) CHI_COMM_ID_SCI_TM ^ (CHI_Board_Status.device_mode<<4);
     checksum = _crc8_ccitt_update(checksum,data);
     transmit_kiss(data);
 
