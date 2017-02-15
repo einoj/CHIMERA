@@ -1,4 +1,4 @@
-#define SOFTWARE_VERSION 0x10
+#define SOFTWARE_VERSION 0x21
 
 #define NUM_MEMORIES 12
 
