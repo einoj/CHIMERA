@@ -223,9 +223,6 @@ void SPI_CYCLE() {
 
 // returns -1 means continue repogram for loop continue 
 int8_t reprogram_memory(uint8_t i) {
-    LDO_ON;
-    wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
-
     TIMER3_Enable_8s();
     while (erase_chip(i) == BUSY) {
         if (CHI_Board_Status.SPI_timeout_detected==1) {
@@ -239,7 +236,6 @@ int8_t reprogram_memory(uint8_t i) {
 
 
     if (CHI_Board_Status.latch_up_detected==1) {
-
         // Wait 1 second after the latch-up
         SPI_CYCLE();
         CHI_Memory_Status[i].no_LU++;
@@ -309,9 +305,6 @@ int main(void)
 		
 	transmit_CHI_STATUS();
 
-	// LDO for memories ON
-	LDO_ON;
-	wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
     
     // Disable all CS
     for (uint8_t i = 0; i < 12; i++)CHIP_DESELECT(i);
@@ -319,9 +312,12 @@ int main(void)
     // VCC enable all memories
     for (uint8_t i = 0; i < 12; i++) {
         //enable_pin_macro(*mem_arr[i].cs_port, mem_arr[i].PIN_CS);
-        //enable_memory_vcc(mem_arr[i]);
-        disable_memory_vcc(mem_arr[i]);
+        enable_memory_vcc(mem_arr[i]);
+        //disable_memory_vcc(mem_arr[i]);
     }
+    // LDO for memories ON
+    LDO_ON;
+    wait_8s(); // FM25W256 has a  minimum powerup time of 1ms
 
 	/* Main Loop */
     while (1) 
@@ -374,6 +370,11 @@ int main(void)
                 }
 
                 if (CHI_Board_Status.mem_reprog & (1<<i))	{
+                    if (CHI_Board_Status.latch_up_detected==1) {			
+                        SPI_CYCLE();				
+                        CHI_Memory_Status[i].no_LU++;
+                        CHI_Board_Status.latch_up_detected=0;
+                    }							
                     enable_memory_vcc(mem_arr[i]);
                     wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
                     if (reprogram_memory(i)){
@@ -407,9 +408,14 @@ int main(void)
                     CHI_Board_Status.current_memory=i; // not used at this moment
 
                     // Test memory (test procedure defined by device_mode(read only, write read, etc.))
-                    LDO_ON;
                     switch  (CHI_Board_Status.device_mode ) {
                         case 0x01: //readmode
+                            if (CHI_Board_Status.latch_up_detected==1) {			
+                                SPI_CYCLE();				
+                                CHI_Memory_Status[i].no_LU++;
+                                CHI_Board_Status.latch_up_detected=0;
+                            }							
+
                             // Enable the memory to Test 
                             enable_memory_vcc(mem_arr[i]);
                             wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
@@ -429,6 +435,20 @@ int main(void)
                             break;
 
                         case 0x02:
+                            if (CHI_Board_Status.latch_up_detected==1) {			
+                                SPI_CYCLE();				
+                                CHI_Memory_Status[i].no_LU++;
+                                CHI_Board_Status.latch_up_detected=0;
+                            }							
+                            // IF there was a latchup we need to power on all the memories that are under test
+                            for (uint8_t i=0;i<12;i++) {	
+                              if (CHI_Board_Status.mem_to_test & (1<<i)) {
+                                enable_memory_vcc(mem_arr[i]);
+                              } else {
+                                disable_memory_vcc(mem_arr[i]);
+                              }
+                            }
+                            wait_2ms();// FM25W256 has a  minimum powerup time of 1ms
                             if (CHI_Board_Status.program_sram) {	// The SRAMs need to be reprogrammed when set to mode 2, this variable will be set to 1 when the mode changes
                                 //reprogram all SRAMS to be tested
                                 for(uint8_t j=0;j<12;j++) {
@@ -453,7 +473,15 @@ int main(void)
                             break;
 
                         default:
-                            // IF memory is SRAM REPROGRAM //
+                            if (CHI_Board_Status.latch_up_detected==1) {			
+                                SPI_CYCLE();				
+                                CHI_Memory_Status[i].no_LU++;
+                                CHI_Board_Status.latch_up_detected=0;
+                            }							
+
+                            // Enable the memory to Test 
+                            enable_memory_vcc(mem_arr[i]);
+                            wait_2ms(); // FM25W256 has a  minimum powerup time of 1ms
                             if (mem_arr[i].sram) {
                                 reprogram_memory(i); // if reprogramming fails it will be detected as a sefi later when reading
                             }
@@ -462,11 +490,11 @@ int main(void)
                                 CHI_Memory_Status[i].no_LU++;
                                 CHI_Board_Status.latch_up_detected=0;								
                             }
-                            else if (CHI_Board_Status.latch_up_detected==1) {
-	                            SPI_CYCLE();
-	                            CHI_Memory_Status[i].no_LU++;
-	                            CHI_Board_Status.latch_up_detected=0;
-                            }
+                            else if (CHI_Board_Status.latch_up_detected==1) {			
+                                SPI_CYCLE();				
+                                CHI_Memory_Status[i].no_LU++;
+                                CHI_Board_Status.latch_up_detected=0;
+                            }							
                             break;
                     }
                     CHI_Memory_Status[i].cycles++;

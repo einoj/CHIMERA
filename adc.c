@@ -42,7 +42,9 @@ ISR(ADC_vect)
 	if (ADC_Sample_Cnt>2) ADC_Sample_Cnt=0;
 	
 	if (ADC_Median>(int16_t)0x01F0) { // 50mA threshold
-		LDO_OFF;
+    for (uint8_t i = 0; i < 12; i++) {
+        disable_memory_vcc(mem_arr[i]);
+    }
 		
 		CHI_Board_Status.latch_up_detected=1;	
 	}
