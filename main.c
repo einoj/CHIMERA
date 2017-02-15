@@ -353,7 +353,6 @@ int main(void)
 		CHI_Board_Status.no_cycles++; // increase number of memory cycles
 				
         for (uint8_t i=0;i<12;i++) {	
-            // IF memory is SRAM REPROGRAM && mode == 0x01 don't reprogram//
             if (CHI_Board_Status.mem_to_test & (1<<i)) {
                 // Power on the memory to Reprogram, just leaving this for mode 2 as it changes nothing
                
@@ -367,6 +366,12 @@ int main(void)
                 	// exclude the memory from the test if SEFI > 10 TBD
                 	CHI_Board_Status.mem_to_test&=~(1<<i);
                 }					
+                
+                // Do not reprogram SRAMs in mode 1 as the data will be lost when they are powered off
+                // Reprogramming of SRAMs in mode 1 happens right before checking 
+                if (CHI_Board_Status.device_mode == 0x01 && mem_arr[i].sram == 1) {
+                    CHI_Board_Status.mem_reprog &= ~ (1<<i); // clear reprogramming flag	
+                }
 
                 if (CHI_Board_Status.mem_reprog & (1<<i))	{
                     enable_memory_vcc(mem_arr[i]);
