@@ -288,7 +288,7 @@ int main(void)
 {
 	Power_On_Check();	// check what was the cause of reset
 	
-	OSCCAL=0xA1; // clock calibration
+	//OSCCAL=0xA1; // clock calibration
 	volatile uint32_t start_time;	
 	
 	// Initialize the Board
