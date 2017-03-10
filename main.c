@@ -441,11 +441,11 @@ int main(void)
                                 CHI_Board_Status.latch_up_detected=0;
                             }							
                             // IF there was a latchup we need to power on all the memories that are under test
-                            for (uint8_t i=0;i<12;i++) {	
-                              if (CHI_Board_Status.mem_to_test & (1<<i)) {
-                                enable_memory_vcc(mem_arr[i]);
+                            for (uint8_t j=0;j<12;j++) {	
+                              if (CHI_Board_Status.mem_to_test & (1<<j)) {
+                                enable_memory_vcc(mem_arr[j]);
                               } else {
-                                disable_memory_vcc(mem_arr[i]);
+                                disable_memory_vcc(mem_arr[j]);
                               }
                             }
                             wait_2ms();// FM25W256 has a  minimum powerup time of 1ms
