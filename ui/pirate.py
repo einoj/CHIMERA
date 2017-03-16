@@ -20,8 +20,8 @@ from time import sleep
 from crc8 import calculateCRC8
 from kiss import encode_kiss_frame, decode_kiss_frame
 from kiss_constants import *
-import numpy as np
-np.set_printoptions(formatter={'int':hex})
+from random import randint
+from math import ceil
 
 # logger constants
 LOG_LEVEL = logging.DEBUG
@@ -235,7 +235,7 @@ class KISS(object):
         self._logger.info("Waiting for power-on packet...")
         self.wait_for_frame()
         frame = self.get_frame()
-        self._logger.info("RECEIVED:\n"+ self.frame_to_string(frame))
+        self._logger.info("RECEIVED:  "+ self.frame_to_string(frame))
         frame = decode_kiss_frame(frame)
         if frame[0] != STATUS:
             self._logger.info("FAIL: First byte of status frame should be " + hex(STATUS) + ", is: " + hex(frame[0]))
@@ -246,9 +246,9 @@ class KISS(object):
         else:
             self._logger.info("OK: Checksum correct")
         if len(frame) != 7:
-            self._logger.info("FAIL: Length of frame should be 7")
+            self._logger.info("FAIL: Length of frame should be 7\n")
         else:
-            self._logger.info("OK: Length of frame is 7")
+            self._logger.info("OK: Length of frame is 7\n")
         
         # Send SCI_TM packet and receive Scientific telemetry
         self._logger.info("Requesting scientific telemtry...")
@@ -266,16 +266,16 @@ class KISS(object):
         else:
             self._logger.info("OK: Checksum correct")
         if len(frame) != 92:
-            self._logger.info("FAIL: Length of frame should be 92, is: " + str(len(frame)))
+            self._logger.info("FAIL: Length of frame should be 92, is: " + str(len(frame)) +"\n")
         else:
-            self._logger.info("OK: Length of frame is 92")
+            self._logger.info("OK: Length of frame is 92\n")
 
         # Request ‘STATUS’ packet
         self._logger.info("Requesting Status Packet...")
         self.request_status()
         self.wait_for_frame()
         frame = self.get_frame()
-        self._logger.info("RECEIVED:\n"+ self.frame_to_string(frame))
+        self._logger.info("RECEIVED:  "+ self.frame_to_string(frame))
         frame = decode_kiss_frame(frame)
         if frame[0] != STATUS:
             self._logger.info("FAIL: First byte of status frame should be " + hex(STATUS) + ", is: " + hex(frame[0]))
@@ -286,16 +286,16 @@ class KISS(object):
         else:
             self._logger.info("OK: Checksum correct")
         if len(frame) != 7:
-            self._logger.info("FAIL: Length of frame should be 7")
+            self._logger.info("FAIL: Length of frame should be 7\n")
         else:
-            self._logger.info("OK: Length of frame is 7")
+            self._logger.info("OK: Length of frame is 7\n")
 
         # Send NACK to receive ‘STATUS’ packet again
         self._logger.info("Sending NACK to receive Status packet...")
         self.send_nack()
         self.wait_for_frame()
         frame = self.get_frame()
-        self._logger.info("RECEIVED:\n"+ self.frame_to_string(frame))
+        self._logger.info("RECEIVED: "+ self.frame_to_string(frame))
         frame = decode_kiss_frame(frame)
         if frame[0] != STATUS:
             self._logger.info("FAIL: First byte of status frame should be " + hex(STATUS) + ", is: " + hex(frame[0]))
@@ -306,9 +306,23 @@ class KISS(object):
         else:
             self._logger.info("OK: Checksum correct")
         if len(frame) != 7:
-            self._logger.info("FAIL: Length of frame should be 7")
+            self._logger.info("FAIL: Length of frame should be 7\n")
         else:
-            self._logger.info("OK: Length of frame is 7")
+            self._logger.info("OK: Length of frame is 7\n")
+
+        # Send random bytes and check if NACK was received.
+        frame = randint(0,9999999999999999999999999999999999999999999)
+        self._logger.info("SENDING random bytes: "+ hex(frame))
+        frame = frame.to_bytes(ceil(frame.bit_length()/8),byteorder='little')
+        self.interface.write(frame)
+        self.wait_for_frame()
+        frame = self.get_frame()
+        self._logger.info("RECEIVED: "+ self.frame_to_string(frame))
+        frame = decode_kiss_frame(frame)
+        if frame[0] != NACK:
+            self._logger.info("FAIL: expected " + hex(ACK) + ", received: " + hex(frame[0])+'\n')
+        else:
+            self._logger.info("OK: received NACK: " + hex(ACK)+'\n')
 
         # Send ‘TIME’ command 
         # Check if ACK is received.
@@ -317,21 +331,24 @@ class KISS(object):
         self.send_time(0x12345678)
         self.wait_for_frame()
         frame = self.get_frame()
-        self._logger.info("RECEIVED:\n"+ self.frame_to_string(frame))
+        self._logger.info("RECEIVED: "+ self.frame_to_string(frame))
         frame = decode_kiss_frame(frame)
         if frame[0] != ACK:
             self._logger.info("FAIL: expected " + hex(ACK) + ", received: " + hex(frame[0]))
         else:
             self._logger.info("OK: received ACK: " + hex(ACK))
         self.wait_for_frame()
+        self.get_frame()
+        self.request_sci_tm()
+        self.wait_for_frame()
         frame = self.get_frame()
         self._logger.info("RECEIVED:\n"+ self.frame_to_string(frame))
         frame = decode_kiss_frame(frame)
         new_time = int.from_bytes(frame[1:5],  byteorder="big")
         if new_time < 0x12345678:
-            self._logger.info("FAIL: expected new time > " + hex(0x12345678) + ", is: " + frame[1:5].hex())
+            self._logger.info("FAIL: expected new time > " + hex(0x12345678) + ", is: " + frame[1:5].hex()+'\n')
         else:
-            self._logger.info("OK: new time is " + frame[1:5].hex())
+            self._logger.info("OK: new time is " + frame[1:5].hex()+'\n')
 
 
 
