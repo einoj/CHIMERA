@@ -20,6 +20,8 @@ from time import sleep
 from crc8 import calculateCRC8
 from kiss import encode_kiss_frame, decode_kiss_frame
 from kiss_constants import *
+import numpy as np
+np.set_printoptions(formatter={'int':hex})
 
 # logger constants
 LOG_LEVEL = logging.DEBUG
@@ -161,11 +163,18 @@ class KISS(object):
                 r_buffer = []
                 read_data = self.interface.read(1)
                 while (read_data != FEND):
+                    self._logger.info(r_buffer)
                     if len(read_data)>0:
                         r_buffer.append(read_data)
                     read_data = self.interface.read(1)
                 if len(r_buffer) > 0:
                     self.frame_queue.put(r_buffer)
+    
+    def check_checksum(self,frame):
+        checksum = 0
+        for i in frame:
+            checksum = calculateCRC8(checksum,int.from_bytes(i, byteorder='little'))
+        return checksum
 
     def handle_frames(self):
         if not self.frame_queue.empty():
@@ -177,7 +186,7 @@ class KISS(object):
         
     def get_frame(self):
         if not self.frame_queue.empty():
-            return b''.join(self.frame_queue.get())
+            return self.frame_queue.get()
 
     # Takes a data frame as input adds kiss framing and checksum
     def write(self, frame):
@@ -201,6 +210,21 @@ class KISS(object):
     def send_nack(self):
         frame = b'\x15\x6B'
         self.write(frame)
+    
+    def wait_for_frame(self):
+        while self.frame_queue.empty():
+            sleep(0.05)
+
+    
+    def full_functional_test(self):
+        # receive power-on status packet
+        self._logger.info("Waiting for power-on packet")
+        self.wait_for_frame()
+        frame = self.get_frames()
+        if check_checksum(frame):
+            self._logger.info("FAIL: CHECKSUM NOT CORRECT")
+        else:
+            self._logger.info("OK: CHECKSUM CORRECT")
 
 def main():
     ki = KISS(port='com8', speed='38400', pirate=False)
@@ -210,9 +234,7 @@ def main():
     sr_read_thread.daemon = True # stop when main thread stops
     sr_read_thread.start()
 
-    while (1):
-        ki.handle_frames()
-        sleep(1)
+    ki.full_functional_test()
         #wait
     #ki.simpleread()
         #port.close()
