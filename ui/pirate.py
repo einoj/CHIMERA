@@ -163,7 +163,6 @@ class KISS(object):
                 r_buffer = []
                 read_data = self.interface.read(1)
                 while (read_data != FEND):
-                    self._logger.info(r_buffer)
                     if len(read_data)>0:
                         r_buffer.append(read_data)
                     read_data = self.interface.read(1)
@@ -173,7 +172,7 @@ class KISS(object):
     def check_checksum(self,frame):
         checksum = 0
         for i in frame:
-            checksum = calculateCRC8(checksum,int.from_bytes(i, byteorder='little'))
+            checksum = calculateCRC8(checksum,i)
         return checksum
 
     def handle_frames(self):
@@ -186,6 +185,8 @@ class KISS(object):
         
     def get_frame(self):
         if not self.frame_queue.empty():
+        #    frame = self.frame_queue.get()
+        #    frame = [i.hex() for i in frame]
             return self.frame_queue.get()
 
     # Takes a data frame as input adds kiss framing and checksum
@@ -193,11 +194,9 @@ class KISS(object):
         interface_handler = self.interface.write
 
         if interface_handler is not None:
-            return interface_handler(b''.join([
-                FEND,
-                encode_kiss_frame(frame),
-                FEND
-                ]))
+            frame = b''.join([ FEND, encode_kiss_frame(frame), FEND ])
+            self._logger.info("SENDING: " + frame.hex())
+            return interface_handler(frame)
 
     def request_sci_tm(self):
         frame = b'\x01\x07'
@@ -205,6 +204,10 @@ class KISS(object):
 
     def request_status(self):
         frame = b'\x02\x0E'
+        self.write(frame)
+
+    def send_time(self,new_time):
+        frame = b'\x08'+(new_time).to_bytes(4,byteorder='big')
         self.write(frame)
 
     def send_nack(self):
@@ -215,16 +218,123 @@ class KISS(object):
         while self.frame_queue.empty():
             sleep(0.05)
 
-    
+    def frame_to_string(self, frame):
+        string = ""
+        linewidth = 0
+        for byte in frame:
+            string += byte.hex()+" "
+            linewidth += 2
+            if linewidth == 80:
+                string+='\n'
+                linewidth = 0
+        string = string[:-1]
+        return string
+
     def full_functional_test(self):
         # receive power-on status packet
-        self._logger.info("Waiting for power-on packet")
+        self._logger.info("Waiting for power-on packet...")
         self.wait_for_frame()
-        frame = self.get_frames()
-        if check_checksum(frame):
-            self._logger.info("FAIL: CHECKSUM NOT CORRECT")
+        frame = self.get_frame()
+        self._logger.info("RECEIVED:\n"+ self.frame_to_string(frame))
+        frame = decode_kiss_frame(frame)
+        if frame[0] != STATUS:
+            self._logger.info("FAIL: First byte of status frame should be " + hex(STATUS) + ", is: " + hex(frame[0]))
         else:
-            self._logger.info("OK: CHECKSUM CORRECT")
+            self._logger.info("OK: First byte of status frame is " + hex(STATUS))
+        if self.check_checksum(frame):
+            self._logger.info("FAIL: Checksum not correct")
+        else:
+            self._logger.info("OK: Checksum correct")
+        if len(frame) != 7:
+            self._logger.info("FAIL: Length of frame should be 7")
+        else:
+            self._logger.info("OK: Length of frame is 7")
+        
+        # Send SCI_TM packet and receive Scientific telemetry
+        self._logger.info("Requesting scientific telemtry...")
+        self.request_sci_tm()
+        self.wait_for_frame()
+        frame = self.get_frame()
+        self._logger.info("RECEIVED:\n"+ self.frame_to_string(frame))
+        frame = decode_kiss_frame(frame)
+        if frame[0] != SCI_TM ^ MODE1<<4:
+            self._logger.info("FAIL: First byte of status frame should be " + hex(SCI_TM ^ MODE1<<4) + ", is: " + hex(frame[0]))
+        else:
+            self._logger.info("OK: First byte of status frame is " + hex(SCI_TM ^ MODE1<<4))
+        if self.check_checksum(frame):
+            self._logger.info("FAIL: Checksum not correct")
+        else:
+            self._logger.info("OK: Checksum correct")
+        if len(frame) != 92:
+            self._logger.info("FAIL: Length of frame should be 92, is: " + str(len(frame)))
+        else:
+            self._logger.info("OK: Length of frame is 92")
+
+        # Request ‘STATUS’ packet
+        self._logger.info("Requesting Status Packet...")
+        self.request_status()
+        self.wait_for_frame()
+        frame = self.get_frame()
+        self._logger.info("RECEIVED:\n"+ self.frame_to_string(frame))
+        frame = decode_kiss_frame(frame)
+        if frame[0] != STATUS:
+            self._logger.info("FAIL: First byte of status frame should be " + hex(STATUS) + ", is: " + hex(frame[0]))
+        else:
+            self._logger.info("OK: First byte of status frame is " + hex(STATUS))
+        if self.check_checksum(frame):
+            self._logger.info("FAIL: Checksum not correct")
+        else:
+            self._logger.info("OK: Checksum correct")
+        if len(frame) != 7:
+            self._logger.info("FAIL: Length of frame should be 7")
+        else:
+            self._logger.info("OK: Length of frame is 7")
+
+        # Send NACK to receive ‘STATUS’ packet again
+        self._logger.info("Sending NACK to receive Status packet...")
+        self.send_nack()
+        self.wait_for_frame()
+        frame = self.get_frame()
+        self._logger.info("RECEIVED:\n"+ self.frame_to_string(frame))
+        frame = decode_kiss_frame(frame)
+        if frame[0] != STATUS:
+            self._logger.info("FAIL: First byte of status frame should be " + hex(STATUS) + ", is: " + hex(frame[0]))
+        else:
+            self._logger.info("OK: First byte of status frame is " + hex(STATUS))
+        if self.check_checksum(frame):
+            self._logger.info("FAIL: Checksum not correct")
+        else:
+            self._logger.info("OK: Checksum correct")
+        if len(frame) != 7:
+            self._logger.info("FAIL: Length of frame should be 7")
+        else:
+            self._logger.info("OK: Length of frame is 7")
+
+        # Send ‘TIME’ command 
+        # Check if ACK is received.
+        # Send ‘STATUS’ to check if time was updated.
+        # Note: time will be updated only after next SCI_TM packet was sent.
+        self.send_time(0x12345678)
+        self.wait_for_frame()
+        frame = self.get_frame()
+        self._logger.info("RECEIVED:\n"+ self.frame_to_string(frame))
+        frame = decode_kiss_frame(frame)
+        if frame[0] != ACK:
+            self._logger.info("FAIL: expected " + hex(ACK) + ", received: " + hex(frame[0]))
+        else:
+            self._logger.info("OK: received ACK: " + hex(ACK))
+        self.wait_for_frame()
+        frame = self.get_frame()
+        self._logger.info("RECEIVED:\n"+ self.frame_to_string(frame))
+        frame = decode_kiss_frame(frame)
+        new_time = int.from_bytes(frame[1:5],  byteorder="big")
+        if new_time < 0x12345678:
+            self._logger.info("FAIL: expected new time > " + hex(0x12345678) + ", is: " + frame[1:5].hex())
+        else:
+            self._logger.info("OK: new time is " + frame[1:5].hex())
+
+
+
 
 def main():
     ki = KISS(port='com8', speed='38400', pirate=False)
@@ -238,6 +348,8 @@ def main():
         #wait
     #ki.simpleread()
         #port.close()
+    #sr_read_thread._stop().set()
+    #ki.interface.close()    
 
 
 if __name__ == '__main__':

@@ -1,4 +1,6 @@
 from kiss_constants import *
+from crc8 import calculateCRC8
+
 # "FEND is sent as FESC, TFEND"
 FESC_TFEND = b''.join([FESC, TFEND])
 
