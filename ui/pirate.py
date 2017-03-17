@@ -78,8 +78,7 @@ class KISS(object):
         _console_handler.setFormatter(LOG_FORMAT)
         _logger.addHandler(_console_handler)
         _logger.propagate = False
-
-
+         
     def __init__(self, port=None, speed=None, pirate=False):
         """
         Initialises the serial interface
@@ -232,7 +231,12 @@ class KISS(object):
         string = string[:-1]
         return string
 
-    def full_functional_test(self):
+    def full_functional_test(self, filename="Functional_test.txt"):
+        _file_handler = logging.FileHandler(filename)
+        _file_handler.setLevel(LOG_LEVEL)
+        _file_handler.setFormatter(LOG_FORMAT)
+        self._logger.addHandler(_file_handler)
+        self._logger.propagate = False
         # receive power-on status packet
         errors = 0
         tests = 0 
@@ -623,7 +627,7 @@ class KISS(object):
         self._logger.info("Found " + str(errors) + " errors")
 
 def main():
-    ki = KISS(port='com8', speed='38400', pirate=False)
+    ki = KISS(port='com9', speed='38400', pirate=False)
     ki.start()
 
     sr_read_thread = threading.Thread(target=ki.simpleread)
