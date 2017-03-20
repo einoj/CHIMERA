@@ -336,7 +336,7 @@ class KISS(object):
             self._logger.info("OK: Length of frame is 7\n")
 
         # Send random bytes and check if NACK was received.
-        self._logger.info("TEST checklist #9\n________________________________________________________________________________")
+        self._logger.info("TEST #7 Send random bytes and check if NACK was received.\n________________________________________________________________________________")
         tests += 1
         frame = randint(99999,99999999999999)
         self._logger.info("SENDING random bytes: "+ hex(frame))
@@ -355,7 +355,7 @@ class KISS(object):
 
         #Check if commands are properly interpreted when KISS formatting has to be applied.
         #This should not be accepted:
-        self._logger.info("TEST checklist #12 Check if commands are properly interpreted when KISS formatting has to be applied\n________________________________________________________________________________")
+        self._logger.info("TEST checklist #8 Check if commands are properly interpreted when KISS formatting has to be applied\n________________________________________________________________________________")
         tests += 1
         frame = [0xC0, 0x07, 0x01, 0x00, 0xC0, 0x47, 0xC0]
         frame = bytes(frame)
@@ -451,7 +451,7 @@ class KISS(object):
         else:
             self._logger.info("OK: received ACK: " + hex(frame[0])+'\n')
         
-        self._logger.info("TEST checklist #13 Send empty KISS frame\n________________________________________________________________________________")
+        self._logger.info("TEST checklist #9 Send empty KISS frame\n________________________________________________________________________________")
         tests += 1
         frame = [0xc0, 0xc0]
         frame = bytes(frame)
@@ -467,7 +467,7 @@ class KISS(object):
         else:
             self._logger.info("OK: received NACK: " + hex(frame[0])+'\n')
 
-        self._logger.info("TEST checklist #14 Send very long random frame\n________________________________________________________________________________")
+        self._logger.info("TEST checklist #10 Send very long random frame\n________________________________________________________________________________")
         tests += 1
         frame = b''
         for i in range(10):
@@ -487,7 +487,7 @@ class KISS(object):
             else:
                 self._logger.info("OK: received NACK: " + hex(frame[0])+'\n')
 
-        self._logger.info("TEST checklist #15 Send two frames merged into one KISS formatting\n________________________________________________________________________________")
+        self._logger.info("TEST checklist #11 Send two frames merged into one KISS formatting\n________________________________________________________________________________")
         tests += 1
         frame = [0xC0, 0x01, 0x01, 0x12, 0xC0]
         frame = bytes(frame)
@@ -513,7 +513,7 @@ class KISS(object):
         else:
             self._logger.info("OK: Length of frame is 92\n")
 
-        self._logger.info("TEST checklist #16 Send babbling idiot frame\n________________________________________________________________________________")
+        self._logger.info("TEST checklist #12 Send babbling idiot frame\n________________________________________________________________________________")
         tests += 1
         frame = 10*[0xC0, 0xC0]
         frame = bytes(frame)
@@ -551,7 +551,7 @@ class KISS(object):
         # Check if ACK is received.
         # Send ‘STATUS’ to check if time was updated.
         # Note: time will be updated only after next SCI_TM packet was sent.
-        self._logger.info("TEST checklist #12 Send 'TIME' command and Send 'STATUS' to check if time was updated.\n________________________________________________________________________________")
+        self._logger.info("TEST checklist #13 Send 'TIME' command and Send 'STATUS' to check if time was updated.\n________________________________________________________________________________")
         tests += 1
         self.send_time(0x12345678, verbose=True)
         self.wait_for_frame()
@@ -578,7 +578,7 @@ class KISS(object):
         else:
             self._logger.info("OK: new time is " + frame[1:5].hex()+'\n')
 
-        self._logger.info("TEST checklist #X Check that all memories have been tested and that none of them has errors.\n________________________________________________________________________________")
+        self._logger.info("TEST checklist #14 Check that all memories have been tested and that none of them have errors.\n________________________________________________________________________________")
         tests += 1
         tmp_errors = errors
         for i in range(12):
@@ -603,7 +603,7 @@ class KISS(object):
               errors += 1
         if tmp_errors == errors:
             self._logger.info("OK: All memories functioning as expected\n")
-        self._logger.info("TEST checklist #18 Set MODE 2 to test only 6 SRAMs\n________________________________________________________________________________")
+        self._logger.info("TEST checklist #16 Set MODE 2 to test only 6 SRAMs\n________________________________________________________________________________")
         tests += 1
         frame = [0xC0, 0x07, 0x02, 0x0f, 0xDB, 0xDC, 0x39, 0xC0]
         frame = bytes(frame)
