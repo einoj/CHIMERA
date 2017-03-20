@@ -551,7 +551,7 @@ class KISS(object):
         # Check if ACK is received.
         # Send ‘STATUS’ to check if time was updated.
         # Note: time will be updated only after next SCI_TM packet was sent.
-        self._logger.info("TEST checklist #12 Check if commands are properly interpreted when KISS formatting has to be applied\n________________________________________________________________________________")
+        self._logger.info("TEST checklist #12 Send 'TIME' command and Send 'STATUS' to check if time was updated.\n________________________________________________________________________________")
         tests += 1
         self.send_time(0x12345678, verbose=True)
         self.wait_for_frame()
@@ -577,6 +577,31 @@ class KISS(object):
         else:
             self._logger.info("OK: new time is " + frame[1:5].hex()+'\n')
 
+        self._logger.info("TEST checklist #X Check that all memories have been tested and that none of them has errors.\n________________________________________________________________________________")
+        tests += 1
+        tmp_errors = errors
+        for i in range(12):
+            sub_frame = frame[(i+1)*7:(i+1)*7+7]
+            if sub_frame[0] < 1:
+              self._logger.info("FAIL: "+str(sub_frame[0])+" cycles on memory u" + str(i+1))
+              errors += 1
+            if sub_frame[1] != 0:
+              self._logger.info("FAIL: "+str(sub_frame[1])+"SEUs in memory u" + str(i+1))
+              errors += 1
+            if sub_frame[2] != 0:
+              self._logger.info("FAIL: "+str(sub_frame[2])+" MBUs in memory u" + str(i+1))
+              errors += 1
+            if sub_frame[3] != 0: 
+              self._logger.info("FAIL: "+str(sub_frame[3])+" LUs in memory u" + str(i+1))
+              errors += 1
+            if sub_frame[4] != 0:
+              self._logger.info("FAIL: "+str(sub_frame[4])+" timeout SEFIs in memory u" + str(i+1))
+              errors += 1
+            if sub_frame[5] != 0:
+              self._logger.info("FAIL: "+str(sub_frame[5])+" RW SEFIs in memory u" + str(i+1))
+              errors += 1
+        if tmp_errors == errors:
+            self._logger.info("OK: All memories functioning as expected\n")
         self._logger.info("TEST checklist #18 Set MODE 2 to test only 6 SRAMs\n________________________________________________________________________________")
         tests += 1
         frame = [0xC0, 0x07, 0x02, 0x0f, 0xDB, 0xDC, 0x39, 0xC0]
