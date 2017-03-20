@@ -563,6 +563,7 @@ class KISS(object):
             errors += 1
         else:
             self._logger.info("OK: received ACK: " + hex(ACK))
+        self._logger.info("Waiting for next SCI_TM frame..")
         self.wait_for_frame()
         self.get_frame()
         self.request_sci_tm(verbose=True)
@@ -617,7 +618,7 @@ class KISS(object):
             errors += 1
         else:
             self._logger.info("OK: received ACK: " + hex(frame[0])+'\n')
-        self._logger.info("Waiting for next SCI_TM frame to check if mode changed correctly")
+        self._logger.info("Waiting for next SCI_TM frame to check if mode changed correctly...")
         self.wait_for_frame()
         frame = self.get_frame()
         self.request_sci_tm(verbose=True)
