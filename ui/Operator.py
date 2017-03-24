@@ -15,12 +15,13 @@ from PyQt5.QtWidgets import (QWidget, QPushButton,
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import (QThread, pyqtSignal, QObject)
 from PyQt5 import uic
-from pirate import KISS, NACK, STATUS, SCI_TM
+from kiss import *
+from kiss_uart import KISS, NACK, STATUS, SCI_TM
 from kiss_constants import *
 from kiss_tnc import *
 
 class Communicate(QObject):
-    gui_signal = pyqtSignal(bytes)
+    gui_signal = pyqtSignal(list)
 
 def frame_thread(callbackFunc):
     mySrc = Communicate()
@@ -30,6 +31,7 @@ def frame_thread(callbackFunc):
         if not ki.frame_queue.empty():
             frame = ki.get_frame()
             mySrc.gui_signal.emit(frame)
+        sleep(0.05)
 
 class GroundSoftware(QWidget):
     
@@ -112,26 +114,33 @@ class GroundSoftware(QWidget):
         self.show()
         self.start_frame_thread()
 
-    def update_frame_view_callback(self, frame):
+    def handle_frame(self, frame):
         if len(frame) > 2:
-            self.lastFrame.insertPlainText(''.join(["0x%02x "% byte for byte in frame])+'\n\n')
-            ki._logger.debug(frame)
-            if frame[0] == CHI_COMM_ID_SCI_TM:
-                self.handle_SCI_TM_frame(frame[1:])
-            elif frame[0] == CHI_COMM_ID_STATUS:
-                self.handle_status_frame(frame[1:])
+            self.lastFrame.insertPlainText(ki.frame_to_string(frame) + '\n\n')
+            ki._logger.debug(ki.frame_to_string(frame))
+            byte_frame = decode_kiss_frame(frame)
+            checksum = ki.check_checksum(byte_frame)
+            if checksum != 0:
+                #bad checksum, request packet again
+                ki._logger.debug("Bad packet, Request previous")
+                self.get_prev()
+                return -1
+            if byte_frame[0]&0x0F == CHI_COMM_ID_SCI_TM:
+                self.handle_SCI_TM_frame(byte_frame)
+            elif byte_frame[0] == CHI_COMM_ID_STATUS:
+                self.handle_status_frame(byte_frame)
 
     def start_frame_thread(self):
         ## Oops! should use signals and slots, not interact directly
-        t = threading.Thread(name = 'frame_thread', target=frame_thread, args = (self.update_frame_view_callback,))
+        t = threading.Thread(name = 'frame_thread', target=frame_thread, args = (self.handle_frame,))
         ##t.daemon = True # stop when main thread stops
         t.start()
 
     def handle_status_frame(self,frame):
-        self.chi_status.SOFTWARE_VERSION = frame[0]
-        self.chi_status.reset_type = frame[1]
-        self.chi_status.device_mode = frame[2]
-        self.chi_status.no_cycles = int.from_bytes(frame[3:5],byteorder='big')    
+        self.chi_status.SOFTWARE_VERSION = frame[1]
+        self.chi_status.reset_type = frame[2]
+        self.chi_status.device_mode = frame[3]
+        self.chi_status.no_cycles = int.from_bytes(frame[4:6],byteorder='big')    
 
         self.SOFTWARE_VERSION.setText("CHIMERA Software: V."+str(self.chi_status.SOFTWARE_VERSION))
         self.reset_type.setText("Reset type: "+str(self.chi_status.reset_type))
@@ -139,15 +148,14 @@ class GroundSoftware(QWidget):
         self.no_cycles.setText("Number of Cycles: " + str(self.chi_status.no_cycles))
 
     def handle_SCI_TM_frame(self, frame):
-        self.chi_sci_tm.local_time = int.from_bytes(frame[:4],byteorder='big')    
-        self.chi_sci_tm.mem_to_test = int.from_bytes(frame[4:6],byteorder='big')    
+        self.chi_sci_tm.local_time = int.from_bytes(frame[1:5],byteorder='big')    
+        self.chi_sci_tm.mem_to_test = int.from_bytes(frame[5:7],byteorder='big')    
         #for i in range(1,13):
         #    self.chi_sci_tm.no_SEU[i-1] = frame[5*i]
-
-        self.local_time.setText("CHIMERA time: " + str(self.chi_sci_tm.local_time)) 
+        self.local_time.setText("CHIMERA time: " + str(self.chi_sci_tm.local_time) + " ms") 
         ki._logger.debug(len(frame))
-        memories_lower = frame[4]
         memories_upper = frame[5]
+        memories_lower = frame[6]
         for i in range(0,8):
             if (memories_lower>>i & 1):
                 self.leds[i].setStyleSheet("QWidget { background-color: %s }" %  
@@ -214,9 +222,9 @@ class GroundSoftware(QWidget):
             gridlayout.addWidget(self.checkboxes[i],2,i,1,1)
 
 if __name__ == '__main__':
-    
-    ki = KISS(port='com7', speed='115200', pirate=True)
+    ki = KISS(port='com8', speed='38400', pirate=False)
     ki.start()
+
     sr_read_thread = threading.Thread(target=ki.simpleread)
     sr_read_thread.daemon = True # stop when main thread stops
     sr_read_thread.start()
