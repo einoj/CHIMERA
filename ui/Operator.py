@@ -11,8 +11,8 @@ import sys
 import threading
 from time import sleep
 from PyQt5.QtWidgets import (QWidget, QPushButton, 
-    QFrame, QApplication, QLabel, QTextEdit, QGridLayout, QHBoxLayout, QVBoxLayout, QCheckBox, QComboBox)
-from PyQt5.QtGui import QColor
+    QFrame, QApplication, QLabel, QTextEdit, QGridLayout, QHBoxLayout, QVBoxLayout, QCheckBox, QComboBox, QTableWidget)
+from PyQt5.QtGui import QColor 
 from PyQt5.QtCore import (QThread, pyqtSignal, QObject)
 from PyQt5 import uic
 from kiss import *
@@ -102,11 +102,19 @@ class GroundSoftware(QWidget):
         middle_box.addLayout(sub_middle_box)
         middle_box.addLayout(led_grid)
 
-        mainLayout = QHBoxLayout(self)
+        dataTable = QTableWidget()
+        dataTable.setRowCount(13)
+        dataTable.setColumnCount(5)
 
-        mainLayout.addLayout(button_box)
-        mainLayout.addLayout(middle_box)
-        mainLayout.addWidget(self.lastFrame)
+        infoBoxes = QHBoxLayout()
+        infoBoxes.addLayout(button_box)
+        infoBoxes.addLayout(middle_box)
+        infoBoxes.addWidget(self.lastFrame)
+
+        mainLayout = QVBoxLayout(self)
+
+        mainLayout.addLayout(infoBoxes)
+        mainLayout.addWidget(dataTable)
 
         self.setGeometry(300, 300, 600, 200)
         self.setWindowTitle('Toggle button')
@@ -189,7 +197,7 @@ class GroundSoftware(QWidget):
         for i in range(8,12):
             if (self.checkboxes[i].isChecked()):
                 memories_upper |= (1<<(i-8))
-        frame += bytes([memories_lower, memories_upper])
+        frame += bytes([memories_upper, memories_lower])
         ki._logger.debug(frame)
         ki.write(frame)
 
