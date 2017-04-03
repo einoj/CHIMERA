@@ -11,7 +11,7 @@ import sys
 import threading
 from time import sleep
 from PyQt5.QtWidgets import (QWidget, QPushButton, 
-    QFrame, QApplication, QLabel, QTextEdit, QGridLayout, QHBoxLayout, QVBoxLayout, QCheckBox, QComboBox, QTableWidget)
+    QFrame, QApplication, QLabel, QTextEdit, QGridLayout, QHBoxLayout, QVBoxLayout, QCheckBox, QComboBox, QTableWidget, QTableWidgetItem)
 from PyQt5.QtGui import QColor 
 from PyQt5.QtCore import (QThread, pyqtSignal, QObject)
 from PyQt5 import uic
@@ -102,9 +102,16 @@ class GroundSoftware(QWidget):
         middle_box.addLayout(sub_middle_box)
         middle_box.addLayout(led_grid)
 
-        dataTable = QTableWidget()
-        dataTable.setRowCount(13)
-        dataTable.setColumnCount(5)
+        self.dataTable = QTableWidget()
+        self.dataTable.setRowCount(12)
+        self.dataTable.setColumnCount(7)
+        table_labels = ["Cycles", "MBUs", "SEUs", "SELs", "R/W SEFIs", "Timeout SEFIs", "Current"]
+        for i, label in enumerate(table_labels):
+            self.dataTable.setHorizontalHeaderItem(i,QTableWidgetItem(label))
+        for i in range(0,12):
+            self.dataTable.setVerticalHeaderItem(i,QTableWidgetItem("mem"+str(i+1)))
+
+        self.update_data_table()
 
         infoBoxes = QHBoxLayout()
         infoBoxes.addLayout(button_box)
@@ -114,9 +121,9 @@ class GroundSoftware(QWidget):
         mainLayout = QVBoxLayout(self)
 
         mainLayout.addLayout(infoBoxes)
-        mainLayout.addWidget(dataTable)
+        mainLayout.addWidget(self.dataTable)
 
-        self.setGeometry(300, 300, 600, 200)
+        self.setGeometry(100, 100, 800, 850)
         self.setWindowTitle('Toggle button')
         self.setLayout(mainLayout)
         self.show()
@@ -178,6 +185,29 @@ class GroundSoftware(QWidget):
             else:
                 self.leds[i].setStyleSheet("QWidget { background-color: %s }" %  
                     self.red.name())
+        memory_data = frame[7:-1]
+         
+        #iterates over 12 values
+        for i in range(0,7*12,7):
+            new_data = memory_data[i:i+7]
+            idx = i//7
+            for j in range(6):
+                delta = 0
+                if new_data[j] < self.chi_sci_tm.prev_data[idx][j]:
+                    delta = 255-self.chi_sci_tm.prev_data[idx][j]+new_data[j]+1
+                else:
+                    delta = new_data[j] - self.chi_sci_tm.prev_data[idx][j]
+                self.chi_sci_tm.curr_data[idx][j] += delta
+            self.chi_sci_tm.curr_data[idx][6] = new_data[6]
+            self.chi_sci_tm.prev_data[idx] = new_data
+
+        self.update_data_table()
+
+
+    def update_data_table(self):
+        for i, row in enumerate(self.chi_sci_tm.curr_data):
+            for j, col in enumerate(row):
+                self.dataTable.setItem(i,j,QTableWidgetItem(str(col)))
 
     def set_mode(self):
         frame = b'\x07'

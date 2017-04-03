@@ -1,3 +1,4 @@
+import numpy as np
 
 class CHI_STATUS: 
 
@@ -11,17 +12,8 @@ class CHI_SCI_TM:
     def __init__(self):
         self.local_time = 0
         self.mem_to_test = 0
-
-        self.no_SEU = [ ]
-        self.no_LU = [ ]
-        self.no_SEFI_timeout  = [ ]
-        self.no_SEFI_rw_error = [ ]
-        self.no_SEFI_current1 = [ ]
         
-        for i in range(12):
-            self.no_SEU.append(0)
-            self.no_LU.append(0)
-            self.no_SEFI_timeout.append(0)
-            self.no_SEFI_rw_error.append(0)
-            self.no_SEFI_current1.append(0)
-	
+        self.prev_data = 12*[b'\x00\x00\x00\x00\x00\x00\x00']
+        # current_data contains no_cycles, no_SEU, no_MBU, no_LU, no_SEFI_timeout, no_SEFI_rw_error, no_SEFI_current
+        self.curr_data= np.zeros([12,7],dtype=int) #12*[7*[0]]
+
