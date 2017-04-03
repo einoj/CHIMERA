@@ -25,6 +25,7 @@ from math import ceil
 
 # logger constants
 LOG_LEVEL = logging.DEBUG
+LOG_LEVEL_CRI = logging.CRITICAL
 #LOG_FORMAT = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 LOG_FORMAT = logging.Formatter('%(asctime)s %(message)s')
 

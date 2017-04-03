@@ -16,7 +16,7 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtCore import (QThread, pyqtSignal, QObject)
 from PyQt5 import uic
 from kiss import *
-from kiss_uart import KISS, NACK, STATUS, SCI_TM
+from kiss_uart import *
 from kiss_constants import *
 from kiss_tnc import *
 
@@ -132,7 +132,7 @@ class GroundSoftware(QWidget):
     def handle_frame(self, frame):
         if len(frame) > 2:
             self.lastFrame.insertPlainText(ki.frame_to_string(frame) + '\n\n')
-            ki._logger.debug(ki.frame_to_string(frame))
+            ki._logger.critical(ki.frame_to_string(frame))
             byte_frame = decode_kiss_frame(frame)
             checksum = ki.check_checksum(byte_frame)
             if checksum != 0:
@@ -262,6 +262,13 @@ class GroundSoftware(QWidget):
 if __name__ == '__main__':
     ki = KISS(port='com8', speed='38400', pirate=False)
     ki.start()
+
+    filename="Frames.txt"
+    _file_handler = logging.FileHandler(filename)
+    _file_handler.setLevel(LOG_LEVEL_CRI)
+    _file_handler.setFormatter(LOG_FORMAT)
+    ki._logger.addHandler(_file_handler)
+    ki._logger.propagate = False
 
     sr_read_thread = threading.Thread(target=ki.simpleread)
     sr_read_thread.daemon = True # stop when main thread stops
