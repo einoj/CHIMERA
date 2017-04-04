@@ -69,6 +69,7 @@ uint8_t read_memory(uint8_t mem_idx) {
     uint8_t page_SEUs; //SEU errors
     uint8_t page_MBUs; //SEU errors
     uint32_t addr;
+    uint8_t orig_value;
 
 	CHI_Memory_Status[mem_idx].current1=ADC_Median>>2; // Reading bias current measurement
 
@@ -116,6 +117,7 @@ uint8_t read_memory(uint8_t mem_idx) {
 	
             if ((buf[j] ^ pattern[ptr_idx]) != 0) {
                 if (CHI_Board_Status.latch_up_detected==1) return 0xAC;
+                orig_value=buf[j];
 
                 buf[j] ^= pattern[ptr_idx];
                 if (buf[j] == 0x80 || buf[j] == 0x40 || buf[j] == 0x20 || buf[j] == 0x10 || buf[j] == 0x08 || buf[j] == 0x04 || buf[j] == 0x02 || buf[j] == 0x01) {
@@ -137,7 +139,7 @@ uint8_t read_memory(uint8_t mem_idx) {
                     Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
                     Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
                     Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
-                    Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
+                    Memory_Events[CHI_Board_Status.Event_cnt].value = orig_value;
                     CHI_Board_Status.Event_cnt++;
                 }
 
