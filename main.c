@@ -68,7 +68,7 @@ uint8_t read_memory(uint8_t mem_idx) {
     uint8_t ptr_idx = 0; // because the order of the pattern changes per page
     uint8_t page_SEUs; //SEU errors
     uint8_t page_MBUs; //SEU errors
-    //uint32_t addr;
+    uint32_t addr;
 
 	CHI_Memory_Status[mem_idx].current1=ADC_Median>>2; // Reading bias current measurement
 
@@ -130,48 +130,36 @@ uint8_t read_memory(uint8_t mem_idx) {
                     CHI_Memory_Status[mem_idx].no_MBU++;
                     
                     // page_number*pagesize + address in page
-                    //addr = i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
 
                     // WARNING THERE IS PROBABLY A WAY THAT THIS CAN CAUSE OUTOF BOUNDS WRITES
                 }
+
+                if (CHI_Board_Status.Event_cnt<CHI_NUM_EVENT-1) {
+                    addr = i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
+                    Memory_Events[CHI_Board_Status.Event_cnt].memory_id = mem_idx;
+                    Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
+                    Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
+                    Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
+                    Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
+                    CHI_Board_Status.Event_cnt++;
+                }
+
                 if (page_SEUs+page_MBUs > 15) {
                   // remove the last page_size errors and store a SEFI
                   CHI_Memory_Status[mem_idx].no_SEU -= page_SEUs;
                   CHI_Memory_Status[mem_idx].no_MBU -= page_MBUs;
                   CHI_Memory_Status[mem_idx].no_SEFI_wr_error++;
                   CHI_Memory_Status[mem_idx].no_SEFI_seq++;
-                  //CHI_Board_Status.Event_cnt -= CHI_NUM_EVENT-1;
-                 // if (CHI_Board_Status.Event_cnt > CHI_NUM_EVENT-1) { //OVERFLOW 
-                 //  CHI_Board_Status.Event_cnt = 0;  // All stored data now delted
-                 // }
-
-                 // Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
-                 // Memory_Events[CHI_Board_Status.Event_cnt].memory_id = 0x80 | mem_idx; //1 in upper memory bit signifies a SEFI
-                 // Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
-                 // Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
-                 // Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
-                 // Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
-                 // CHI_Board_Status.Event_cnt++;
+                  
+                  transmit_CHI_EVENTS();
                   return 1;
                 }
-
-                /*
-               // else if (CHI_Board_Status.Event_cnt < CHI_NUM_EVENT) {
-               //   Memory_Events[CHI_Board_Status.Event_cnt].timestamp = CHI_Board_Status.local_time;
-               //   Memory_Events[CHI_Board_Status.Event_cnt].memory_id = mem_idx;
-               //   Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
-               //   Memory_Events[CHI_Board_Status.Event_cnt].addr2 = (uint8_t) (addr>>8);
-               //   Memory_Events[CHI_Board_Status.Event_cnt].addr3 = (uint8_t) (addr>>16);
-               //   Memory_Events[CHI_Board_Status.Event_cnt].value = buf[j];
-               //   CHI_Board_Status.Event_cnt++;
-               // }
-                
-                else {
-                    //TODO transmit data when EVENT table if full
-                    }
-                    */
             }
             ptr_idx ^= 0x01;
+        }
+        // Transmit status Event packet at end of page check
+        if (CHI_Board_Status.Event_cnt > 0) {
+            transmit_CHI_EVENTS();
         }
     }
 					

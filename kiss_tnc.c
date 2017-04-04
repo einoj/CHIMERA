@@ -201,8 +201,6 @@ uint8_t decode_dataframe(uint8_t* dataframe)
    return j;
 }
 
-
-/*
 void transmit_CHI_EVENTS() {
     uint8_t checksum = 0; // Used to store the crc8 checksum
     uint8_t data; // Used to temporarily hold bytes of multibyte variables
@@ -211,11 +209,25 @@ void transmit_CHI_EVENTS() {
     data = (uint8_t) CHI_COMM_ID_EVENT;
     checksum = _crc8_ccitt_update(checksum,data);
     transmit_kiss(data);
+    //
+    // Send On Board TIME stamp
+    data = (uint8_t) (CHI_Board_Status.local_time>>24);
+    checksum = _crc8_ccitt_update(checksum, data);
+    transmit_kiss(data);
+
+    data = (uint8_t) (CHI_Board_Status.local_time>>16);
+    checksum = _crc8_ccitt_update(checksum, data);
+    transmit_kiss(data);
+
+    data = (uint8_t) (CHI_Board_Status.local_time>>8);
+    checksum = _crc8_ccitt_update(checksum, data);
+    transmit_kiss(data);
+
+    data = (uint8_t) (CHI_Board_Status.local_time);
+    checksum = _crc8_ccitt_update(checksum, data);
+    transmit_kiss(data);
+
     for (uint16_t i = 0; i < CHI_Board_Status.Event_cnt; i++) {
-        // send timestamp 
-			  data =  Memory_Events[i].timestamp;
-        checksum = _crc8_ccitt_update(checksum, data);
-        transmit_kiss(data);
         // Send Memory_id
         data =  Memory_Events[i].memory_id;
         checksum = _crc8_ccitt_update(checksum, data);
@@ -246,7 +258,6 @@ void transmit_CHI_EVENTS() {
   //TODO wait for ack before setting num_events to 0
   CHI_Board_Status.Event_cnt = 0;
 }
-*/
 
 void transmit_CHI_STATUS() {
 	uint8_t checksum = 0; // Used to store the crc8 checksum
