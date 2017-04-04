@@ -128,13 +128,10 @@ uint8_t read_memory(uint8_t mem_idx) {
                     page_MBUs++;
                     CHI_Board_Status.mem_reprog |= (1<<mem_idx);
                     CHI_Memory_Status[mem_idx].no_MBU++;
-                    
-                    // page_number*pagesize + address in page
-
-                    // WARNING THERE IS PROBABLY A WAY THAT THIS CAN CAUSE OUTOF BOUNDS WRITES
                 }
 
                 if (CHI_Board_Status.Event_cnt<CHI_NUM_EVENT-1) {
+                    // page_number*pagesize + address in page
                     addr = i*mem_arr[mem_idx].page_size + j; //calculate the address of the SEU
                     Memory_Events[CHI_Board_Status.Event_cnt].memory_id = mem_idx;
                     Memory_Events[CHI_Board_Status.Event_cnt].addr1 = (uint8_t) (addr);
