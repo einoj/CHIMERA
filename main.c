@@ -169,7 +169,7 @@ uint8_t read_memory(uint8_t mem_idx) {
 void Power_On_Init() {
     CHI_Board_Status.device_mode = 0x01;
     CHI_Board_Status.latch_up_detected = 0;
-    CHI_Board_Status.mem_to_test = 0x0FFF;//0x0FC7;// 0b0000000001000000;// 0x01C0; // 0x0FA7 9 memories
+    CHI_Board_Status.mem_to_test = 0x001;//0x0FC7;// 0b0000000001000000;// 0x01C0; // 0x0FA7 9 memories
     CHI_Board_Status.mem_reprog = 0x0000;
     CHI_Board_Status.no_cycles = 0;
     CHI_Board_Status.program_sram = 1;	// The SRAMs need to be reprogrammed when set to mode 2, this variable will be set to 1 when the mode changes
