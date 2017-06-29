@@ -181,7 +181,7 @@ class KISS(object):
             checksum = 0
             for i in frame:
                 checksum = calculateCRC8(checksum,int.from_bytes(i, byteorder='little'))
-            self._logger.debug(frame)
+            self._logger.debug(frame) 
         
     def get_frame(self):
         if not self.frame_queue.empty():

@@ -19,6 +19,7 @@ from kiss import *
 from kiss_uart import *
 from kiss_constants import *
 from kiss_tnc import *
+LOG_FORMAT_FILE = logging.Formatter('%(message)s')
 
 class Communicate(QObject):
     gui_signal = pyqtSignal(list)
@@ -132,7 +133,7 @@ class GroundSoftware(QWidget):
     def handle_frame(self, frame):
         if len(frame) > 2:
             self.lastFrame.insertPlainText(ki.frame_to_string(frame) + '\n\n')
-            ki._logger.critical(ki.frame_to_string(frame))
+            ki._logger.critical("c0 " + ki.frame_to_string(frame) + " c0")
             byte_frame = decode_kiss_frame(frame)
             checksum = ki.check_checksum(byte_frame)
             if checksum != 0:
@@ -260,13 +261,13 @@ class GroundSoftware(QWidget):
             gridlayout.addWidget(self.checkboxes[i],2,i,1,1)
 
 if __name__ == '__main__':
-    ki = KISS(port='com8', speed='38400', pirate=False)
+    ki = KISS(port='com10', speed='38400', pirate=False)
     ki.start()
 
     filename="Frames.txt"
     _file_handler = logging.FileHandler(filename)
     _file_handler.setLevel(LOG_LEVEL_CRI)
-    _file_handler.setFormatter(LOG_FORMAT)
+    _file_handler.setFormatter(LOG_FORMAT_FILE)
     ki._logger.addHandler(_file_handler)
     ki._logger.propagate = False
 

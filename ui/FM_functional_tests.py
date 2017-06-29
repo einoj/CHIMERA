@@ -1,14 +1,14 @@
 from kiss_uart import *
 
 def main():
-    ki = KISS(port='com8', speed='38400', pirate=False)
+    ki = KISS(port='com9', speed='38400', pirate=False)
     ki.start()
 
     sr_read_thread = threading.Thread(target=ki.simpleread)
     sr_read_thread.daemon = True # stop when main thread stops
     sr_read_thread.start()
 
-    filename="Functional_test.txt"
+    filename="Functional_test_FM4.txt"
     _file_handler = logging.FileHandler(filename)
     _file_handler.setLevel(LOG_LEVEL)
     _file_handler.setFormatter(LOG_FORMAT)
