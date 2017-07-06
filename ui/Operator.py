@@ -132,6 +132,15 @@ class GroundSoftware(QWidget):
 
     def handle_frame(self, frame):
         if len(frame) > 2:
+            #log frame
+            with open("Binary_data.bin", "ab") as bin_file:
+                # Add kiss framing that was removed
+                bin_file.write(FEND)
+                # write all bin values in list to file
+                for byte in frame:
+                    bin_file.write(byte)
+                # Add kiss framing that was removed
+                bin_file.write(FEND)
             self.lastFrame.insertPlainText(ki.frame_to_string(frame) + '\n\n')
             ki._logger.critical("c0 " + ki.frame_to_string(frame) + " c0")
             byte_frame = decode_kiss_frame(frame)
@@ -261,7 +270,7 @@ class GroundSoftware(QWidget):
             gridlayout.addWidget(self.checkboxes[i],2,i,1,1)
 
 if __name__ == '__main__':
-    ki = KISS(port='com10', speed='38400', pirate=False)
+    ki = KISS(port='com8', speed='38400', pirate=False)
     ki.start()
 
     filename="Frames.txt"
