@@ -270,7 +270,7 @@ class GroundSoftware(QWidget):
             gridlayout.addWidget(self.checkboxes[i],2,i,1,1)
 
 if __name__ == '__main__':
-    ki = KISS(port='com8', speed='38400', pirate=False)
+    ki = KISS(port='com9', speed='38400', pirate=False)
     ki.start()
 
     filename="Frames.txt"
