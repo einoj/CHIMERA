@@ -413,8 +413,6 @@ int main(void)
                                 SPI_CYCLE();								
                                 CHI_Memory_Status[i].no_LU++;
                                 CHI_Board_Status.latch_up_detected=0;								
-                                // Double read memories to check FRAM SEUs
-                                read_memory(i);
                             }
                             else if (CHI_Board_Status.latch_up_detected==1) {			
                                 SPI_CYCLE();				
@@ -453,8 +451,6 @@ int main(void)
                                 SPI_CYCLE();								
                                 CHI_Memory_Status[i].no_LU++;
                                 CHI_Board_Status.latch_up_detected=0;								
-                                // Double read memories to check FRAM SEUs
-                                read_memory(i);
                             }
                             else if (CHI_Board_Status.latch_up_detected==1) {			
                                 SPI_CYCLE();				
@@ -480,8 +476,6 @@ int main(void)
                                 SPI_CYCLE();								
                                 CHI_Memory_Status[i].no_LU++;
                                 CHI_Board_Status.latch_up_detected=0;								
-                                // Double read memories to check FRAM SEUs
-                                read_memory(i);
                             }
                             else if (CHI_Board_Status.latch_up_detected==1) {			
                                 SPI_CYCLE();				
