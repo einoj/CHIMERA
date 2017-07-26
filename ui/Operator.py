@@ -10,9 +10,9 @@ author: Eino Oltedal
 import sys
 import threading
 from time import sleep
-from PyQt5.QtWidgets import (QWidget, QPushButton, 
-    QFrame, QApplication, QLabel, QTextEdit, QGridLayout, QHBoxLayout, QVBoxLayout, QCheckBox, QComboBox, QTableWidget, QTableWidgetItem)
-from PyQt5.QtGui import QColor 
+from PyQt5.QtWidgets import (QMainWindow, QWidget, QPushButton, 
+    QFrame, QApplication, QLabel, QTextEdit, QGridLayout, QHBoxLayout, QVBoxLayout, QCheckBox, QComboBox, QTableWidget, QTableWidgetItem, QMenuBar)
+from PyQt5 import QtGui 
 from PyQt5.QtCore import (QThread, pyqtSignal, QObject)
 from PyQt5 import uic
 from kiss import *
@@ -34,7 +34,7 @@ def frame_thread(callbackFunc):
             mySrc.gui_signal.emit(frame)
         sleep(0.05)
 
-class GroundSoftware(QWidget):
+class GroundSoftware(QMainWindow):
     
     def __init__(self, kiss_serial=None):
         super().__init__()
@@ -42,6 +42,12 @@ class GroundSoftware(QWidget):
         self.initUI()
         
     def initUI(self, kiss_serial=None):      
+        widget = QWidget(self)
+        self.setCentralWidget(widget)
+        menubar = self.menuBar()#QMenuBar()
+        fileMenu = menubar.addMenu('&File')
+        self.setWindowTitle('CHIMERA GUI')
+
         self.labels = [ ]
         self.leds = [ ]
         self.checkboxes = [ ]
@@ -56,8 +62,9 @@ class GroundSoftware(QWidget):
         self.local_time = QLabel("CHIMERA time: " + str(self.chi_sci_tm.local_time))
 
         self.ki = kiss_serial
-        self.red = QColor(255, 0, 0)       
-        self.green = QColor(0, 255, 0)
+        self.red = QtGui.QColor(255, 0, 0)       
+        self.green = QtGui.QColor(0, 255, 0)
+
 
         button_box = QVBoxLayout()
         status_b = QPushButton('Get Status', self)
@@ -114,19 +121,17 @@ class GroundSoftware(QWidget):
 
         self.update_data_table()
 
-        infoBoxes = QHBoxLayout()
-        infoBoxes.addLayout(button_box)
-        infoBoxes.addLayout(middle_box)
-        infoBoxes.addWidget(self.lastFrame)
+        self.infoBoxes = QHBoxLayout()
+        self.infoBoxes.addLayout(button_box)
+        self.infoBoxes.addLayout(middle_box)
+        self.infoBoxes.addWidget(self.lastFrame)
 
-        mainLayout = QVBoxLayout(self)
-
-        mainLayout.addLayout(infoBoxes)
-        mainLayout.addWidget(self.dataTable)
+        self.mainLayout = QVBoxLayout(self)
+        self.mainLayout.addLayout(self.infoBoxes)
+        self.mainLayout.addWidget(self.dataTable)
 
         self.setGeometry(100, 100, 800, 850)
-        self.setWindowTitle('CHIMERA GUI')
-        self.setLayout(mainLayout)
+        widget.setLayout(self.mainLayout)
         self.show()
         self.start_frame_thread()
 
@@ -268,6 +273,9 @@ class GroundSoftware(QWidget):
             checkbox = QCheckBox(self)
             self.checkboxes.append(checkbox)
             gridlayout.addWidget(self.checkboxes[i],2,i,1,1)
+
+    def exit_application(self):
+        sys.exit()
 
 if __name__ == '__main__':
     ki = KISS(port='com8', speed='38400', pirate=False)
