@@ -11,7 +11,9 @@ import sys
 import threading
 from time import sleep
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QPushButton, 
-    QFrame, QApplication, QLabel, QTextEdit, QGridLayout, QHBoxLayout, QVBoxLayout, QCheckBox, QComboBox, QTableWidget, QTableWidgetItem, QMenuBar)
+    QFrame, QApplication, QLabel, QTextEdit, QGridLayout, QHBoxLayout,
+    QVBoxLayout, QCheckBox, QComboBox, QTableWidget, QTableWidgetItem, 
+    QMenuBar, QAction, qApp)
 from PyQt5 import QtGui 
 from PyQt5.QtCore import (QThread, pyqtSignal, QObject)
 from PyQt5 import uic
@@ -42,11 +44,19 @@ class GroundSoftware(QMainWindow):
         self.initUI()
         
     def initUI(self, kiss_serial=None):      
+        self.setWindowTitle('CHIMERA GUI')
         widget = QWidget(self)
         self.setCentralWidget(widget)
-        menubar = self.menuBar()#QMenuBar()
+        menubar = self.menuBar()
+
+        # Menu functions
+        exitAction = QAction("&Exit", self)
+        exitAction.setShortcut('Ctrl+Q')
+        exitAction.setStatusTip('Exit application')
+        exitAction.triggered.connect(qApp.quit)
+
         fileMenu = menubar.addMenu('&File')
-        self.setWindowTitle('CHIMERA GUI')
+        fileMenu.addAction(exitAction)
 
         self.labels = [ ]
         self.leds = [ ]
@@ -65,7 +75,7 @@ class GroundSoftware(QMainWindow):
         self.red = QtGui.QColor(255, 0, 0)       
         self.green = QtGui.QColor(0, 255, 0)
 
-
+        # Buttons for controlling CHIMERA
         button_box = QVBoxLayout()
         status_b = QPushButton('Get Status', self)
         status_b.clicked[bool].connect(self.getStatus)
@@ -126,7 +136,7 @@ class GroundSoftware(QMainWindow):
         self.infoBoxes.addLayout(middle_box)
         self.infoBoxes.addWidget(self.lastFrame)
 
-        self.mainLayout = QVBoxLayout(self)
+        self.mainLayout = QVBoxLayout()
         self.mainLayout.addLayout(self.infoBoxes)
         self.mainLayout.addWidget(self.dataTable)
 
@@ -275,9 +285,10 @@ class GroundSoftware(QMainWindow):
             gridlayout.addWidget(self.checkboxes[i],2,i,1,1)
 
     def exit_application(self):
-        sys.exit()
+        sys.exit(app.exec_())
 
 if __name__ == '__main__':
+    exit_event = threading.Event()
     ki = KISS(port='com8', speed='38400', pirate=False)
     ki.start()
 
@@ -288,7 +299,7 @@ if __name__ == '__main__':
     ki._logger.addHandler(_file_handler)
     ki._logger.propagate = False
 
-    sr_read_thread = threading.Thread(target=ki.simpleread)
+    sr_read_thread = threading.Thread(target=ki.simpleread,daemon=True)
     sr_read_thread.daemon = True # stop when main thread stops
     sr_read_thread.start()
 
@@ -296,3 +307,4 @@ if __name__ == '__main__':
     ex = GroundSoftware(ki)
 
     sys.exit(app.exec_())
+    ki.stop()

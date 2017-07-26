@@ -94,6 +94,7 @@ class KISS(object):
         self._logger.debug("%s","INITIALIZING")
         self.frame_queue = Queue() #messages to be sent are put here, messages are read by sending thread
         self.decoded_frames = Queue()
+        self.stop_event = threading.Event()
 
         if pirate == True and self.port is not None and self.speed is not None:
             self.speed = 115200
@@ -107,13 +108,16 @@ class KISS(object):
         except Exception as e:
             print('I/O error({0}): {1}'.format(e.errno, e.strerror))
             print('Port cannot be opened')
-
+            return
         if 'buspirate' in self.interface_mode:
             # Setup bus pirate to serial bridge mode
             self.enter_buspirate_binarymode()
         elif 'serial' in self.interface_mode:
-            self._logger.debug('Connection OPEN! Speed='+str(self.speed)+' Port='+str(self.port)+' \n')
+            self._logger.debug('connection open! speed='+str(self.speed)+' port='+str(self.port)+' \n')
 
+    #def close(self):
+    #    self._logger.debug('connection closed!')
+    #    self.interface.close()
             
     def enter_buspirate_binarymode(self):
         self._logger.debug('Entering binary mode...\n')
@@ -157,7 +161,13 @@ class KISS(object):
             
     #reads bytes 
     def simpleread(self):
+        if self.interface == None:
+            self._logger.debug('UART interface is not Open!')
+            return
+
         while True:
+            if self.stop_event.is_set():
+                return
             read_data = self.interface.read(1)
             if read_data == FEND:
                 r_buffer = []
@@ -230,6 +240,9 @@ class KISS(object):
                 linewidth = 0
         string = string[:-1]
         return string
+
+    def stop(self):
+        self.stop_event.set()
 
 def main():
     ki = KISS(port='com8', speed='38400', pirate=False)
