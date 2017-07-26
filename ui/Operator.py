@@ -125,7 +125,7 @@ class GroundSoftware(QWidget):
         mainLayout.addWidget(self.dataTable)
 
         self.setGeometry(100, 100, 800, 850)
-        self.setWindowTitle('Toggle button')
+        self.setWindowTitle('CHIMERA GUI')
         self.setLayout(mainLayout)
         self.show()
         self.start_frame_thread()
