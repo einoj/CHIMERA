@@ -172,7 +172,7 @@ class GroundSoftware(QMainWindow):
 
     def start_frame_thread(self):
         ## Oops! should use signals and slots, not interact directly
-        t = threading.Thread(name = 'frame_thread', target=frame_thread, args = (self.handle_frame,))
+        t = threading.Thread(name = 'frame_thread', target=frame_thread,daemon=True, args = (self.handle_frame,))
         ##t.daemon = True # stop when main thread stops
         t.start()
 
@@ -288,7 +288,8 @@ class GroundSoftware(QMainWindow):
         sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    exit_event = threading.Event()
+    #exit_event = threading.Event() Consider using events instead of deamon=true
+    # Remember to also check for event in GroundSoft
     ki = KISS(port='com8', speed='38400', pirate=False)
     ki.start()
 
@@ -300,11 +301,9 @@ if __name__ == '__main__':
     ki._logger.propagate = False
 
     sr_read_thread = threading.Thread(target=ki.simpleread,daemon=True)
-    sr_read_thread.daemon = True # stop when main thread stops
     sr_read_thread.start()
 
     app = QApplication(sys.argv)
-    ex = GroundSoftware(ki)
+    ex = GroundSoftware()
 
     sys.exit(app.exec_())
-    ki.stop()
