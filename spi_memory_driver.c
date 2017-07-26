@@ -4,7 +4,7 @@
 void SPI_Init(void) {
     DDRB = 0;
 	DDRB = (1<<DDB0)|(1<<DDB1)|(1<<DDB2)|(1<<DDB4)|(1<<DDB5)|(1<<DDB6)|(1<<DDB7);//0xF7;//(1<<MOSI)|(1<<SCK);
-    SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR0);//|(1<<SPIE);
+    SPCR=(1<<SPE)|(1<<MSTR)|(0<<SPR0);//|(1<<SPIE);
 
     // Clear the SPIF flag by reading SPSR and SPDR
     SPSR;
