@@ -75,6 +75,8 @@ class GroundSoftware(QMainWindow):
         print(self.chi_events.rw_sefi)
         print("SEUs extracted from EVENT data: " + str(self.chi_events.real_seus))
         print("MBUs extracted from EVENT data: " + str(self.chi_events.real_mbus))
+        print("Zero to one transitions: " + str(self.chi_events.zero_to_one))
+        print("One to zero transitions: " + str(self.chi_events.one_to_zero))
 
     def handle_file_frame(self, frame):
         if len(frame) > 2:
@@ -83,7 +85,6 @@ class GroundSoftware(QMainWindow):
             checksum = ki.check_checksum(byte_frame)
             if checksum != 0:
                 #bad checksum, request packet again
-                print("BAAAD")
                 ki._logger.debug("Bad packet, Request previous")
                 return -1
             if byte_frame[0]&0x0F == CHI_COMM_ID_SCI_TM:
@@ -99,6 +100,7 @@ class GroundSoftware(QMainWindow):
         byte_frame = byte_frame[5:-1] 
         num_events = len(byte_frame)//5
         if num_events == 15:
+            # SEFI
             print(byte_frame)
             self.chi_events.rw_sefi+=1
             for i in range(num_events):
@@ -114,18 +116,27 @@ class GroundSoftware(QMainWindow):
                 event = byte_frame[0:5]
                 # if addr1 is even the pattern should be 0x55
                 seus = 0
+                xormask = 0
+                memID = event[0]
+                # the number of upsets is counted by xoring the original value with the value afte upset
+                # and counting the 1s. 
                 if event[1]%2 == 0:
-                    seus = bin(0x55^event[-1]).count('1')
+                    xormask = 0x55^event[-1]
+                    seus = bin(xormask).count('1')
                     print("SEU 0x55 : " + str(hex(event[-1]))+" uspets: " +str(seus))
                 else:
-                    seus = bin(0xAA^event[-1]).count('1')
+                    xormask = 0xAA^event[-1]
+                    seus = bin(xormask).count('1')
                     print("SEU 0xAA : " + str(hex(event[-1]))+" uspets: " +str(seus))
                 byte_frame = byte_frame[5:]
-                self.chi_events.seus[event[0]] += 1
+                self.chi_events.seus[memID] += 1
+                # The xor mask is also used to find the number of one to zero and zero to one transitions
+                self.chi_events.one_to_zero[memID] += bin(xormask&event[-1]).count('1')
+                self.chi_events.zero_to_one[memID] += bin(xormask&~event[-1]).count('1')
                 if seus > 1:
-                    self.chi_events.real_mbus[event[0]] += 1
+                    self.chi_events.real_mbus[memID] += 1
                 else:
-                    self.chi_events.real_seus[event[0]] += seus
+                    self.chi_events.real_seus[memID] += seus
 
 
     def initUI(self, kiss_serial=None):      

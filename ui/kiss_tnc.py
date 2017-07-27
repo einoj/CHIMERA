@@ -6,6 +6,8 @@ class CHI_EVENTS:
         self.rw_sefi = 0
         self.real_seus = np.zeros(12)
         self.real_mbus = np.zeros(12)
+        self.one_to_zero = np.zeros(12)
+        self.zero_to_one = np.zeros(12)
 
 class CHI_STATUS: 
 
