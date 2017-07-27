@@ -1,5 +1,12 @@
 import numpy as np
 
+class CHI_EVENTS:
+    def __init__(self):
+        self.seus = np.zeros(12)
+        self.rw_sefi = 0
+        self.real_seus = np.zeros(12)
+        self.real_mbus = np.zeros(12)
+
 class CHI_STATUS: 
 
     def __init__(self):

@@ -13,7 +13,7 @@ from time import sleep
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QPushButton, 
     QFrame, QApplication, QLabel, QTextEdit, QGridLayout, QHBoxLayout,
     QVBoxLayout, QCheckBox, QComboBox, QTableWidget, QTableWidgetItem, 
-    QMenuBar, QAction, qApp)
+    QMenuBar, QAction, qApp, QFileDialog)
 from PyQt5 import QtGui 
 from PyQt5.QtCore import (QThread, pyqtSignal, QObject)
 from PyQt5 import uic
@@ -40,23 +40,108 @@ class GroundSoftware(QMainWindow):
     
     def __init__(self, kiss_serial=None):
         super().__init__()
-        
         self.initUI()
         
+    def clear_gui_data(self):
+        self.lastFrame.clear()
+        self.chi_status = CHI_STATUS()
+        self.chi_sci_tm = CHI_SCI_TM()
+        self.chi_events = CHI_EVENTS()
+
+    def loadFile(self):
+        self.clear_gui_data()
+        openfile = QFileDialog.getOpenFileName(self)
+        # We only need to load the SCI_TM frames
+        print(openfile)
+        frame = []
+        frame_open = False
+        with open(openfile[0], 'rb') as datafile:
+            data = datafile.read()
+            for byte in data:
+                # the frame handling method expects bytes
+                # therefore the int needs to be converted to byte
+                byte = bytes([byte])
+                if byte == FEND:
+                    if frame_open:
+                        self.handle_file_frame(frame)
+                        frame_open = False # close frame
+                    else:
+                        frame = [ ]
+                        frame_open = True  # open frame
+                else:
+                    frame.append(byte)
+        self.update_data_table()
+        print(self.chi_events.seus)
+        print(self.chi_events.rw_sefi)
+        print("SEUs extracted from EVENT data: " + str(self.chi_events.real_seus))
+        print("MBUs extracted from EVENT data: " + str(self.chi_events.real_mbus))
+
+    def handle_file_frame(self, frame):
+        if len(frame) > 2:
+            self.lastFrame.insertPlainText(ki.frame_to_string(frame) + '\n\n')
+            byte_frame = decode_kiss_frame(frame)
+            checksum = ki.check_checksum(byte_frame)
+            if checksum != 0:
+                #bad checksum, request packet again
+                print("BAAAD")
+                ki._logger.debug("Bad packet, Request previous")
+                return -1
+            if byte_frame[0]&0x0F == CHI_COMM_ID_SCI_TM:
+                self.handle_SCI_TM_frame(byte_frame)
+            elif byte_frame[0] == CHI_COMM_ID_STATUS:
+                self.handle_status_frame(byte_frame)
+            elif byte_frame[0] == CHI_COMM_ID_EVENT:
+                self.handle_EVENT_frame(byte_frame)
+
+    def handle_EVENT_frame(self, byte_frame):
+        pattern = [0x55, 0xAA]
+        #strip frametype, timestamp and checksum
+        byte_frame = byte_frame[5:-1] 
+        num_events = len(byte_frame)//5
+        if num_events == 15:
+            print(byte_frame)
+            self.chi_events.rw_sefi+=1
+            for i in range(num_events):
+                event = byte_frame[0:5]
+                if event[1]%2 == 0:
+                    print("SEFI 0x55 : " + str(hex(event[-1])+" upsets: " +str(bin(0x55^event[-1]).count('1'))))
+                else:
+                    print("SEFI 0xAA : " + str(hex(event[-1])+" upsets: " +str(bin(0x55^event[-1]).count('1'))))
+        else:
+            for i in range(num_events):
+                # event data is structured as 
+                # memid, addr1, addr2, addr3, upset
+                event = byte_frame[0:5]
+                # if addr1 is even the pattern should be 0x55
+                seus = 0
+                if event[1]%2 == 0:
+                    seus = bin(0x55^event[-1]).count('1')
+                    print("SEU 0x55 : " + str(hex(event[-1]))+" uspets: " +str(seus))
+                else:
+                    seus = bin(0xAA^event[-1]).count('1')
+                    print("SEU 0xAA : " + str(hex(event[-1]))+" uspets: " +str(seus))
+                byte_frame = byte_frame[5:]
+                self.chi_events.seus[event[0]] += 1
+                if seus > 1:
+                    self.chi_events.real_mbus[event[0]] += 1
+                else:
+                    self.chi_events.real_seus[event[0]] += seus
+
+
     def initUI(self, kiss_serial=None):      
         self.setWindowTitle('CHIMERA GUI')
         widget = QWidget(self)
         self.setCentralWidget(widget)
         menubar = self.menuBar()
 
-        # Menu functions
-        exitAction = QAction("&Exit", self)
-        exitAction.setShortcut('Ctrl+Q')
-        exitAction.setStatusTip('Exit application')
-        exitAction.triggered.connect(qApp.quit)
+        # load data file function
+        loadAction = QAction("&Open...", self)
+        loadAction.setShortcut('Ctrl+O')
+        loadAction.setStatusTip('Load previous frame file')
+        loadAction.triggered.connect(self.loadFile)
 
         fileMenu = menubar.addMenu('&File')
-        fileMenu.addAction(exitAction)
+        fileMenu.addAction(loadAction)
 
         self.labels = [ ]
         self.leds = [ ]
@@ -65,6 +150,7 @@ class GroundSoftware(QMainWindow):
         #CHIMERA INFO
         self.chi_status = CHI_STATUS()
         self.chi_sci_tm = CHI_SCI_TM()
+        self.chi_events = CHI_EVENTS()
         self.SOFTWARE_VERSION = QLabel("CHIMERA Software: V."+str(self.chi_status.SOFTWARE_VERSION))
         self.reset_type =QLabel("Reset type: "+str(self.chi_status.reset_type))
         self.device_mode = QLabel("Device Mode: " + str(self.chi_status.device_mode)) 
@@ -193,7 +279,6 @@ class GroundSoftware(QMainWindow):
         #for i in range(1,13):
         #    self.chi_sci_tm.no_SEU[i-1] = frame[5*i]
         self.local_time.setText("CHIMERA time: " + str(self.chi_sci_tm.local_time) + " ms") 
-        ki._logger.debug(len(frame))
         memories_upper = frame[5]
         memories_lower = frame[6]
         for i in range(0,8):
