@@ -3,7 +3,7 @@
 
 void SPI_Init(void) {
     DDRB = 0;
-	DDRB = (1<<DDB0)|(1<<DDB1)|(1<<DDB2)|(1<<DDB4)|(1<<DDB5)|(1<<DDB6)|(1<<DDB7);//0xF7;//(1<<MOSI)|(1<<SCK);
+  DDRB = (1<<DDB0)|(1<<DDB1)|(1<<DDB2)|(1<<DDB4)|(1<<DDB5)|(1<<DDB6)|(1<<DDB7);//0xF7;//(1<<MOSI)|(1<<SCK);
     SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR0);//|(1<<SPIE);
 
     // Clear the SPIF flag by reading SPSR and SPDR
@@ -67,7 +67,7 @@ uint8_t status_reg;
 
     read_status_reg(&status_reg, mem_idx);
     if (!(status_reg & (1<<WIP))) { 
-	      return TRANSFER_COMPLETED;
+        return TRANSFER_COMPLETED;
     } else {
         return BUSY;
     }
@@ -220,15 +220,15 @@ uint8_t erase_chip(uint8_t mem_idx)
     uint8_t status_reg;                                          
     read_status_reg(&status_reg, mem_idx);
     if (!(status_reg & (1<<WIP))) {
-		
-		// TO BI FIXED
-		if (mem_arr[mem_idx].page_num==128)
-		{	// change mode to sequential for small sram
-			CHIP_SELECT(mem_idx);
-			spi_tx_byte(0x01);
-			spi_tx_byte(0x40);
-			CHIP_DESELECT(mem_idx);			
-		}
+    
+    // TO BI FIXED
+    if (mem_arr[mem_idx].page_num==128)
+    { // change mode to sequential for small sram
+      CHIP_SELECT(mem_idx);
+      spi_tx_byte(0x01);
+      spi_tx_byte(0x40);
+      CHIP_DESELECT(mem_idx);     
+    }
             spi_command(WREN, mem_idx);    
     //        DISABLE_SPI_INTERRUPT;  
             CHIP_SELECT(mem_idx);

@@ -17,7 +17,7 @@ uint8_t test_CHIMERA_v2_memory0(void) {
     //erase chip
     while (erase_chip(0) == BUSY);
 
-    // read page	
+    // read page  
     while (read_24bit_page(0, 0, buf) == BUSY);
 
     // check that buffer is 0;
@@ -31,12 +31,12 @@ uint8_t test_CHIMERA_v2_memory0(void) {
     Send_ACK();
 
     // Page program first page of memory 0
-    for (uint16_t i = 0; i < mem_arr[0].page_num; i++) {	
+    for (uint16_t i = 0; i < mem_arr[0].page_num; i++) {  
         while (write_24bit_page(i*mem_arr[0].page_size, 0) == BUSY);
     }
 
-    // read page	
-    for (uint16_t k = 0; k < mem_arr[0].page_num; k++) {	
+    // read page  
+    for (uint16_t k = 0; k < mem_arr[0].page_num; k++) {  
         while (read_24bit_page(k*mem_arr[0].page_size, 0, buf) == BUSY);
 
         // check that buffer contains the correct pattern;
