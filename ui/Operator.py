@@ -63,7 +63,9 @@ class GroundSoftware(QMainWindow):
                 byte = bytes([byte])
                 if byte == FEND:
                     if frame_open:
-                        self.handle_file_frame(frame)
+                        retval = self.handle_file_frame(frame)
+                        if retval != 0:
+                            frame = [ ]
                         frame_open = False # close frame
                     else:
                         frame = [ ]
@@ -85,7 +87,7 @@ class GroundSoftware(QMainWindow):
             checksum = ki.check_checksum(byte_frame)
             if checksum != 0:
                 #bad checksum, request packet again
-                ki._logger.debug("Bad packet, Request previous")
+                ki._logger.debug("Bad packet, drop frame")
                 return -1
             if byte_frame[0]&0x0F == CHI_COMM_ID_SCI_TM:
                 self.handle_SCI_TM_frame(byte_frame)
@@ -220,7 +222,7 @@ class GroundSoftware(QMainWindow):
         self.dataTable = QTableWidget()
         self.dataTable.setRowCount(12)
         self.dataTable.setColumnCount(7)
-        table_labels = ["Cycles", "MBUs", "SEUs", "SELs", "R/W SEFIs", "Timeout SEFIs", "Current"]
+        table_labels = ["Cycles", "SEUs", "MBUs", "SELs", "R/W SEFIs", "Timeout SEFIs", "Current"]
         for i, label in enumerate(table_labels):
             self.dataTable.setHorizontalHeaderItem(i,QTableWidgetItem(label))
         for i in range(0,12):
@@ -308,18 +310,32 @@ class GroundSoftware(QMainWindow):
                     self.red.name())
         memory_data = frame[7:-1]
          
-        #iterates over 12 values
-        for i in range(0,7*12,7):
-            new_data = memory_data[i:i+7]
-            idx = i//7
-            for j in range(6):
+        #iterates over 12 memories
+        #old versions of kiss_tnc.c sends 6 bytes for every memory while from 
+        #commit 00984806d 7 bytes are sent because the SEU counter is extended
+        #from 8-bit to 16-bit, and later turned into an MBU counter, 80 bytes vs 92 bytes.
+        #Therefore the length of the sci_tm_frame is measured before it is read.
+        #If there are only 6 bytes available the 7th byte will be set to 0
+        #and the data will be formated like this:
+        #cycles|SEU|LU|SEFI time| SEFI WR| current
+        if len(frame) == 92:
+            sci_bytes = 7
+        elif len(frame) == 80:
+            sci_bytes = 6
+        else:
+            print("Unsupported SCI_TM_frame format!")
+            return -1
+        for i in range(0,sci_bytes*12,sci_bytes):
+            new_data = memory_data[i:i+sci_bytes]
+            idx = i//sci_bytes
+            for j in range(sci_bytes-1):
                 delta = 0
                 if new_data[j] < self.chi_sci_tm.prev_data[idx][j]:
                     delta = 255-self.chi_sci_tm.prev_data[idx][j]+new_data[j]+1
                 else:
                     delta = new_data[j] - self.chi_sci_tm.prev_data[idx][j]
                 self.chi_sci_tm.curr_data[idx][j] += delta
-            self.chi_sci_tm.curr_data[idx][6] = new_data[6]
+            self.chi_sci_tm.curr_data[idx][6] = new_data[sci_bytes-1]
             self.chi_sci_tm.prev_data[idx] = new_data
 
         self.update_data_table()
